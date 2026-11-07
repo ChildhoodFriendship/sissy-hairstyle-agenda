@@ -13,7 +13,7 @@ export const it = {
     notConfigured: 'Collegamento a Supabase non configurato: inserisci la chiave publishable nella configurazione del progetto.',
     warning: 'Accesso protetto tramite Supabase Auth. I dati del salone sono separati per account.',
   },
-  nav: { agenda: 'Agenda', clients: 'Clienti', messages: 'Messaggi', settings: 'Impostazioni', logout: 'Esci' },
+  nav: { agenda: 'Agenda', clients: 'Clienti', settings: 'Impostazioni', logout: 'Esci' },
   common: {
     today: 'Oggi', previous: 'Giorno precedente', next: 'Giorno successivo',
     newAppointment: 'Nuovo appuntamento', save: 'Salva', cancel: 'Annulla', close: 'Chiudi',
@@ -50,10 +50,10 @@ export const it = {
     countryCode: 'Prefisso predefinito', services: 'Servizi (uno per riga)', open: 'Apertura', close: 'Chiusura',
     closedDays: 'Giorni di chiusura (0 domenica, 6 sabato)', templates: 'Modelli WhatsApp',
     demoData: 'Dati dimostrativi', enableDemo: 'Carica dati demo fittizi', disableDemo: 'Rimuovi dati demo',
-    export: 'Esporta backup JSON', import: 'Importa backup JSON', saveSuccess: 'Impostazioni salvate.',
+    import: 'Importa backup JSON', saveSuccess: 'Impostazioni salvate.',
     importSuccess: 'Backup importato.', importError: 'File non valido o incompatibile: i dati non sono stati modificati.',
     privacy: 'Il file di backup contiene dati personali: conservalo in un luogo protetto.',
-    placeholders: 'Segnaposto disponibili: {nome}, {data}, {ora}, {servizio}, {salone}.',
+    placeholders: 'Nel testo, {nome}, {data}, {ora}, {servizio} e {salone} verranno sostituiti automaticamente dai dati dell’appuntamento.',
   },
   ui: {
     loginWelcome: 'BENTORNATA',
@@ -96,7 +96,7 @@ export const it = {
     clientSaved: 'Cliente salvato.',
     demoLoaded: 'Dati demo fittizi caricati.',
     demoRemoved: 'Dati demo rimossi.',
-    exportReady: 'Backup JSON pronto.',
+
     genericError: 'Operazione non riuscita. I dati precedenti sono stati mantenuti.',
     sectionAgenda: 'Riepilogo giornaliero',
     sectionClients: 'Rubrica clienti',

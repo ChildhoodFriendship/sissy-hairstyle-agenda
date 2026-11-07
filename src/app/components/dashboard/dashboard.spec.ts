@@ -49,6 +49,37 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi all’agenda');
   });
 
+  it('prefills appointment details when a saved client is selected', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      load(): Promise<void>;
+      openForm(): void;
+      selectAppointmentClient(id: string): void;
+      draft: { clientName: string; firstName: string; lastName: string; phone: string };
+    };
+    await instance.load();
+    instance.openForm();
+    instance.selectAppointmentClient(sampleClient.id);
+    expect(instance.draft.clientName).toBe('Ada Lovelace');
+    expect(instance.draft.firstName).toBe('Ada');
+    expect(instance.draft.lastName).toBe('Lovelace');
+    expect(instance.draft.phone).toBe(sampleClient.phone);
+  });
+
+  it('offers adding a client directly from the clients screen', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('clients');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Aggiungi cliente');
+    (fixture.componentInstance as unknown as { addClient(): void }).addClient();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi cliente');
+  });
+
   it('opens the client editor with the selected client details', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();

@@ -77,16 +77,6 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
     await this.write(SETTINGS_KEY, settings);
   }
 
-  async exportBackup(): Promise<string> {
-    const data: AgendaBackup = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      appointments: await this.listAppointments(),
-      clients: await this.listClients(),
-      settings: await this.loadSettings(),
-    };
-    return JSON.stringify(data, null, 2);
-  }
 
   async importBackup(text: string): Promise<boolean> {
     if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) return false;

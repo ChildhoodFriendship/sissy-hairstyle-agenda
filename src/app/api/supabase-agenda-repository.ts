@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import type { AgendaBackup, AppointmentRepository, ClientRepository } from './repositories';
+import type { AppointmentRepository, ClientRepository } from './repositories';
 import { LocalStorageRepository } from './local-storage-repository';
 import { SUPABASE_CLIENT } from './supabase-client';
 import type { Appointment, Client } from '../library/models';
@@ -110,16 +110,6 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
     if (error) throw error;
   }
 
-  override async exportBackup(): Promise<string> {
-    const data: AgendaBackup = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      appointments: await this.listAppointments(),
-      clients: await this.listClients(),
-      settings: await this.loadSettings(),
-    };
-    return JSON.stringify(data, null, 2);
-  }
 
   override async importBackup(_text: string): Promise<boolean> {
     return false;
