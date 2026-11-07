@@ -18,6 +18,8 @@ export interface Appointment {
 export interface Client {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   phone: string;
   whatsappConsent: boolean;
   notes: string;

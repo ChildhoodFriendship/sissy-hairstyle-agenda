@@ -14,7 +14,7 @@ const defaultSettings: SalonSettings = {
   businessHours: { open: '', close: '', closedDays: [] },
   messageTemplates: {
     confirmation: 'Ciao {nome}, il tuo appuntamento è fissato per {data} alle {ora}. A presto! — {salone}',
-    reminder: 'Ciao {nome}, ti ricordiamo il tuo appuntamento di domani, {data} alle {ora}. A presto! — {salone}',
+    reminder: 'Buongiorno {nome}, le ricordo il suo appuntamento il {data} alle {ora}. A presto! — {salone}',
   },
   demoDataEnabled: false,
 };

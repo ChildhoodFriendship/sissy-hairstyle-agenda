@@ -1,72 +1,59 @@
-import { Injectable } from '@angular/core';
-
-const SESSION_KEY = 'sissy-agenda-demo-session';
-const LOCK_KEY = 'sissy-agenda-demo-lock';
-const ATTEMPTS_KEY = 'sissy-agenda-demo-attempts';
-const MAX_ATTEMPTS = 5;
-const LOCK_MS = 30_000;
+import { inject, Injectable } from '@angular/core';
+import { SUPABASE_CLIENT } from './supabase-client';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  login(username: string, password: string): boolean {
-    const now = Date.now();
-    const lockedUntil = this.readNumber(LOCK_KEY);
-    if (lockedUntil > now) return false;
+  private readonly supabase = inject(SUPABASE_CLIENT);
 
-    if (username === 'admin' && password === 'admin') {
-      this.write(SESSION_KEY, 'demo');
-      this.write(ATTEMPTS_KEY, '0');
-      this.write(LOCK_KEY, '0');
-      return true;
-    }
-
-    const attempts = this.readNumber(ATTEMPTS_KEY) + 1;
-    this.write(ATTEMPTS_KEY, String(attempts));
-    if (attempts >= MAX_ATTEMPTS) {
-      this.write(LOCK_KEY, String(now + LOCK_MS));
-      this.write(ATTEMPTS_KEY, '0');
-    }
-    return false;
-  }
-
-  logout(): void {
-    this.remove(SESSION_KEY);
-  }
-
-  isAuthenticated(): boolean {
-    return this.read(SESSION_KEY) === 'demo';
-  }
-
-  remainingLockSeconds(): number {
-    return Math.max(0, Math.ceil((this.readNumber(LOCK_KEY) - Date.now()) / 1000));
-  }
-
-  private read(key: string): string | null {
+  async login(email: string, password: string): Promise<boolean> {
+    if (!this.supabase) return false;
     try {
-      return globalThis.sessionStorage?.getItem(key) ?? null;
+      const { error } = await this.supabase.auth.signInWithPassword({ email: email.trim(), password });
+      return !error;
     } catch {
-      return null;
+      return false;
     }
   }
 
-  private readNumber(key: string): number {
-    const value = Number(this.read(key));
-    return Number.isFinite(value) ? value : 0;
+  isConfigured(): boolean {
+    return this.supabase !== null;
   }
 
-  private write(key: string, value: string): void {
+  async requestPasswordReset(email: string, redirectTo: string): Promise<boolean> {
+    if (!this.supabase) return false;
     try {
-      globalThis.sessionStorage?.setItem(key, value);
+      const { error } = await this.supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+      return !error;
     } catch {
-      // Session storage can be unavailable in restricted browser contexts.
+      return false;
     }
   }
 
-  private remove(key: string): void {
+  async updatePassword(password: string): Promise<boolean> {
+    if (!this.supabase) return false;
     try {
-      globalThis.sessionStorage?.removeItem(key);
+      const { error } = await this.supabase.auth.updateUser({ password });
+      return !error;
     } catch {
-      // Session storage can be unavailable in restricted browser contexts.
+      return false;
     }
+  }
+
+  onPasswordRecovery(callback: () => void): { unsubscribe: () => void } | null {
+    if (!this.supabase) return null;
+    const { data } = this.supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') callback();
+    });
+    return data.subscription;
+  }
+
+  async logout(): Promise<void> {
+    if (this.supabase) await this.supabase.auth.signOut();
+  }
+
+  async isAuthenticated(): Promise<boolean> {
+    if (!this.supabase) return false;
+    const { data, error } = await this.supabase.auth.getSession();
+    return !error && !!data.session;
   }
 }

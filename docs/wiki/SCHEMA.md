@@ -5,11 +5,11 @@
 | Property | Value |
 |---|---|
 | Schema version | `1.0` |
-| Last modified | `2026-11-05` |
+| Last modified | `2026-11-07` |
 
 ## Purpose
 
-This schema defines the documentation structure and validation rules for the single Angular appointment-agenda application. The application is a frontend-only prototype: it stores data in the browser and simulates message sending; it does not provide server-side persistence, authentication, or WhatsApp delivery.
+This schema defines the documentation structure and validation rules for the Angular appointment-agenda application. The application integrates Supabase Auth and owner-scoped database access; the database migration and public runtime configuration must still be applied for a deployment to use that backend. WhatsApp reminders are user-mediated links and are not sent by the application.
 
 ## Language
 
