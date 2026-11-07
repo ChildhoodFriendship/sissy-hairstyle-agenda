@@ -40,7 +40,7 @@ This section defines how the browser application reaches the Supabase project. T
 
 The clients table stores first name, last name, phone, WhatsApp consent, notes, and creation time. The appointments table stores the client reference and name/phone snapshot, date, time, service, notes, status, reminder consent, and creation time. Passwords are managed by Supabase Auth, not in application SQL or local browser storage. A publishable key is not a secret; RLS is the data authorization boundary.
 
-The live project currently contains the `clients` and `appointments` tables with owner-scoped RLS policies and no client or appointment rows. One Auth account exists, but its email does not match the address currently entered on the local login page. A local build does not prove that a particular account can sign in or that provider email delivery is configured.
+The live project contains `clients` and `appointments` tables with owner-scoped RLS policies. Each Auth user can access only rows owned by that user; shared salon access across multiple accounts is not implemented. A local build does not prove that a particular account can sign in or that provider email delivery is configured.
 
 ## Functional Characteristics
 

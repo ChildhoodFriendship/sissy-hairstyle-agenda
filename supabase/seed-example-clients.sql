@@ -5,7 +5,7 @@
 with account as (
   select id as owner_id
   from auth.users
-  where lower(email) = lower('sissy@example.com')
+  where lower(email) = lower('childhoodfriendship00@gmail.com')
 ), sample_clients(first_name, last_name, phone) as (
   values
     ('Giulia', 'Esempio', '+390000000001'),
@@ -30,7 +30,7 @@ set first_name = excluded.first_name,
 with account as (
   select id as owner_id
   from auth.users
-  where lower(email) = lower('sissy@example.com')
+  where lower(email) = lower('childhoodfriendship00@gmail.com')
 ), sample_appointments(first_name, last_name, day_offset, appointment_time) as (
   values
     ('Giulia', 'Esempio', 21, time '09:00'),

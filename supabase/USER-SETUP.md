@@ -4,7 +4,7 @@ Questa guida descrive la configurazione del progetto Supabase **sissy hairstyle 
 
 ## Stato verificato del progetto
 
-Verifica read-only del 7 novembre 2026: `public.clients` e `public.appointments` esistono e sono vuote; in `auth.users` esiste un account, ma non corrisponde all’indirizzo attualmente inserito nella schermata locale di accesso. Quindi non ci sono ancora clienti/appuntamenti, ma non è corretto dire che il progetto non abbia alcun utente Auth. Controlla l’indirizzo esatto in **Authentication → Users** prima di creare un altro account.
+Verifica read-only del 7 novembre 2026: in `auth.users` esiste un utente confermato con l’email configurata nel seed. `public.clients` e `public.appointments` contengono 7 righe ciascuna: 6 per tabella sono i record fittizi di questo seed e 1 per tabella non è marcata come seed; verifica quelle due righe in dashboard prima di modificarle o cancellarle. Se serve un account separato per Sissy, non risulta ancora creato.
 
 La schermata **Password dimenticata?** ha risposto: quel messaggio generico è intenzionale e non prova che sia stata inviata un’email. Supabase non invia il link se l’indirizzo non corrisponde a un account, ma restituisce comunque una risposta generica per non rivelare quali email siano registrate. Il recupero password non crea utenti.
 
@@ -19,7 +19,7 @@ La schermata **Password dimenticata?** ha risposto: quel messaggio generico è i
 
 ## Creare o verificare l’account di accesso
 
-L’accesso è con **email e password**. `sissy` e `admin` possono essere etichette informali, ma non sono username separati e `admin` non ha privilegi speciali. Ogni account vede esclusivamente le proprie righe grazie a RLS.
+L’accesso è con **email e password**. `sissy` e `admin` possono essere etichette informali, ma non sono username separati e `admin` non ha privilegi speciali. Ogni account vede esclusivamente le proprie righe grazie a RLS: un secondo account Sissy avrà un’agenda separata e vuota. Se deve condividere i dati del primo account, fermati prima di invitarla: servono un modello e policy per utenti del medesimo salone, non basta creare un secondo utente Auth.
 
 1. Apri **Authentication → Users** e controlla l’indirizzo esatto dell’account esistente. Deve coincidere con l’email digitata nella schermata di login.
 2. Se non c’è un account con l’indirizzo desiderato, scegli **Add user → Send invitation**, inserisci quell’indirizzo esatto e invia l’invito. L’invito crea un utente Auth in attesa; il link ricevuto conferma l’indirizzo e completa la configurazione. Se l’account esiste già, usa quello invece di crearne un duplicato.
