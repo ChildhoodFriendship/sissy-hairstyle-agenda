@@ -38,15 +38,37 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('[aria-label="Navigazione principale"]')).toBeTruthy();
   });
 
-  it('opens the appointment form from the main action', async () => {
+  it('exposes the theme toggle in the top bar and applies the dark theme', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement;
+    expect(button.textContent).toContain('Modalità scura');
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(true);
+    expect(button.textContent).toContain('Modalità chiara');
+  });
+
+  it('opens the appointment form from the main action', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    fixture.detectChanges();
     const button = [...fixture.nativeElement.querySelectorAll('button')].find((item: HTMLButtonElement) => item.textContent?.includes('Nuovo appuntamento')) as HTMLButtonElement;
     button.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi all’agenda');
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.querySelector('h2')?.textContent).toContain('Aggiungi all’agenda');
+    const clientOption = [...dialog.querySelectorAll('select[name="clientId"] option')].find((option) => (option as HTMLOptionElement).value === sampleClient.id) as HTMLOptionElement;
+    expect(clientOption).toBeTruthy();
+    expect(clientOption?.textContent?.trim()).toBe(sampleClient.name);
+    expect(clientOption?.textContent).not.toContain(sampleClient.phone);
+    (fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.scrim')?.classList.contains('dark')).toBe(true);
   });
 
   it('prefills appointment details when a saved client is selected', async () => {
