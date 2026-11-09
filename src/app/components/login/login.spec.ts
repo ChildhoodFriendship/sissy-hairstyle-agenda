@@ -5,6 +5,35 @@ import { AuthService } from '../../api/auth.service';
 import { Login } from './login';
 
 describe('Login password recovery', () => {
+  it('lets the user switch the login screen between light and dark themes', async () => {
+    localStorage.clear();
+    await TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            onPasswordRecovery: () => null,
+            requestPasswordReset: vi.fn().mockResolvedValue(true),
+            isConfigured: () => true,
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const toggle = fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement;
+    expect(toggle).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.login-layout')?.classList.contains('dark')).toBe(false);
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.login-layout')?.classList.contains('dark')).toBe(true);
+    expect(localStorage.getItem('sissy-agenda-theme')).toBe('dark');
+  });
+
   it('explains that password recovery requires an existing Auth account', async () => {
     const requestPasswordReset = vi.fn().mockResolvedValue(true);
     await TestBed.configureTestingModule({

@@ -10,7 +10,7 @@ This application manages a salon's appointment agenda and client contact records
 
 ## Description
 
-This application provides the salon operator with a daily agenda, a manageable client list, configurable services, WhatsApp reminder preparation, and salon preferences. Existing clients can be selected when creating appointments, and their contact details are prefilled. Italian phone numbers use `+39` as the default country prefix. Date and time in the appointment form are selected through the native picker controls. The interface offers light and dark themes and uses a white-and-blue visual palette. Supabase Auth identifies the operator, while row-level security scopes customer and appointment records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
+This application provides the salon operator with a daily agenda, a manageable client list, configurable services, WhatsApp reminder preparation, and salon preferences. Existing clients can be selected when creating appointments, and their contact details are prefilled. Italian phone numbers use `+39` as the default country prefix. Date and time in the appointment form are selected through the native picker controls. The interface offers persistent light and dark themes with neutral surfaces, restrained rose accents, subtle CSS-only hover feedback, keyboard focus indicators, and reduced-motion support without additional runtime dependencies. Supabase Auth identifies the operator, while row-level security scopes customer and appointment records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
 
 The wiki is organized into the [backend integration area](backend-integration/overview.md), which documents the authentication, database boundary, activation prerequisites, and verified limitations.
 
@@ -20,7 +20,7 @@ The wiki is organized into the [backend integration area](backend-integration/ov
 - Prefills appointment contact details when the operator selects a saved client.
 - Adds and edits client records from the client screen.
 - Opens a consent-gated WhatsApp reminder from an appointment card for review and manual sending.
-- Configures light or dark appearance; the selected theme is retained in the browser.
+- Configures light or dark appearance from the login or agenda screen; the selected theme is retained in the browser.
 - Authenticates operators through Supabase Auth when the project configuration and database setup are available.
 - Shows a recovery flow for requesting an email link and setting a replacement password after Supabase verifies the recovery session.
 - Uses `+39` as the default telephone country prefix when normalizing Italian numbers.
