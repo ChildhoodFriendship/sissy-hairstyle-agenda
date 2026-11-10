@@ -4,6 +4,17 @@ import { AuthService } from './auth.service';
 import { SUPABASE_CLIENT } from './supabase-client';
 
 describe('AuthService password recovery', () => {
+  it('registers with email, password and username metadata', async () => {
+    const signUp = vi.fn().mockResolvedValue({ error: null });
+    TestBed.configureTestingModule({ providers: [{ provide: SUPABASE_CLIENT, useValue: { auth: { signUp } } }] });
+    await expect(TestBed.inject(AuthService).register('ada', 'ada@example.com', 'Strong-pass-42')).resolves.toBe(true);
+    expect(signUp).toHaveBeenCalledWith({
+      email: 'ada@example.com',
+      password: 'Strong-pass-42',
+      options: { data: { username: 'ada' } },
+    });
+  });
+
   it('requests a reset link with the configured application return URL', async () => {
     const resetPasswordForEmail = vi.fn().mockResolvedValue({ error: null });
     TestBed.configureTestingModule({

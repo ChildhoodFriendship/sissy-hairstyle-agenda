@@ -3,10 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
-import type { Appointment, Client, SalonSettings } from '../../library/models';
+import type { Appointment, Client, Employee, SalonSettings } from '../../library/models';
 import { findAppointmentConflict, getDueReminders, normalizePhoneNumber, renderMessageTemplate } from '../../library/domain-utils';
 
- type View = 'agenda' | 'clients' | 'settings';
+const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
+
+ type View = 'agenda' | 'clients' | 'employees' | 'settings';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,6 +22,7 @@ import { findAppointmentConflict, getDueReminders, normalizePhoneNumber, renderM
         <nav aria-label="Navigazione principale">
           <button [class.active]="view()==='agenda'" (click)="view.set('agenda')"><img src="/assets/agenda.svg" alt="" />Agenda</button>
           <button [class.active]="view()==='clients'" (click)="view.set('clients')"><img src="/assets/clients.svg" alt="" />Clienti</button>
+          <button [class.active]="view()==='employees'" (click)="view.set('employees')"><img src="/assets/clients.svg" alt="" />Dipendenti</button>
           <button [class.active]="view()==='settings'" (click)="view.set('settings')"><img src="/assets/settings.svg" alt="" />Impostazioni</button>
         </nav>
         <div class="sidebar-bottom"><div class="profile"><span class="avatar">S</span><span><b>Agenda Sissy</b><small>Dati sincronizzati</small></span></div><button class="logout" (click)="logout()">Esci <span>↗</span></button></div>
@@ -33,7 +36,7 @@ import { findAppointmentConflict, getDueReminders, normalizePhoneNumber, renderM
           <section class="datebar"><button class="icon-button" (click)="shiftDate(-1)" aria-label="Giorno precedente">←</button><label class="date-chip"><span>GIORNO SELEZIONATO</span><input type="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" /></label><button class="icon-button" (click)="shiftDate(1)" aria-label="Giorno successivo">→</button><button class="today-button" (click)="selectedDate.set(today)">Oggi</button></section>
           <section class="stats"><article><span>APPUNTAMENTI</span><strong>{{ todayAppointments().length }}</strong><small>nel giorno selezionato</small></article><article><span>CONFERMATI</span><strong>{{ confirmedCount() }}</strong><small>orari riservati</small></article><article><span>PROMEMORIA</span><strong>{{ dueReminders().length }}</strong><small>da preparare · non inviati</small></article></section>
           <section class="agenda-card"><div class="card-title"><div><p class="eyebrow">{{ selectedDate() === today ? 'OGGI' : 'AGENDA DEL GIORNO' }}</p><h2>{{ displayDate(selectedDate()) }}</h2></div><span class="count-pill">{{ todayAppointments().length }} {{ copy.ui.appointmentCount }}</span></div>
-            @if (todayAppointments().length) { <div class="appointment-list"><div class="time-rail"><span>09</span><span>12</span><span>15</span><span>18</span></div><div class="appointment-items">@for (item of todayAppointments(); track item.id) { <article class="appointment" [class.cancelled]="item.status==='cancelled'"><div class="appointment-time">{{ item.time }}</div><div class="appointment-body"><div class="appointment-top"><h3>{{ item.clientName }}</h3><span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span></div><p>{{ item.service || 'Servizio non indicato' }} <span>·</span> {{ item.phone }}</p>@if(item.notes){<small>{{ item.notes }}</small>}</div><div class="appointment-actions"><button class="whatsapp" [disabled]="!clientConsent(item.clientId)" (click)="openWhatsApp(item,'reminder')" [attr.aria-label]="clientConsent(item.clientId) ? 'Prepara promemoria WhatsApp per '+item.clientName : 'Consenso WhatsApp non registrato'"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20l1.2-4.4A8.4 8.4 0 1 1 20 11.5Z"/><path d="M8.5 8.3c.5 3 2.2 4.7 5.2 5.4"/></svg>Messaggio</button><button (click)="edit(item)" aria-label="Modifica appuntamento">Modifica</button><button (click)="changeStatus(item, item.status==='cancelled'?'confirmed':'cancelled')">{{ item.status==='cancelled'?'Ripristina':'Annulla' }}</button><button class="delete" (click)="removeAppointment(item)" aria-label="Elimina appuntamento">Elimina</button></div></article> }</div></div> }
+            @if (todayAppointments().length) { <div class="appointment-list"><div class="time-rail"><span>09</span><span>12</span><span>15</span><span>18</span></div><div class="appointment-items">@for (item of todayAppointments(); track item.id) { <article class="appointment" [class.cancelled]="item.status==='cancelled'"><div class="appointment-time">{{ item.time }}</div><div class="appointment-body"><div class="appointment-top"><h3>{{ item.clientName }}</h3><span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span></div><p>{{ item.service || 'Servizio non indicato' }} <span>·</span> {{ item.phone }} <span>·</span> {{ item.employeeName || 'Admin' }}</p>@if(item.notes){<small>{{ item.notes }}</small>}</div><div class="appointment-actions"><button class="whatsapp" [disabled]="!clientConsent(item.clientId)" (click)="openWhatsApp(item,'reminder')" [attr.aria-label]="clientConsent(item.clientId) ? 'Prepara promemoria WhatsApp per '+item.clientName : 'Consenso WhatsApp non registrato'"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20l1.2-4.4A8.4 8.4 0 1 1 20 11.5Z"/><path d="M8.5 8.3c.5 3 2.2 4.7 5.2 5.4"/></svg>Messaggio</button><button (click)="edit(item)" aria-label="Modifica appuntamento">Modifica</button><button (click)="changeStatus(item, item.status==='cancelled'?'confirmed':'cancelled')">{{ item.status==='cancelled'?'Ripristina':'Annulla' }}</button><button class="delete" (click)="removeAppointment(item)" aria-label="Elimina appuntamento">Elimina</button></div></article> }</div></div> }
             @else { <div class="empty"><span class="empty-art">✳</span><h3>{{ copy.agenda.emptyTitle }}</h3><p>{{ copy.agenda.emptyText }}</p><button class="secondary" (click)="openForm()">＋ Crea appuntamento</button></div> }
           </section>
           @if(dueReminders().length){<section class="reminder-card"><div><span class="reminder-icon">◷</span><div><b>Promemoria da preparare</b><p>{{ dueReminders().length }} appuntamenti per domani. Si aprono da ogni appuntamento.</p></div></div></section>}
@@ -47,14 +50,22 @@ import { findAppointmentConflict, getDueReminders, normalizePhoneNumber, renderM
           </section>
         }
 
+        @if (view()==='employees') {
+          <section class="page-heading"><div><p class="eyebrow">IL TUO TEAM</p><h1>Dipendenti</h1><p class="subtitle">Gestisci le persone assegnabili agli appuntamenti.</p></div><button class="primary" (click)="addEmployee()">＋ Aggiungi dipendente</button></section>
+          <section class="agenda-card"><div class="card-title"><div><p class="eyebrow">PERSONALE</p><h2>Il team del salone</h2></div><span class="count-pill">{{ activeEmployees().length }} dipendenti</span></div>
+            @if(activeEmployees().length){<div class="client-list">@for(employee of activeEmployees();track employee.id){<article class="employee-row"><span class="client-avatar">{{ initials(employee.firstName+' '+employee.lastName) }}</span><div class="client-info"><b>{{ employee.firstName }} {{ employee.lastName }}</b></div><button class="text-button" (click)="editEmployee(employee)">Modifica</button><button class="text-button danger" (click)="removeEmployee(employee)">Elimina</button></article>}</div>}
+            @else{<div class="empty"><span class="empty-art">♙</span><h3>Nessun dipendente ancora</h3><p>Aggiungi nome e cognome per poter assegnare gli appuntamenti.</p><button class="secondary" (click)="addEmployee()">＋ Aggiungi dipendente</button></div>}
+          </section>
+        }
+
         @if (view()==='settings') {
           <section class="page-heading"><div><p class="eyebrow">IL TUO SPAZIO</p><h1>Impostazioni</h1><p class="subtitle">Preferenze del salone.</p></div></section>
           <section class="settings-grid"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label><label>Servizi</label><div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div><div class="service-add"><input name="newService" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><label>Testo del promemoria<textarea name="reminder" rows="3" [(ngModel)]="settingsDraft.messageTemplates.reminder"></textarea></label><small class="muted">{{ copy.settings.placeholders }}</small><button class="primary" type="submit">Salva impostazioni</button></form></article></section>
         }
       </main>
     </div>
-    @if(formOpen()) { <div class="scrim" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeForm()" aria-label="Chiudi">×</button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" required autocomplete="tel" placeholder="+39 333 1234567" [(ngModel)]="draft.phone" /></label><div class="two-fields"><label>Data *<div class="picker-field"><input #datePicker name="date" type="date" required tabindex="-1" [(ngModel)]="draft.date" /><button type="button" (click)="showPicker(datePicker)" aria-label="Scegli la data">▦</button></div></label><label>Ora *<div class="picker-field"><input #timePicker name="time" type="time" required tabindex="-1" [(ngModel)]="draft.time" /><button type="button" (click)="showPicker(timePicker)" aria-label="Scegli l’ora">◷</button></div></label></div><label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>La cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeForm()">Annulla</button><button class="primary" type="submit">{{ editingId()?'Salva modifiche':'Salva appuntamento' }}</button></div></form></section></div> }
-    @if(clientFormOpen()) { <div class="scrim" [class.dark]="darkMode()" (click)="closeClientForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="client-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeClientForm()" aria-label="Chiudi">×</button><p class="eyebrow">RUBRICA CLIENTI</p><h2 id="client-form-title">{{ editingClient() ? 'Modifica cliente' : 'Aggiungi cliente' }}</h2><p class="subtitle">Inserisci i dati della cliente.</p><form (submit)="$event.preventDefault(); saveClient()"><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="clientDraft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="clientDraft.lastName" /></label><label>Telefono *<input name="clientPhone" type="tel" required autocomplete="tel" placeholder="+39 333 1234567" [(ngModel)]="clientDraft.phone" /></label><label>Note<textarea name="clientNotes" rows="2" [(ngModel)]="clientDraft.notes"></textarea></label><label class="check"><input type="checkbox" name="clientConsent" [(ngModel)]="clientDraft.whatsappConsent" /><span>Consenso WhatsApp registrato</span></label>@if(clientFormError()){<p class="form-error" role="alert">{{ clientFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeClientForm()">Annulla</button><button class="primary" type="submit">Salva cliente</button></div></form></section></div> }
+    @if(formOpen()) { <div class="scrim" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeForm()" aria-label="Chiudi">×</button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" required autocomplete="tel" placeholder="+39 333 1234567" [(ngModel)]="draft.phone" /></label><div class="two-fields"><label>Data *<div class="picker-field"><input #datePicker name="date" type="date" required tabindex="-1" [(ngModel)]="draft.date" /><button type="button" (click)="showPicker(datePicker)" aria-label="Scegli la data">▦</button></div></label><label>Ora *<div class="picker-field"><input #timePicker name="time" type="time" required tabindex="-1" [(ngModel)]="draft.time" /><button type="button" (click)="showPicker(timePicker)" aria-label="Scegli l’ora">◷</button></div></label></div><label>Seguito da<select name="employeeId" [(ngModel)]="draft.employeeId"><option [ngValue]="null">Admin</option>@if(legacyEmployeeName(); as legacyName){<option [ngValue]="legacyEmployeeAssignmentValue" disabled>{{ legacyName }} (non attivo)</option>}@if(archivedEmployee(); as archived){<option [ngValue]="archived.id" disabled>{{ archivedEmployeeName() }} (non attivo)</option>}@for(employee of activeEmployees();track employee.id){<option [ngValue]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>}</select></label><label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>La cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeForm()">Annulla</button><button class="primary" type="submit">{{ editingId()?'Salva modifiche':'Salva appuntamento' }}</button></div></form></section></div> }
+    @if(employeeFormOpen()) { <div class="scrim" [class.dark]="darkMode()" (click)="closeEmployeeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="employee-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeEmployeeForm()" aria-label="Chiudi">×</button><p class="eyebrow">PERSONALE</p><h2 id="employee-form-title">{{ editingEmployee() ? 'Modifica dipendente' : 'Aggiungi dipendente' }}</h2><p class="subtitle">Sono sufficienti nome e cognome.</p><form (submit)="$event.preventDefault(); saveEmployee()"><label>Nome *<input name="employeeFirstName" required autocomplete="given-name" [(ngModel)]="employeeDraft.firstName" /></label><label>Cognome *<input name="employeeLastName" required autocomplete="family-name" [(ngModel)]="employeeDraft.lastName" /></label>@if(employeeFormError()){<p class="form-error" role="alert">{{ employeeFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeEmployeeForm()">Annulla</button><button class="primary" type="submit">Salva dipendente</button></div></form></section></div> }\n    @if(clientFormOpen()) { <div class="scrim" [class.dark]="darkMode()" (click)="closeClientForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="client-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeClientForm()" aria-label="Chiudi">×</button><p class="eyebrow">RUBRICA CLIENTI</p><h2 id="client-form-title">{{ editingClient() ? 'Modifica cliente' : 'Aggiungi cliente' }}</h2><p class="subtitle">Inserisci i dati della cliente.</p><form (submit)="$event.preventDefault(); saveClient()"><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="clientDraft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="clientDraft.lastName" /></label><label>Telefono *<input name="clientPhone" type="tel" required autocomplete="tel" placeholder="+39 333 1234567" [(ngModel)]="clientDraft.phone" /></label><label>Note<textarea name="clientNotes" rows="2" [(ngModel)]="clientDraft.notes"></textarea></label><label class="check"><input type="checkbox" name="clientConsent" [(ngModel)]="clientDraft.whatsappConsent" /><span>Consenso WhatsApp registrato</span></label>@if(clientFormError()){<p class="form-error" role="alert">{{ clientFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeClientForm()">Annulla</button><button class="primary" type="submit">Salva cliente</button></div></form></section></div> }
   `,
   styles: `
     /* Previous dashboard styling retired; the clean design system follows.
@@ -177,8 +188,10 @@ import { findAppointmentConflict, getDueReminders, normalizePhoneNumber, renderM
     .search { display: flex; align-items: center; gap: 8px; min-width: min(260px, 100%); padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); }
     .search span { font-size: 18px; }
     .search input { width: 100%; min-width: 0; height: 40px; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
-    .client-list { padding: 0 18px; }
-    .client-row { display: grid; grid-template-columns: 36px minmax(140px, 1fr) auto 54px auto auto auto; align-items: center; gap: 11px; min-height: 66px; border-bottom: 1px solid var(--line); }
+    .employee-row { display:grid; grid-template-columns:36px minmax(0,1fr) auto auto; align-items:center; gap:11px; min-height:66px; padding:8px 0; border-bottom:1px solid var(--line); }
+    .employee-row:last-child { border-bottom:0; }
+    .client-list { padding:0 18px; }
+    .client-row { display:grid; grid-template-columns: 36px minmax(140px, 1fr) auto 54px auto auto auto; align-items: center; gap: 11px; min-height: 66px; border-bottom: 1px solid var(--line); }
     .client-row:last-child { border-bottom: 0; }
     .client-info { min-width: 0; }
     .client-info b, .client-info span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -232,7 +245,7 @@ import { findAppointmentConflict, getDueReminders, normalizePhoneNumber, renderM
     @media (max-width: 720px) {
       .sidebar { position: fixed; inset: auto 0 0; width: 100%; padding: 7px 10px max(7px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); }
       .sidebar .brand, .side-label, .sidebar-bottom { display: none; }
-      .sidebar nav { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+      .sidebar nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
       .sidebar nav button { flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 5px 3px; font-size: 10px; }
       .sidebar nav button img { width: 17px; height: 17px; }
       .main { margin: 0; padding: 0 18px 102px; }
@@ -286,10 +299,17 @@ export class Dashboard {
   protected newService = '';
   protected readonly appointments = signal<Appointment[]>([]);
   protected readonly clients = signal<Client[]>([]);
+  protected readonly employees = signal<Employee[]>([]);
+  protected readonly activeEmployees = computed(() => this.employees().filter((employee) => employee.isActive !== false));
+  protected readonly legacyEmployeeAssignmentValue = LEGACY_EMPLOYEE_ASSIGNMENT;
   protected readonly settings = signal<SalonSettings>({ salonName: 'Il tuo salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: 'Ciao {nome}, il tuo appuntamento è fissato per {data} alle {ora}. A presto! — {salone}', reminder: 'Buongiorno {nome}, le ricordo il suo appuntamento il {data} alle {ora}. A presto! — {salone}' }, demoDataEnabled: false });
   protected settingsDraft: SalonSettings = structuredClone(this.settings());
   protected readonly formOpen = signal(false);
   protected readonly clientFormOpen = signal(false);
+  protected readonly employeeFormOpen = signal(false);
+  protected readonly employeeFormError = signal('');
+  protected readonly employeeDraft = { firstName: '', lastName: '' };
+  protected readonly editingEmployee = signal<Employee | null>(null);
   protected readonly clientFormError = signal('');
   protected readonly clientDraft = { firstName: '', lastName: '', phone: '', notes: '', whatsappConsent: false };
   protected readonly editingClient = signal<Client | null>(null);
@@ -312,19 +332,59 @@ export class Dashboard {
 
   private async load(): Promise<void> {
     try {
-      const [appointments, clients, settings] = await Promise.all([this.repo.listAppointments(), this.repo.listClients(), this.repo.loadSettings()]);
-      this.appointments.set(appointments); this.clients.set(clients); this.settings.set(settings); this.settingsDraft = structuredClone(settings);
+      const [appointments, clients, employees, settings] = await Promise.all([this.repo.listAppointments(), this.repo.listClients(), this.repo.listEmployees(), this.repo.loadSettings()]);
+      this.appointments.set(appointments); this.clients.set(clients); this.employees.set(employees); this.settings.set(settings); this.settingsDraft = structuredClone(settings);
     } catch { this.notice.set(this.copy.ui.genericError); }
     this.storageWarning.set(this.repo.hasStorageWarning());
   }
 
   protected openForm(): void { this.editingId.set(''); Object.assign(this.draft, this.emptyDraft()); this.draft.date = this.selectedDate(); this.formError.set(''); this.formOpen.set(true); }
+  protected addEmployee(): void { this.editingEmployee.set(null); this.employeeDraft.firstName = ''; this.employeeDraft.lastName = ''; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
+  protected editEmployee(employee: Employee): void { this.editingEmployee.set(employee); this.employeeDraft.firstName = employee.firstName; this.employeeDraft.lastName = employee.lastName; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
+  protected closeEmployeeForm(): void { this.employeeFormOpen.set(false); this.employeeFormError.set(''); }
+  protected async saveEmployee(): Promise<void> {
+    const firstName = this.employeeDraft.firstName.trim();
+    const lastName = this.employeeDraft.lastName.trim();
+    if (!firstName || !lastName) { this.employeeFormError.set('Inserisci nome e cognome.'); return; }
+    const original = this.editingEmployee();
+    try {
+      await this.repo.saveEmployee({ ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName });
+      await this.load();
+      this.notice.set(original ? 'Dati dipendente aggiornati.' : 'Dipendente aggiunto.');
+      this.closeEmployeeForm();
+    } catch { this.employeeFormError.set(this.copy.ui.genericError); }
+  }
+  protected async removeEmployee(employee: Employee): Promise<void> {
+    if (!globalThis.confirm(`Eliminare ${employee.firstName} ${employee.lastName}? Gli appuntamenti storici resteranno.`)) return;
+    try { await this.repo.deleteEmployee(employee.id); await this.load(); this.notice.set('Dipendente eliminato.'); }
+    catch { this.notice.set(this.copy.ui.genericError); }
+  }
+  protected archivedEmployee(): Employee | null {
+    const employeeId = this.draft.employeeId;
+    if (!employeeId) return null;
+    const employee = this.employees().find((item) => item.id === employeeId);
+    return employee?.isActive === false ? employee : null;
+  }
+  protected archivedEmployeeName(): string {
+    const employee = this.archivedEmployee();
+    if (!employee) return '';
+    const prior = this.appointments().find((item) => item.id === this.editingId());
+    return prior?.employeeId === employee.id && prior.employeeName
+      ? prior.employeeName
+      : `${employee.firstName} ${employee.lastName}`;
+  }
+  protected legacyEmployeeName(): string | null {
+    if (this.draft.employeeId !== LEGACY_EMPLOYEE_ASSIGNMENT) return null;
+    const prior = this.appointments().find((item) => item.id === this.editingId());
+    if (!prior || prior.employeeId != null || !prior.employeeName || prior.employeeName === 'Admin') return null;
+    return prior.employeeName;
+  }
   protected addClient(): void { this.editingClient.set(null); Object.assign(this.clientDraft, { firstName: '', lastName: '', phone: '', notes: '', whatsappConsent: false }); this.clientFormError.set(''); this.clientFormOpen.set(true); }
   protected selectAppointmentClient(id: string): void { const client = this.clients().find((item) => item.id === id); this.draft.clientId = client?.id; if (client) { const parts = client.name.trim().split(/\s+/); this.draft.firstName = client.firstName || parts.shift() || ''; this.draft.lastName = client.lastName || parts.join(' '); this.draft.clientName = client.name; this.draft.phone = client.phone; this.draft.reminderConsent = client.whatsappConsent; } else { this.draft.firstName = ''; this.draft.lastName = ''; this.draft.clientName = ''; this.draft.phone = ''; this.draft.reminderConsent = false; } }
   protected showPicker(input: HTMLInputElement): void { try { input.showPicker(); } catch { input.click(); } }
   protected toggleTheme(): void { this.darkMode.update((dark) => !dark); localStorage.setItem('sissy-agenda-theme', this.darkMode() ? 'dark' : 'light'); }
   protected closeForm(): void { this.formOpen.set(false); this.formError.set(''); }
-  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' '),phone:item.phone,date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent}); this.formError.set(''); this.formOpen.set(true); }
+  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' '),phone:item.phone,date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); this.formError.set(''); this.formOpen.set(true); }
   protected startAppointment(client: Client): void { this.openForm(); this.selectAppointmentClient(client.id); this.view.set('agenda'); }
   protected editClient(client: Client): void {
     const parts = client.name.trim().split(/\s+/);
@@ -368,11 +428,20 @@ export class Dashboard {
     const clientName = `${this.draft.firstName.trim()} ${this.draft.lastName.trim()}`.trim();
     if (!this.draft.firstName.trim() || !this.draft.lastName.trim() || !this.draft.date || !this.draft.time) { this.formError.set(this.copy.form.required); return; }
     const existing = this.appointments();
-    if (findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
     const prior = this.editingId() ? existing.find((item)=>item.id===this.editingId()) : undefined;
+    const employee = this.employees().find((item) => item.id === this.draft.employeeId);
+    const legacyEmployeeName = this.legacyEmployeeName();
+    const requestedEmployeeId = this.draft.employeeId === LEGACY_EMPLOYEE_ASSIGNMENT ? null : this.draft.employeeId ?? null;
+    const requestedEmployeeName = legacyEmployeeName ?? (employee ? `${employee.firstName} ${employee.lastName}` : 'Admin');
+    if (findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
     const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>item.phone===phone.e164);
     const client: Client = { id:this.draft.clientId||prior?.clientId||matchedClient?.id||crypto.randomUUID(), firstName:this.draft.firstName.trim(), lastName:this.draft.lastName.trim(), name:clientName, phone:phone.e164, whatsappConsent:matchedClient?.whatsappConsent ?? this.draft.reminderConsent, notes:matchedClient?.notes||'', createdAt:matchedClient?.createdAt||prior?.createdAt||new Date().toISOString() };
-    const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString() };
+    const employeeName = legacyEmployeeName ?? (employee
+      ? employee.isActive === false && prior?.employeeId === employee.id
+        ? prior.employeeName || `${employee.firstName} ${employee.lastName}`
+        : `${employee.firstName} ${employee.lastName}`
+      : 'Admin');
+    const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
     try { await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.notice.set(this.copy.form.saveSuccess); this.closeForm(); }
     catch { this.formError.set(this.copy.ui.genericError); }
   }
@@ -397,6 +466,6 @@ export class Dashboard {
   protected clientAppointments(id:string):number { return this.appointments().filter((item)=>item.clientId===id).length; }
   protected initials(value:string):string { return value.trim().split(/\s+/).slice(0,2).map((p)=>p[0]?.toLocaleUpperCase('it')).join(''); }
   protected async logout():Promise<void> { await this.auth.logout(); window.location.assign('/login'); }
-  private emptyDraft(): {clientId?:string;clientName:string;firstName:string;lastName:string;phone:string;date:string;time:string;service:string;notes:string;reminderConsent:boolean} { return {clientName:'',firstName:'',lastName:'',phone:'',date:this.localDate(),time:'',service:'',notes:'',reminderConsent:false}; }
+  private emptyDraft(): {clientId?:string;clientName:string;firstName:string;lastName:string;phone:string;date:string;time:string;service:string;notes:string;reminderConsent:boolean;employeeId:string|null} { return {clientName:'',firstName:'',lastName:'',phone:'',date:this.localDate(),time:'',service:'',notes:'',reminderConsent:false,employeeId:null}; }
   private localDate(date=new Date()):string { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; }
 }

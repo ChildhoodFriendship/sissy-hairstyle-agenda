@@ -68,6 +68,41 @@ describe('findAppointmentConflict', () => {
       ),
     ).toBe(false);
   });
+
+  it('allows distinct assignees to share a slot until its three-appointment limit', () => {
+    const existing = [
+      appointment({ id: 'admin', employeeId: null }),
+      appointment({ id: 'employee-1', employeeId: 'employee-1' }),
+    ];
+    expect(findAppointmentConflict(existing, {
+      date: '2026-11-06', time: '10:30', employeeId: 'employee-2',
+    })).toBe(false);
+  });
+
+  it('blocks a fourth appointment and duplicate assignee in the same slot', () => {
+    const existing = [
+      appointment({ id: 'admin', employeeId: null }),
+      appointment({ id: 'employee-1', employeeId: 'employee-1' }),
+      appointment({ id: 'employee-2', employeeId: 'employee-2' }),
+    ];
+    expect(findAppointmentConflict(existing, {
+      date: '2026-11-06', time: '10:30', employeeId: 'employee-3',
+    })).toBe(true);
+    expect(findAppointmentConflict(existing, {
+      date: '2026-11-06', time: '10:30', employeeId: null,
+    })).toBe(true);
+  });
+
+  it('does not treat an archived employee snapshot without an id as the Admin assignee', () => {
+    const legacyAssignment = appointment({
+      id: 'legacy-assignment',
+      employeeId: null,
+      employeeName: 'Giulia Bianchi',
+    });
+    expect(findAppointmentConflict([legacyAssignment], {
+      date: '2026-11-06', time: '10:30', employeeId: null, employeeName: 'Admin',
+    })).toBe(false);
+  });
 });
 
 describe('getDueReminders', () => {

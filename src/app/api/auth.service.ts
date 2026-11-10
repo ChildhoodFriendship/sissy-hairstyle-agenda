@@ -5,10 +5,31 @@ import { SUPABASE_CLIENT } from './supabase-client';
 export class AuthService {
   private readonly supabase = inject(SUPABASE_CLIENT);
 
-  async login(email: string, password: string): Promise<boolean> {
+  async login(username: string, password: string): Promise<boolean> {
     if (!this.supabase) return false;
     try {
-      const { error } = await this.supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { data, error } = await this.supabase.functions.invoke('login-with-username', {
+        body: { username: username.trim().toLowerCase(), password },
+      });
+      if (error || !data?.access_token || !data?.refresh_token) return false;
+      const { error: sessionError } = await this.supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      return !sessionError;
+    } catch {
+      return false;
+    }
+  }
+
+  async register(username: string, email: string, password: string): Promise<boolean> {
+    if (!this.supabase) return false;
+    try {
+      const { error } = await this.supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { username: username.trim().toLowerCase() } },
+      });
       return !error;
     } catch {
       return false;

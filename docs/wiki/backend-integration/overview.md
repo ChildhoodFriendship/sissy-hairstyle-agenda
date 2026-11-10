@@ -18,6 +18,9 @@ source:
     - part: other
       path: supabase/migrations/20261107000000_create_agenda_core.sql
       description: Owner-scoped database tables and RLS policies.
+    - part: other
+      path: supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql
+      description: Employee archival and collision-safe username profile repair.
 ---
 
 ## Short Description
@@ -30,7 +33,7 @@ This area groups the application's backend integration documentation. It disting
 
 ## Functional Characteristics
 
-The application authenticates operators with email and password, reads and writes client and appointment rows through the Supabase client, and requests a password recovery email. These capabilities require the database migration, runtime publishable-key configuration, allowed Auth redirects, and a usable email-delivery configuration.
+The application registers account owners with a username, email, and password; username/password login uses a server-side Edge Function. It reads and writes client, employee, and appointment rows through the Supabase client, and requests password recovery on a dedicated email form. These capabilities require the database migrations, runtime publishable-key configuration, an Edge Function secret, allowed Auth redirects, and usable email delivery.
 
 ## Interfaces And Protocols
 

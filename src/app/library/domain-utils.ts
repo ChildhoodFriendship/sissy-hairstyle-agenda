@@ -37,16 +37,27 @@ export interface AppointmentSlot {
   date: string;
   time: string;
   excludeId?: string;
+  employeeId?: string | null;
+  employeeName?: string;
 }
 
 export function findAppointmentConflict(appointments: Appointment[], slot: AppointmentSlot): boolean {
-  return appointments.some(
-    (item) =>
-      item.status === 'confirmed' &&
-      item.id !== slot.excludeId &&
-      item.date === slot.date &&
-      item.time === slot.time,
+  const sameSlot = appointments.filter((item) =>
+    item.status === 'confirmed' &&
+    item.id !== slot.excludeId &&
+    item.date === slot.date &&
+    item.time === slot.time,
   );
+  const requestedAssignee = assigneeKey(slot.employeeId, slot.employeeName, slot.excludeId ?? 'new');
+  return sameSlot.length >= 3 || sameSlot.some((item) =>
+    assigneeKey(item.employeeId, item.employeeName, item.id) === requestedAssignee,
+  );
+}
+
+function assigneeKey(employeeId: string | null | undefined, employeeName: string | undefined, appointmentId: string): string {
+  if (employeeId) return `employee:${employeeId}`;
+  if (employeeName && employeeName !== 'Admin') return `legacy:${appointmentId}`;
+  return 'admin';
 }
 
 export function getDueReminders(appointments: Appointment[], today: string): Appointment[] {

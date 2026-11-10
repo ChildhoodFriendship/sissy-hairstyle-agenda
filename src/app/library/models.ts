@@ -12,7 +12,17 @@ export interface Appointment {
   status: AppointmentStatus;
   reminderConsent: boolean;
   createdAt: string;
+  employeeId?: string | null;
+  employeeName?: string;
   demo?: boolean;
+}
+
+export interface Employee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  isActive?: boolean;
 }
 
 export interface Client {
@@ -56,6 +66,7 @@ export interface AppointmentDraft {
   service: string;
   notes: string;
   reminderConsent: boolean;
+  employeeId?: string | null;
 }
 
 export interface MessagePlaceholders {

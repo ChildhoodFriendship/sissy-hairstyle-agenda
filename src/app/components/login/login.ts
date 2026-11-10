@@ -31,19 +31,35 @@ import { AuthService } from '../../api/auth.service';
               @if (statusMessage()) { <p role="status">{{ statusMessage() }}</p> }
               <button class="button-primary" type="submit">Salva nuova password</button>
             </form>
+          } @else if (registrationMode()) {
+            <h2>Crea il tuo account</h2>
+            <p class="panel-intro">Imposta i dati di accesso del titolare del salone.</p>
+            <form (submit)="register($event)" autocomplete="on">
+              <label for="new-username">Username</label>
+              <input id="new-username" name="new-username" type="text" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]+" autocomplete="username" required [value]="registerUsername()" (input)="registerUsername.set(inputValue($event))" />
+              <label for="register-email">Email</label>
+              <input id="register-email" name="register-email" type="email" autocomplete="email" required [value]="registerEmail()" (input)="registerEmail.set(inputValue($event))" />
+              <label for="register-password">Password</label>
+              <input id="register-password" name="register-password" type="password" autocomplete="new-password" minlength="8" required [value]="registerPassword()" (input)="registerPassword.set(inputValue($event))" />
+              @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+              @if (statusMessage()) { <p role="status">{{ statusMessage() }}</p> }
+              <button class="button-primary" type="submit">Crea account</button>
+            </form>
+            <button type="button" class="demo-hint" (click)="registrationMode.set(false)">Torna all’accesso</button>
           } @else {
             <h2>Accedi al tuo spazio</h2>
 
             <form (submit)="submit($event)" autocomplete="on">
               <label for="username">{{ copy.login.username }}</label>
-              <input id="username" name="username" type="email" autocomplete="username" required [value]="username()" (input)="username.set(inputValue($event))" />
+              <input id="username" name="username" type="text" autocomplete="username" required [value]="username()" (input)="username.set(inputValue($event))" />
               <label for="password">{{ copy.login.password }}</label>
               <input id="password" name="password" type="password" autocomplete="current-password" required [value]="password()" (input)="password.set(inputValue($event))" />
               @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
               @if (statusMessage()) { <p role="status">{{ statusMessage() }}</p> }
               <button class="button-primary" type="submit">{{ copy.login.submit }} <span aria-hidden="true">↗</span></button>
             </form>
-            <button type="button" class="demo-hint" (click)="requestPasswordReset()">Password dimenticata?</button>
+            <a class="demo-hint" href="/forgot-password">Password dimenticata?</a>
+            <button type="button" class="demo-hint" (click)="registrationMode.set(true)">Crea un account</button>
             <p class="demo-hint">{{ copy.login.recoveryHelp }}</p>
           }
 
@@ -113,6 +129,10 @@ export class Login {
   protected readonly copy = it;
   protected readonly darkMode = signal(localStorage.getItem('sissy-agenda-theme') === 'dark');
   protected readonly username = signal('');
+  protected readonly registrationMode = signal(false);
+  protected readonly registerUsername = signal('');
+  protected readonly registerEmail = signal('');
+  protected readonly registerPassword = signal('');
   protected readonly password = signal('');
   protected readonly error = signal('');
   protected readonly statusMessage = signal('');
@@ -146,6 +166,24 @@ export class Login {
       return;
     }
     this.error.set(this.auth.isConfigured() ? this.copy.login.invalid : this.copy.login.notConfigured);
+  }
+
+  protected async register(event: Event): Promise<void> {
+    event.preventDefault();
+    this.error.set('');
+    this.statusMessage.set('');
+    const username = this.registerUsername().trim().toLowerCase();
+    if (!/^[a-z0-9_.-]{3,30}$/.test(username)) {
+      this.error.set('Lo username deve contenere 3–30 caratteri: lettere, numeri, punto, trattino o trattino basso.');
+      return;
+    }
+    const registered = await this.auth.register(username, this.registerEmail(), this.registerPassword());
+    if (registered) {
+      this.statusMessage.set('Account creato. Se la conferma email è attiva, controlla la posta per completare la registrazione.');
+      this.registrationMode.set(false);
+      return;
+    }
+    this.error.set(this.auth.isConfigured() ? 'Impossibile creare l’account. Controlla i dati o riprova più tardi.' : this.copy.login.notConfigured);
   }
 
   protected async requestPasswordReset(): Promise<void> {

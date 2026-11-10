@@ -10,13 +10,16 @@ This application manages a salon's appointment agenda and client contact records
 
 ## Description
 
-This application provides the salon operator with a daily agenda, a manageable client list, configurable services, WhatsApp reminder preparation, and salon preferences. Existing clients can be selected when creating appointments, and their contact details are prefilled. Italian phone numbers use `+39` as the default country prefix. Date and time in the appointment form are selected through the native picker controls. The interface offers persistent light and dark themes with neutral surfaces, restrained rose accents, subtle CSS-only hover feedback, keyboard focus indicators, and reduced-motion support without additional runtime dependencies. Supabase Auth identifies the operator, while row-level security scopes customer and appointment records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
+This application provides the salon operator with a daily agenda, a manageable client list, a team roster, configurable services, WhatsApp reminder preparation, and salon preferences. Appointments can be assigned to the admin or a saved employee; each confirmed time slot accepts up to three appointments, with no duplicate assignee in the same slot. Existing clients can be selected when creating appointments, and their contact details are prefilled. The interface offers persistent light and dark themes. Supabase Auth manages account credentials, while row-level security scopes salon records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
 
 The wiki is organized into the [backend integration area](backend-integration/overview.md), which documents the authentication, database boundary, activation prerequisites, and verified limitations.
 
 ## Functional Characteristics
 
-- Manages client, appointment, and service records through the configured agenda repository and salon settings.
+- Manages client, employee, appointment, and service records through the configured agenda repository and salon settings.
+- Assigns confirmed appointments to the admin or one saved employee, with a maximum of three appointments per date/time slot.
+- Registers accounts with username, email, and password and accepts username/password login through a Supabase Edge Function.
+- Shows a dedicated email-based password recovery page.
 - Prefills appointment contact details when the operator selects a saved client.
 - Adds and edits client records from the client screen.
 - Opens a consent-gated WhatsApp reminder from an appointment card for review and manual sending.
@@ -30,11 +33,11 @@ The wiki is organized into the [backend integration area](backend-integration/ov
 
 ## Interfaces And Protocols
 
-The browser loads `/supabase-config.json` at startup and uses the Supabase JavaScript client with a publishable key. Authenticated data requests use Supabase Data API access to `public.clients` and `public.appointments`; row-level security restricts records to the authenticated owner. Password recovery uses Supabase Auth email delivery and a configured application redirect URL.
+The browser loads `/supabase-config.json` and uses the Supabase JavaScript client with a publishable key. Authenticated data requests use the Supabase Data API for clients, employees, and appointments; row-level security restricts rows to the authenticated owner. Username login exchanges the identifier and password through the `login-with-username` Edge Function, which returns a Supabase session. Password recovery uses Supabase Auth email delivery and a configured application redirect URL.
 
 ## Dependencies And Relationships
 
-The application depends on the Supabase project configuration, the schema in `supabase/migrations/20261107000000_create_agenda_core.sql`, authenticated user accounts, and owner-scoped RLS policies. Runtime activation instructions are in [`supabase/USER-SETUP.md`](../../supabase/USER-SETUP.md).
+The application depends on the Supabase project configuration, both migrations under `supabase/migrations/`, authenticated accounts, the username-login Edge Function, and owner-scoped RLS policies. Runtime activation instructions are in [`supabase/README.md`](../../supabase/README.md) and [`supabase/USER-SETUP.md`](../../supabase/USER-SETUP.md).
 
 ## Procedures
 

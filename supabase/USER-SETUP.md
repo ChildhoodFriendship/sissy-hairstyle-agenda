@@ -10,29 +10,26 @@ La schermata **Password dimenticata?** ha risposto: quel messaggio generico è i
 
 ## Configurazione del progetto
 
-1. **Database e RLS.** Nel progetto corretto, il SQL Editor può eseguire `supabase/migrations/20261107000000_create_agenda_core.sql` per una nuova installazione. In questo progetto le tabelle e le policy RLS sono già presenti: non rieseguire la migrazione senza prima verificare lo schema. La migrazione crea solo tabelle e policy, non crea utenti né password.
-2. **Chiave browser.** La configurazione locale `public/supabase-config.json` contiene l’URL `https://jawxcjkheoarslyvupir.supabase.co` e una chiave di tipo Publishable. Se la config viene rigenerata o il valore manca, in **Project Settings → API Keys** copia esclusivamente la chiave **Publishable** (`sb_publishable_…`) nel campo `publishableKey`. È una chiave destinata al browser e può essere distribuita con l’app; l’accesso ai dati è protetto dalle policy RLS. Non inserire mai chiavi `secret` o `service_role` in `public/`, nel codice frontend, in Git o in chat.
-3. **URL Auth.** In **Authentication → URL Configuration** imposta:
-   - **Site URL**: `https://sissy-hairstyle-agenda.vercel.app` (origine senza percorso/query), come destinazione predefinita degli inviti senza redirect esplicito.
-   - **Redirect URLs**: `https://sissy-hairstyle-agenda.vercel.app`, `https://sissy-hairstyle-agenda.vercel.app/login?recovery=1` e `http://localhost:4200/login?recovery=1` per i test locali. La allow-list autorizza destinazioni, ma non sceglie il Site URL. Non impostare `localhost:3000`: l’app Angular locale usa la porta `4200`.
-4. **Email.** In **Authentication → Emails** (sezione **Notifications**) configura **Custom SMTP / SMTP Settings** e un mittente verificato per inviti e recupero verso indirizzi ordinari. Inserisci le credenziali SMTP solo nel pannello Supabase. Il provider predefinito è per test: invia solo agli indirizzi del team del progetto, ha un limite complessivo di 2 email/ora e non garantisce la consegna. Controlla anche Spam e i log Auth quando un’email non arriva.
+1. **Database e RLS.** La migrazione base `supabase/migrations/20261107000000_create_agenda_core.sql` e `supabase/migrations/20261110000000_employees_capacity_and_usernames.sql` sono già state applicate: non rieseguirle. Applica `supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql` nel SQL Editor del progetto corretto; ripara eventuali profili username mancanti, abilita l’archiviazione dei dipendenti, disattiva la cancellazione fisica via API e conserva gli assegnatari storici.
+2. **Edge Function login.** Distribuisci `supabase/functions/login-with-username/index.ts` come `login-with-username`; `supabase/config.toml` disattiva la verifica JWT per questa funzione di login pubblico. Se l’ambiente del progetto non espone la variabile legacy di service role, configura il secret server-side `SERVICE_ROLE_KEY`. Non copiare mai questa chiave nel client o in chat.
+3. **Chiave browser.** `public/supabase-config.json` contiene già URL progetto e chiave Publishable; non sostituirla con una chiave `secret` o `service_role`.
+4. **URL Auth ed email.** Mantieni configurati Site URL, redirect di recupero effettivamente usati e un mittente SMTP verificato per email di conferma/recupero. Controlla Spam e i log Auth se un messaggio non arriva.
 
 ## Creare o verificare l’account di accesso
 
-L’accesso è con **email e password**. `sissy` e `admin` possono essere etichette informali, ma non sono username separati e `admin` non ha privilegi speciali. Ogni account vede esclusivamente le proprie righe grazie a RLS: un secondo account Sissy avrà un’agenda separata e vuota. Se deve condividere i dati del primo account, fermati prima di invitarla: servono un modello e policy per utenti del medesimo salone, non basta creare un secondo utente Auth.
+L’app registra il titolare con **username, email e password**. L’accesso ordinario usa username e password; l’email resta necessaria per confermare l’account e recuperare la password. Il login username richiede la Edge Function `login-with-username` e le migrazioni `20261110000000_employees_capacity_and_usernames.sql` e `20261110220224_employee_archive_and_username_backfill.sql`. Gli account Auth distinti continuano ad avere dati separati per proprietario: non creare un secondo account se deve condividere i dati del primo salone.
 
-1. Apri **Authentication → Users** e controlla l’indirizzo esatto dell’account esistente. Deve coincidere con l’email digitata nella schermata di login.
-2. Se non c’è un account con l’indirizzo desiderato, scegli **Add user → Send invitation**, inserisci quell’indirizzo esatto e invia l’invito. L’invito crea un utente Auth in attesa; il link ricevuto conferma l’indirizzo e completa la configurazione. Se l’account esiste già, usa quello invece di crearne un duplicato.
-3. Dopo aver accettato l’invito, apri l’app e imposta la password tramite **Password dimenticata?** se non ne hai già una. La richiesta deve usare la stessa email registrata in Auth. Se il link di invito porta a Vercel, è la destinazione predefinita impostata sopra; i test del recupero avviati dall’app locale tornano invece a `http://localhost:4200/login?recovery=1`.
+1. Per un nuovo account, apri **Crea un account** dalla schermata di accesso e inserisci username, email e password. Se la conferma email è attiva, completa la registrazione dal messaggio ricevuto.
+2. Per l’account Auth già esistente, le migrazioni creano o riparano uno username usando i metadati Auth validi o, in mancanza, la parte dell’email prima di `@`; in caso di collisione provano un suffisso univoco. Usa quel valore per il primo accesso username.
+3. Non inserire utenti o password via SQL. Non usare un secondo account Auth per simulare un dipendente: i dipendenti si gestiscono nella schermata **Dipendenti** e restano sotto lo stesso proprietario.
 
 Non scrivere in `auth.users` né impostare password con SQL. Non condividere inviti o URL di recupero: possono contenere token di sessione; se un link è già stato condiviso, non riutilizzarlo e genera un nuovo flusso dal pannello.
 
 ## Recuperare la password
 
-1. Verifica prima in **Authentication → Users** che esista l’account e che la sua email coincida esattamente con quella inserita nella pagina di accesso.
-2. Se l’utente non esiste, crea/invita prima l’account seguendo la sezione precedente. La richiesta di recupero non registra utenti e non invia email per indirizzi non associati a un account.
-3. Se l’utente esiste, seleziona **Password dimenticata?**. La conferma mostrata è volutamente generica; non garantisce la consegna. Se non arriva nulla, controlla email dell’account, Spam, configurazione SMTP, eventuali limiti di invio e **Authentication → Audit Logs**.
-4. Apri il link ricevuto sullo stesso browser e imposta una password nuova di almeno 8 caratteri. Non copiare o inoltrare la URL completa.
+1. Apri **Password dimenticata?** dalla schermata di accesso: si apre la pagina dedicata, dove inserire l’email dell’account.
+2. La conferma è volutamente generica e non garantisce la consegna. Se arriva l’email, apri il link nello stesso browser e imposta una nuova password di almeno 8 caratteri.
+3. Se non arriva nulla, controlla l’indirizzo, Spam, configurazione SMTP e **Authentication → Audit Logs**. Il recupero non crea un account.
 
 ## Provare l’app in locale
 

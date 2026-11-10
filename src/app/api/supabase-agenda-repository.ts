@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import type { AppointmentRepository, ClientRepository } from './repositories';
+import type { AppointmentRepository, ClientRepository, EmployeeRepository } from './repositories';
 import { LocalStorageRepository } from './local-storage-repository';
 import { SUPABASE_CLIENT } from './supabase-client';
-import type { Appointment, Client } from '../library/models';
+import type { Appointment, Client, Employee } from '../library/models';
 
 interface ClientRow {
   id: string;
@@ -26,10 +26,20 @@ interface AppointmentRow {
   status: Appointment['status'];
   reminder_consent: boolean;
   created_at: string;
+  employee_id: string | null;
+  employee_name: string;
+}
+
+interface EmployeeRow {
+  id: string;
+  first_name: string;
+  last_name: string;
+  created_at: string;
+  is_active: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
-export class SupabaseAgendaRepository extends LocalStorageRepository implements AppointmentRepository, ClientRepository {
+export class SupabaseAgendaRepository extends LocalStorageRepository implements AppointmentRepository, ClientRepository, EmployeeRepository {
   private readonly supabase = inject(SUPABASE_CLIENT);
 
   override async listAppointments(): Promise<Appointment[]> {
@@ -48,6 +58,8 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       status: row.status,
       reminderConsent: row.reminder_consent,
       createdAt: row.created_at,
+      employeeId: row.employee_id,
+      employeeName: row.employee_name,
     }));
   }
 
@@ -65,6 +77,8 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       status: item.status,
       reminder_consent: item.reminderConsent,
       created_at: item.createdAt,
+      employee_id: item.employeeId ?? null,
+      employee_name: item.employeeName || 'Admin',
     });
     if (error) throw error;
   }
@@ -107,6 +121,34 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
 
   override async deleteClient(id: string): Promise<void> {
     const { error } = await this.requireClient().from('clients').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async listEmployees(): Promise<Employee[]> {
+    const { data, error } = await this.requireClient().from('employees').select('*').order('last_name').order('first_name');
+    if (error) throw error;
+    return (data as EmployeeRow[]).map((row) => ({
+      id: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      createdAt: row.created_at,
+      isActive: row.is_active,
+    }));
+  }
+
+  async saveEmployee(item: Employee): Promise<void> {
+    const { error } = await this.requireClient().from('employees').upsert({
+      id: item.id,
+      first_name: item.firstName,
+      last_name: item.lastName,
+      created_at: item.createdAt,
+      is_active: item.isActive !== false,
+    });
+    if (error) throw error;
+  }
+
+  async deleteEmployee(id: string): Promise<void> {
+    const { error } = await this.requireClient().from('employees').update({ is_active: false }).eq('id', id);
     if (error) throw error;
   }
 

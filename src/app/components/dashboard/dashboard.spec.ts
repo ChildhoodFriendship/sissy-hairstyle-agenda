@@ -18,7 +18,8 @@ describe('Dashboard', () => {
       providers: [{
         provide: SupabaseAgendaRepository,
         useValue: {
-          listAppointments: async () => [], listClients: async () => [sampleClient],
+          listAppointments: async () => [], listClients: async () => [sampleClient], listEmployees: async () => [],
+          saveEmployee: async () => undefined, deleteEmployee: async () => undefined,
           loadSettings: async () => ({ salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false }),
           hasStorageWarning: () => false,
         },
@@ -62,6 +63,7 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
     expect(dialog.querySelector('h2')?.textContent).toContain('Aggiungi all’agenda');
+    expect(dialog.querySelector('select[name="employeeId"] option')?.textContent).toContain('Admin');
     const clientOption = [...dialog.querySelectorAll('select[name="clientId"] option')].find((option) => (option as HTMLOptionElement).value === sampleClient.id) as HTMLOptionElement;
     expect(clientOption).toBeTruthy();
     expect(clientOption?.textContent?.trim()).toBe(sampleClient.name);
@@ -100,6 +102,21 @@ describe('Dashboard', () => {
     (fixture.componentInstance as unknown as { addClient(): void }).addClient();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi cliente');
+  });
+
+  it('shows the employee screen and only asks for first and last name', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('employees');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Dipendenti');
+    (fixture.componentInstance as unknown as { addEmployee(): void }).addEmployee();
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.querySelector('[name="employeeFirstName"]')).toBeTruthy();
+    expect(dialog.querySelector('[name="employeeLastName"]')).toBeTruthy();
+    expect(dialog.querySelectorAll('input')).toHaveLength(2);
   });
 
   it('opens the client editor with the selected client details', async () => {

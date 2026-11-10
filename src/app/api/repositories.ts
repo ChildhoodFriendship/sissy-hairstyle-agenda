@@ -1,4 +1,4 @@
-import type { Appointment, Client, SalonSettings } from '../library/models';
+import type { Appointment, Client, Employee, SalonSettings } from '../library/models';
 
 export interface AppointmentRepository {
   listAppointments(): Promise<Appointment[]>;
@@ -10,6 +10,12 @@ export interface ClientRepository {
   listClients(): Promise<Client[]>;
   saveClient(client: Client): Promise<void>;
   deleteClient(id: string): Promise<void>;
+}
+
+export interface EmployeeRepository {
+  listEmployees(): Promise<Employee[]>;
+  saveEmployee(employee: Employee): Promise<void>;
+  deleteEmployee(id: string): Promise<void>;
 }
 
 export interface SettingsRepository {

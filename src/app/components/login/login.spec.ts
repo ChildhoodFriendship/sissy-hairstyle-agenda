@@ -34,8 +34,7 @@ describe('Login password recovery', () => {
     expect(localStorage.getItem('sissy-agenda-theme')).toBe('dark');
   });
 
-  it('explains that password recovery requires an existing Auth account', async () => {
-    const requestPasswordReset = vi.fn().mockResolvedValue(true);
+  it('links to a dedicated password recovery page', async () => {
     await TestBed.configureTestingModule({
       imports: [Login],
       providers: [
@@ -44,7 +43,6 @@ describe('Login password recovery', () => {
           provide: AuthService,
           useValue: {
             onPasswordRecovery: () => null,
-            requestPasswordReset,
             isConfigured: () => true,
           },
         },
@@ -53,20 +51,23 @@ describe('Login password recovery', () => {
 
     const fixture = TestBed.createComponent(Login);
     fixture.detectChanges();
-    const emailInput = fixture.nativeElement.querySelector('#username') as HTMLInputElement;
-    emailInput.value = 'owner@example.com';
-    emailInput.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('a[href="/forgot-password"]')?.textContent).toContain('Password dimenticata?');
+    expect(fixture.nativeElement.querySelector('#username')?.getAttribute('type')).toBe('text');
+  });
 
-    const resetButton = [...fixture.nativeElement.querySelectorAll('button')]
-      .find((button: HTMLButtonElement) => button.textContent?.includes('Password dimenticata?')) as HTMLButtonElement;
-    resetButton.click();
-    await fixture.whenStable();
+  it('opens registration with username, email and password fields', async () => {
+    await TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [provideRouter([]), { provide: AuthService, useValue: { onPasswordRecovery: () => null, isConfigured: () => true } }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(Login);
     fixture.detectChanges();
-
-    expect(requestPasswordReset).toHaveBeenCalledOnce();
-    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent)
-      .toContain('questa richiesta non crea account');
-    expect(fixture.nativeElement.textContent).toContain('prima aggiungilo in Supabase');
+    const button = [...fixture.nativeElement.querySelectorAll('button')]
+      .find((item: HTMLButtonElement) => item.textContent?.includes('Crea un account')) as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#new-username')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('#register-email')?.getAttribute('type')).toBe('email');
+    expect(fixture.nativeElement.querySelector('#register-password')?.getAttribute('type')).toBe('password');
   });
 });

@@ -24,6 +24,14 @@ source:
       path: public/supabase-config.json
     - part: other
       path: supabase/migrations/20261107000000_create_agenda_core.sql
+    - part: other
+      path: supabase/migrations/20261110000000_employees_capacity_and_usernames.sql
+    - part: other
+      path: supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql
+    - part: endpoint
+      path: supabase/functions/login-with-username/index.ts
+    - part: component
+      path: src/app/components/login/forgot-password.ts
     - part: test
       path: src/app/api/auth.service.spec.ts
     - part: test
@@ -32,31 +40,32 @@ source:
 
 ## Short Description
 
-This section describes Supabase email/password authentication, owner-scoped client and appointment persistence, and password recovery through an emailed link.
+This section describes username/password authentication, account registration with email and password, owner-scoped persistence for clients, employees, and appointments, and password recovery through an email link. Usernames are unique identifiers mapped server-side to the email managed by Supabase Auth.
 
 ## Description
 
-This section defines how the browser application reaches the Supabase project. The runtime configuration contains the project URL and the client-safe publishable key. Supabase Auth manages operator sessions. Authenticated calls access `public.clients` and `public.appointments`, whose row-level security policies compare each row's `owner_id` with the authenticated user ID.
+This section defines how the browser application reaches the Supabase project. Runtime configuration contains the project URL and client-safe publishable key. Supabase Auth manages passwords and sessions. Usernames and Auth email mappings are stored in `public.user_profiles`; the `login-with-username` Edge Function resolves usernames server-side and never returns email addresses. Authenticated calls access `public.clients`, `public.employees`, and `public.appointments`, whose RLS policies compare each row's `owner_id` with the authenticated user ID.
 
-The clients table stores first name, last name, phone, WhatsApp consent, notes, and creation time. The appointments table stores the client reference and name/phone snapshot, date, time, service, notes, status, reminder consent, and creation time. Passwords are managed by Supabase Auth, not in application SQL or local browser storage. A publishable key is not a secret; RLS is the data authorization boundary.
+The employees table stores first name, last name, active status, and creation time. Removing an employee archives the row so existing appointments retain their employee reference and display-name snapshot. For older appointments whose employee row was already deleted, a null employee ID with a non-Admin display name preserves the historical assignment; a null ID with the name `Admin` represents the admin. Database constraints allow up to three confirmed appointments per date/time and prevent assigning the same person twice in a slot. Passwords remain managed by Supabase Auth. A publishable key is not a secret; RLS is the data authorization boundary.
 
-The live project contains `clients` and `appointments` tables with owner-scoped RLS policies. Each Auth user can access only rows owned by that user; shared salon access across multiple accounts is not implemented. A local build does not prove that a particular account can sign in or that provider email delivery is configured.
+The repository contains migration scripts and Edge Function source, but a local build does not prove that the migrations or function have been deployed, or that a particular account can sign in or receive recovery email.
 
 ## Functional Characteristics
 
-- Authenticates with an operator email address and password through Supabase Auth.
+- Registers an account by providing a username, email, and password; Supabase Auth may require email confirmation.
+- Authenticates with username and password through the `login-with-username` Edge Function, which returns a Supabase session without exposing the email mapping.
 - Checks whether a Supabase session exists before allowing access to the protected agenda route.
-- Requests a password-reset email for an entered address, using a generic confirmation message to avoid confirming whether the address belongs to an account; recovery does not create an Auth user, and Supabase may return success without sending mail when no account matches.
+- Requests a password-reset email from the dedicated recovery page, using a generic confirmation that does not reveal whether the email belongs to an account.
 - Listens for the Supabase password-recovery event and allows a new password to be saved after the recovery link establishes the session.
-- Manages client and appointment records through authenticated Data API requests, with database RLS separating owners' rows.
-- Does not include a public sign-up flow or a hardcoded `admin`/`admin` account.
+- Manages client, employee, and appointment records through authenticated Data API requests, with database RLS separating owners' rows.
+- Archives removed employees so appointments retain their historical assignment.
 - Does not send a WhatsApp message; it prepares the `wa.me` link for the operator to review and send manually.
 
 ## Interfaces And Protocols
 
-At startup, the application fetches `/supabase-config.json` and initializes `@supabase/supabase-js` with the configured URL and publishable key. Sign-in uses Supabase Auth's email/password flow. Recovery uses the Auth password-reset email endpoint and redirects to `/login?recovery=1`; the configured Supabase redirect allow-list must include the app's actual origin and path. After authentication, the repository reads and writes `clients` and `appointments` through the Supabase Data API. Errors are surfaced through the app's login or operation feedback.
+At startup, the application fetches `/supabase-config.json` and initializes `@supabase/supabase-js` with the configured URL and publishable key. Registration calls Supabase Auth with email, password, and username metadata. Username login calls the `login-with-username` Edge Function, which looks up the private email mapping using a server-side service key and returns only session tokens. Recovery calls Supabase Auth's password-reset email endpoint and redirects to `/login?recovery=1`; the configured redirect allow-list must include the app's actual origin and path. Authenticated repositories read and write clients, employees, and appointments through the Supabase Data API.
 
-The client does not contain a `secret` or `service_role` key. The database migration enables RLS and grants table operations only to authenticated users under owner checks.
+The client does not contain a `secret` or `service_role` key. The database migration enables RLS and grants employee reads, inserts, and updates only to authenticated owners; physical employee deletion is not granted, and the application archives employee rows instead.
 
 ## Dependencies And Relationships
 
@@ -66,17 +75,17 @@ The integration depends on the Supabase project, `public/supabase-config.json`, 
 
 ### Configure and activate the integration
 
-1. Apply `supabase/migrations/20261107000000_create_agenda_core.sql` in the intended Supabase project's SQL Editor.
-2. Copy the **publishable** project key into `public/supabase-config.json`; leave secret and service-role keys server-side and out of the browser.
-3. Set the Supabase Auth Site URL and allow the local and production recovery redirect URLs.
-4. Verify the operator's exact email in Supabase Auth; if no matching account exists, invite it from **Authentication → Users**. Do not insert users or password hashes through SQL.
-5. Deploy and verify an authenticated read/write operation and confirm that a second account cannot access the first account's rows.
+1. Apply `supabase/migrations/20261107000000_create_agenda_core.sql`, then `supabase/migrations/20261110000000_employees_capacity_and_usernames.sql` and `supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql` in order in the intended Supabase project's SQL Editor. If the first two are already applied, apply only the third migration.
+2. Keep the project's **publishable** key in `public/supabase-config.json`; never put a secret or service-role key in the browser.
+3. Deploy the `login-with-username` Edge Function with JWT verification disabled and configure its server-only service-role secret.
+4. Configure the Supabase Auth Site URL, allowed recovery redirects, and email sender. Registration may require email confirmation.
+5. Verify registration, username login, recovery email delivery, and owner-scoped client/employee/appointment access in the live project; a local build does not verify these provider-side behaviors.
 
 ### Recover an operator password
 
-1. Verify that the email already belongs to an Auth user, then enter that exact address on the login page and select **Password dimenticata?**. The recovery request does not create an account.
-2. If Supabase sends the message, open it and follow the link back to the configured `/login?recovery=1` route.
+1. On the login page, choose **Password dimenticata?** to open the dedicated recovery page and enter the account email.
+2. The confirmation is generic and does not prove that an email was delivered. If the account exists and delivery is configured, open the link received and return to `/login?recovery=1`.
 3. Enter a new password of at least eight characters and save it.
-4. Verify delivery using the intended mailbox. For ordinary recipients, configure and test a custom SMTP sender in Supabase; the default mail service is restricted and is not a production delivery guarantee.
+4. Verify delivery in the intended mailbox. For ordinary recipients, configure and test a custom SMTP sender in Supabase; the default mail service is not a production delivery guarantee.
 
 The complete operator-facing procedure and sample data query are in [`supabase/USER-SETUP.md`](../../../supabase/USER-SETUP.md).

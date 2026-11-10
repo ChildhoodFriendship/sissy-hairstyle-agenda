@@ -7,6 +7,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/login/login').then((module) => module.Login),
   },
   {
+    path: 'forgot-password',
+    loadComponent: () => import('./components/login/forgot-password').then((module) => module.ForgotPassword),
+  },
+  {
     path: 'agenda',
     canActivate: [authGuard],
     loadComponent: () => import('./components/dashboard/dashboard').then((module) => module.Dashboard),
