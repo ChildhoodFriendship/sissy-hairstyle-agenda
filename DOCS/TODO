@@ -13,7 +13,7 @@
 
 ## 3. Schermata “Impostazioni”
 - [x] Verificare se e dove viene mostrato il nome del salone.
-- [ ] Fare in modo che la schermata occupi il 100% dello spazio disponibile.
+- [x] Fare in modo che la schermata occupi il 100% dello spazio disponibile.
 - [ ] Semplificare la creazione del testo del promemoria per utenti non tecnici: progettare un’interfaccia guidata e intuitiva (valutare un popup/editor visuale), rendendo chiara la composizione del messaggio senza richiedere la costruzione manuale di stringhe.
 
 ## 4. Schermata “Login”

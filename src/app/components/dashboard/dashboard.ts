@@ -203,7 +203,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .consent-pill.yes { background: #E9F4ED; color: #34734D; }
     .workspace.dark .consent-pill.yes { background: #20372A; color: #9BD0AE; }
     .client-count { color: var(--muted); font-size: 10px; white-space: nowrap; }
-    .settings-grid { display: grid; grid-template-columns: minmax(0, 680px); }
+    .settings-grid { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
     .settings-card { padding-bottom: 22px; }
     .settings-card form { display: grid; gap: 14px; padding: 20px 22px; }
     .settings-card label, .dialog form > label { display: grid; gap: 6px; color: var(--ink); font-size: 11px; font-weight: 550; }
