@@ -75,6 +75,7 @@ describe('Dashboard', () => {
     button.click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.classList.contains('inverted')).toBe(true);
     expect(button.textContent).toContain('Modalità chiara');
   });
 
