@@ -5,6 +5,8 @@ import { SUPABASE_CLIENT } from '../../api/supabase-client';
 import type { Appointment, Client } from '../../library/models';
 
 describe('Dashboard', () => {
+  let savedClient: Client | undefined;
+
   const sampleClient: Client = {
     id: 'client-1', name: 'Ada Lovelace', firstName: 'Ada', lastName: 'Lovelace',
     phone: '+393331234567', whatsappConsent: false, notes: '', createdAt: '2026-01-01T00:00:00.000Z',
@@ -13,12 +15,15 @@ describe('Dashboard', () => {
   beforeEach(async () => {
     localStorage.clear();
     sessionStorage.clear();
+    savedClient = undefined;
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [{
         provide: SupabaseAgendaRepository,
         useValue: {
           listAppointments: async () => [], listClients: async () => [sampleClient], listEmployees: async () => [],
+          saveClient: async (client: Client) => { savedClient = client; },
+          saveAppointment: async () => undefined,
           saveEmployee: async () => undefined, deleteEmployee: async () => undefined,
           loadSettings: async () => ({ salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false }),
           hasStorageWarning: () => false,
@@ -103,6 +108,20 @@ describe('Dashboard', () => {
     (fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.scrim')?.classList.contains('dark')).toBe(true);
+  });
+
+  it('keeps checked WhatsApp consent enabled for an existing client when saving an appointment', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: sampleClient.id, firstName: 'Ada', lastName: 'Lovelace', phone: '+393331234567', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: true, addToContacts: true, employeeId: null });
+    await instance.saveAppointment();
+    expect(savedClient?.whatsappConsent).toBe(true);
   });
 
   it('prefills appointment details when a saved client is selected', async () => {

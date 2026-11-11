@@ -6,7 +6,7 @@
 
 ## 2. Schermata “Agenda”
 - [x] Individuare un’icona WhatsApp appropriata: Google Fonts Material Symbols non offre necessariamente il marchio ufficiale; valutare un asset SVG ufficiale/appropriato e rispettarne licenza e linee guida.
-- [ ] Verificare perché il pulsante WhatsApp resta disabilitato anche quando il consenso è selezionato. Se si tratta di un bug, correggerlo; altrimenti documentare il motivo e mantenere come TODO.
+- [x] Verificare perché il pulsante WhatsApp resta disabilitato anche quando il consenso è selezionato. Se si tratta di un bug, correggerlo; altrimenti documentare il motivo e mantenere come TODO.
 - [ ] Limitare gli orari selezionabili per gli appuntamenti a intervalli di mezz’ora.
 - [ ] Nell’aggiunta di un appuntamento, aggiungere un controllo (checkbox/flag) per inserire direttamente il cliente anche in rubrica.
 - [ ] Sostituire l’intestazione attuale con il solo titolo “Agenda”; rimuovere “IL TUO SALONE. IN ORDINE” e “Appuntamenti del giorno, senza perdere il filo.”
