@@ -25,7 +25,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
           <button [class.active]="view()==='employees'" (click)="view.set('employees')"><img src="/assets/clients.svg" alt="" />Dipendenti</button>
           <button [class.active]="view()==='settings'" (click)="view.set('settings')"><img src="/assets/settings.svg" alt="" />Impostazioni</button>
         </nav>
-        <div class="sidebar-bottom"><div class="profile"><span class="avatar">S</span><span><b>Agenda Sissy</b><small>Dati sincronizzati</small></span></div><button class="logout" (click)="logout()">Esci <span>↗</span></button></div>
+        <div class="sidebar-bottom"><button class="logout" (click)="logout()"><span>Esci</span><img src="/assets/logout.svg" alt="" aria-hidden="true" /></button></div>
       </aside>
       <main class="main">
         <header class="topbar"><div class="mobile-brand"><span class="brand-mark">S</span> Agenda Sissy</div><span class="demo-label"><i></i> AREA RISERVATA</span><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Modalità chiara' : '☾ Modalità scura' }}</button><button class="mobile-logout" (click)="logout()">Esci</button></header>
@@ -116,7 +116,9 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .profile b { font-size: 12px; font-weight: 600; }
     .profile small { margin-top: 3px; color: var(--muted); font-size: 10px; }
     .logout, .mobile-logout { border: 0; background: transparent; color: var(--muted); }
-    .logout { display: flex; justify-content: space-between; width: 100%; padding: 13px 8px 0; font-size: 12px; }
+    .logout { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 13px 8px 0; font-size: 12px; }
+    .logout img { width: 18px; height: 18px; }
+    .workspace.dark .logout img { filter: invert(1); }
     .logout:hover, .mobile-logout:hover { color: var(--ink); }
     .main { min-height: 100dvh; margin-left: 252px; padding: 0 clamp(24px, 4vw, 58px) 64px; }
     .topbar { display: flex; align-items: center; justify-content: flex-end; gap: 14px; height: 72px; border-bottom: 1px solid var(--line); }

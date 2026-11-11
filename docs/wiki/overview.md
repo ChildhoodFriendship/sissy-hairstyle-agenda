@@ -12,7 +12,7 @@ This application manages a salon's appointment agenda and client contact records
 
 This application provides the salon operator with a daily agenda, a manageable client list, a team roster, configurable services, WhatsApp reminder preparation, and salon preferences. Appointments can be assigned to the admin or a saved employee; each confirmed time slot accepts up to three appointments, with no duplicate assignee in the same slot. Existing clients can be selected when creating appointments, and their contact details are prefilled. The interface offers persistent light and dark themes. Supabase Auth manages account credentials, while row-level security scopes salon records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
 
-The wiki is organized into the [backend integration area](backend-integration/overview.md), which documents the authentication, database boundary, activation prerequisites, and verified limitations.
+The wiki is organized into the [agenda area](agenda/overview.md), which documents appointment, client, employee, salon-setting, and reminder behavior, and the [backend integration area](backend-integration/overview.md), which documents authentication, the database boundary, activation prerequisites, and verified limitations.
 
 ## Functional Characteristics
 
@@ -37,13 +37,13 @@ The browser loads `/supabase-config.json` and uses the Supabase JavaScript clien
 
 ## Dependencies And Relationships
 
-The application depends on the Supabase project configuration, both migrations under `supabase/migrations/`, authenticated accounts, the username-login Edge Function, and owner-scoped RLS policies. Runtime activation instructions are in [`supabase/README.md`](../../supabase/README.md) and [`supabase/USER-SETUP.md`](../../supabase/USER-SETUP.md).
+The application depends on the Supabase project configuration, all three migrations under `supabase/migrations/` applied in order, authenticated accounts, the username-login Edge Function, and owner-scoped RLS policies. Runtime activation instructions are in [`supabase/README.md`](../../supabase/README.md) and [`supabase/USER-SETUP.md`](../../supabase/USER-SETUP.md).
 
 ## Procedures
 
 ### Activate the Supabase-backed deployment
 
-1. Apply the database migration in the intended Supabase project.
+1. Apply all three SQL migrations in `supabase/migrations/` in filename order in the intended Supabase project.
 2. Set the project's publishable key in `public/supabase-config.json`; do not expose a secret or service-role key.
 3. Configure the allowed Auth redirect URLs and, for production password recovery, a verified SMTP sender.
 4. Create the operator account through Supabase Auth and test login, row access, and recovery email delivery.

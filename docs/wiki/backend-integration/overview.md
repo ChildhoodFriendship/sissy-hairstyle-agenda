@@ -41,7 +41,7 @@ The browser communicates with Supabase Auth and the Supabase Data API over the S
 
 ## Dependencies And Relationships
 
-This area depends on the Supabase project, `public/supabase-config.json`, the SQL migration, the Supabase Auth user account, and the `clients` and `appointments` tables. See the [operator setup guide](../../../supabase/USER-SETUP.md).
+This area depends on the Supabase project, `public/supabase-config.json`, all three ordered SQL migrations, the Supabase Auth user account, and the `clients`, `employees`, and `appointments` tables. See the [operator setup guide](../../../supabase/USER-SETUP.md).
 
 ## Procedures
 

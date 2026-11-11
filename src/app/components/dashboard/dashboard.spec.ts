@@ -37,6 +37,8 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Agenda');
     expect(fixture.nativeElement.querySelector('[aria-label="Navigazione principale"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.sidebar .profile')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.getAttribute('src')).toBe('/assets/logout.svg');
   });
 
   it('exposes the theme toggle in the top bar and applies the dark theme', async () => {
