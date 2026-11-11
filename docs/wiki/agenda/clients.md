@@ -22,6 +22,8 @@ source:
       path: src/app/api/supabase-agenda-repository.ts
     - part: other
       path: supabase/migrations/20261107000000_create_agenda_core.sql
+    - part: other
+      path: supabase/migrations/20261111000000_client_contact_directory_flag.sql
 ---
 
 ## Short Description
@@ -37,8 +39,8 @@ This section describes saved client contact records used by the dashboard. A cli
 - Shows the clients screen under the **Clienti** heading with an inline name-or-phone search beside the add-client button.
 - Shows the directory card heading as **I tuoi clienti**.
 - Shows the WhatsApp reminder consent checkbox with masculine wording: **Il cliente ha acconsentito a ricevere promemoria WhatsApp**.
-- Shows clients in name order and filters the list by name or phone.
-- Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values.
+- Shows clients marked for the directory, in name order, and filters the list by name or phone. Appointment-linked clients not marked for the directory are excluded.
+- Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory.
 - Normalizes telephone numbers using `+39` as the default country prefix; explicit international numbers are retained in normalized E.164 form. Invalid numbers prevent saving.
 - Shows whether WhatsApp consent is recorded and counts appointments linked to each client.
 - Opens a new appointment form from a client row and pre-fills the selected client details.

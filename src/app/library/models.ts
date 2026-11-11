@@ -35,6 +35,7 @@ export interface Client {
   notes: string;
   createdAt: string;
   demo?: boolean;
+  inContacts?: boolean;
 }
 
 export interface MessageTemplates {

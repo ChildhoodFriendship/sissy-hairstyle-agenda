@@ -95,6 +95,9 @@ describe('Dashboard', () => {
     expect(clientOption).toBeTruthy();
     expect(clientOption?.textContent?.trim()).toBe(sampleClient.name);
     expect(clientOption?.textContent).not.toContain(sampleClient.phone);
+    expect(dialog.querySelector('input[name="time"]')?.getAttribute('step')).toBe('1800');
+    expect(dialog.querySelector('input[name="addToContacts"]')?.getAttribute('type')).toBe('checkbox');
+    expect((dialog.querySelector('input[name="addToContacts"]') as HTMLInputElement).checked).toBe(false);
     (fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.scrim')?.classList.contains('dark')).toBe(true);

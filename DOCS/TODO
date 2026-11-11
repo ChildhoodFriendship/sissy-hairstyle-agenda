@@ -1,0 +1,24 @@
+# TODO
+
+## 1. Generale
+- [ ] Mostrare il messaggio “Appuntamento salvato.” come popup/toast invece che inline nella pagina. Il popup deve chiudersi automaticamente dopo circa 3 secondi e poter essere chiuso prima tramite una “X”. Applicare lo stesso comportamento a eventuali messaggi di errore del salvataggio dell’appuntamento e ai messaggi relativi all’aggiunta di un cliente in rubrica.
+- [ ] Migliorare la gestione dell’inversione colore delle icone/immagini di clienti, rubrica, dipendenti e impostazioni. Per le icone nere, usare una classe CSS con `filter: invert(1)` attivata dinamicamente in base al tema (ad esempio tramite `themeService.invertIcon()`), verificando che il servizio tema sia disponibile e che il risultato sia corretto nei temi supportati.
+
+## 2. Schermata “Agenda”
+- [ ] Individuare un’icona WhatsApp appropriata: Google Fonts Material Symbols non offre necessariamente il marchio ufficiale; valutare un asset SVG ufficiale/appropriato e rispettarne licenza e linee guida.
+- [ ] Verificare perché il pulsante WhatsApp resta disabilitato anche quando il consenso è selezionato. Se si tratta di un bug, correggerlo; altrimenti documentare il motivo e mantenere come TODO.
+- [ ] Limitare gli orari selezionabili per gli appuntamenti a intervalli di mezz’ora.
+- [ ] Nell’aggiunta di un appuntamento, aggiungere un controllo (checkbox/flag) per inserire direttamente il cliente anche in rubrica.
+- [ ] Sostituire l’intestazione attuale con il solo titolo “Agenda”; rimuovere “IL TUO SALONE. IN ORDINE” e “Appuntamenti del giorno, senza perdere il filo.”
+
+## 3. Schermata “Impostazioni”
+- [ ] Verificare se e dove viene mostrato il nome del salone.
+- [ ] Fare in modo che la schermata occupi il 100% dello spazio disponibile.
+- [ ] Semplificare la creazione del testo del promemoria per utenti non tecnici: progettare un’interfaccia guidata e intuitiva (valutare un popup/editor visuale), rendendo chiara la composizione del messaggio senza richiedere la costruzione manuale di stringhe.
+
+## 4. Schermata “Login”
+- [ ] Ridurre le occorrenze di “area riservata”, mantenendola soltanto accanto al pulsante del tema.
+- [ ] Rimuovere il footer “01/04 ———— Agenda messaggi clienti note”.
+
+## 5. Header
+- [ ] Rimuovere la dicitura “area riservata” in alto a destra.
