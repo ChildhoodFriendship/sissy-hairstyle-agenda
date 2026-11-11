@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Dashboard } from './dashboard';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
 import { SUPABASE_CLIENT } from '../../api/supabase-client';
-import type { Client } from '../../library/models';
+import type { Appointment, Client } from '../../library/models';
 
 describe('Dashboard', () => {
   const sampleClient: Client = {
@@ -35,10 +35,34 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Agenda');
+    expect(fixture.nativeElement.querySelector('h1')?.textContent?.trim()).toBe('Agenda');
+    expect(fixture.nativeElement.textContent).not.toContain('IL TUO SALONE, IN ORDINE');
+    expect(fixture.nativeElement.textContent).not.toContain('Appuntamenti del giorno, senza perdere il filo.');
+    expect(fixture.nativeElement.querySelector('.previous-day img')?.getAttribute('src')).toBe('/assets/arrow_right.svg');
+    expect(fixture.nativeElement.querySelector('.next-day img')?.getAttribute('src')).toBe('/assets/arrow_left.svg');
     expect(fixture.nativeElement.querySelector('[aria-label="Navigazione principale"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.sidebar .profile')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.getAttribute('src')).toBe('/assets/logout.svg');
+  });
+
+  it('uses edit and delete icons for appointment actions', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      appointments: { set(value: Appointment[]): void };
+    };
+    instance.appointments.set([{
+      id: 'appointment-1', clientId: sampleClient.id, clientName: sampleClient.name, phone: sampleClient.phone,
+      date: instance.selectedDate(), time: '09:00', service: 'Taglio', notes: '', status: 'confirmed',
+      reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: null, employeeName: 'Admin',
+    }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.edit-appointment img')?.getAttribute('src')).toBe('/assets/green_edit.svg');
+    expect(fixture.nativeElement.querySelector('.delete-appointment img')?.getAttribute('src')).toBe('/assets/red_delete.svg');
+    expect(fixture.nativeElement.querySelector('.edit-appointment')?.getAttribute('aria-label')).toBe('Modifica appuntamento');
+    expect(fixture.nativeElement.querySelector('.delete-appointment')?.getAttribute('aria-label')).toBe('Elimina appuntamento');
   });
 
   it('exposes the theme toggle in the top bar and applies the dark theme', async () => {

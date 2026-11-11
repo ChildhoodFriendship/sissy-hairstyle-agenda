@@ -38,9 +38,11 @@ This section describes appointment records shown for a selected date in the dash
 
 ## Functional Characteristics
 
-- Shows appointments for the selected date in time order; date controls move to adjacent days or return to today.
+- Shows only **Agenda** as the agenda screen heading, without the promotional eyebrow or subtitle.
+- Shows appointments for the selected date in time order; directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today.
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
 - Selects date and time with native browser picker controls.
+- Shows icon-only edit and delete actions for appointment cards; each keeps an accessible text label.
 - Prefills contact fields and consent state when the operator selects a saved client. A matching phone number can also link a new appointment to an existing client.
 - Assigns an appointment to Admin or an active employee. Existing appointments assigned to archived employees or legacy deleted employees retain a non-active historical assignment while edited.
 - Validates phone numbers and checks confirmed appointments for a time slot: no more than three confirmed appointments and no duplicate assignee. Cancelled or completed appointments are excluded from this client-side conflict check.
