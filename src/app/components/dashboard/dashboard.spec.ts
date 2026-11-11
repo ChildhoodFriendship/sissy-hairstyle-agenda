@@ -177,6 +177,27 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi cliente');
   });
 
+  it('opens a guided reminder editor with live preview and insertable fields', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('settings');
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.edit-reminder-template') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.textContent).toContain('Anteprima di esempio');
+    const editor = dialog.querySelector('textarea[name="reminder"]') as HTMLTextAreaElement;
+    expect(editor).toBeTruthy();
+    const nameButton = [...dialog.querySelectorAll('button')].find((button) => button.textContent?.includes('Nome cliente')) as HTMLButtonElement;
+    expect(nameButton).toBeTruthy();
+    editor.focus();
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+    nameButton.click();
+    fixture.detectChanges();
+    expect(editor.value).toContain('{nome}');
+  });
+
   it('shows the employee screen and only asks for first and last name', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
