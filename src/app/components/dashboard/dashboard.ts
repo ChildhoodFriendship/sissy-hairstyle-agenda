@@ -45,7 +45,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
           <section class="page-heading clients-heading"><h1>Clienti</h1><div class="client-actions"><label class="search"><span>⌕</span><input type="search" placeholder="Cerca per nome o telefono" [ngModel]="clientSearch()" (ngModelChange)="clientSearch.set($event)" /></label><button class="primary" (click)="addClient()"><img src="/assets/add.svg" alt="" aria-hidden="true" />Aggiungi cliente</button></div></section>
           <section class="stats"><article><span>CLIENTI</span><strong>{{ clients().length }}</strong><small>contatti in rubrica</small></article><article><span>CONSENSO WHATSAPP</span><strong>{{ consentingClients().length }}</strong><small>consenso registrato</small></article><article><span>APPUNTAMENTI TOTALI</span><strong>{{ appointments().length }}</strong><small>compresi quelli passati</small></article></section>
           <section class="agenda-card"><div class="card-title"><div><p class="eyebrow">RUBRICA</p><h2>I tuoi clienti</h2></div></div>
-            @if(filteredClients().length){<div class="client-list">@for(client of filteredClients();track client.id){<article class="client-row"><span class="client-avatar">{{ initials(client.name) }}</span><div class="client-info"><b>{{ client.name }}</b><span>{{ client.phone }}</span></div><span class="consent-pill" [class.yes]="client.whatsappConsent">{{ client.whatsappConsent?'Consenso WhatsApp':'Nessun consenso' }}</span><span class="client-count">{{ clientAppointments(client.id) }} app.</span><button class="text-button" (click)="startAppointment(client)">＋ Appuntamento</button><button class="text-button" [attr.aria-label]="'Modifica cliente '+client.name" (click)="editClient(client)">Modifica</button><button class="text-button danger" (click)="removeClient(client)">Elimina</button></article>}</div>}
+            @if(filteredClients().length){<div class="client-list">@for(client of filteredClients();track client.id){<article class="client-row"><span class="client-avatar">{{ initials(client.name) }}</span><div class="client-info"><b>{{ client.name }}</b><span>{{ client.phone }}</span></div><span class="consent-pill" [class.yes]="client.whatsappConsent">{{ client.whatsappConsent?'Consenso WhatsApp':'Nessun consenso' }}</span><span class="client-count">{{ clientAppointments(client.id) }} app.</span><div class="client-row-actions"><button class="text-button" (click)="startAppointment(client)">＋ Appuntamento</button><button class="text-button" [attr.aria-label]="'Modifica cliente '+client.name" (click)="editClient(client)">Modifica</button><button class="text-button danger" (click)="removeClient(client)">Elimina</button></div></article>}</div>}
             @else{<div class="empty"><span class="empty-art">♙</span><h3>{{ clients().length ? 'Nessuna cliente trovata' : 'La rubrica è ancora vuota' }}</h3><p>Aggiungi una cliente per ritrovarla rapidamente quando crei un appuntamento.</p><button class="secondary" (click)="addClient()">＋ Aggiungi cliente</button></div>}
           </section>
         }
@@ -193,8 +193,9 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .employee-row { display:grid; grid-template-columns:36px minmax(0,1fr) auto auto; align-items:center; gap:11px; min-height:66px; padding:8px 0; border-bottom:1px solid var(--line); }
     .employee-row:last-child { border-bottom:0; }
     .client-list { padding:0 18px; }
-    .client-row { display:grid; grid-template-columns: 36px minmax(140px, 1fr) auto 54px auto auto auto; align-items: center; gap: 11px; min-height: 66px; border-bottom: 1px solid var(--line); }
+    .client-row { display:grid; grid-template-columns: 36px minmax(140px, 1fr) auto 54px minmax(0, auto); align-items: center; gap: 11px; min-height: 66px; border-bottom: 1px solid var(--line); }
     .client-row:last-child { border-bottom: 0; }
+    .client-row-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
     .client-info { min-width: 0; }
     .client-info b, .client-info span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .client-info b { font-size: 12px; font-weight: 600; }
@@ -224,8 +225,8 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .service-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; }
     .service-add { display: flex; gap: 8px; }
     .service-add input { flex: 1; min-width: 0; }
-    .toast { position: fixed; z-index: 20; top: 18px; right: 20px; display: flex; align-items: center; gap: 18px; max-width: min(440px, calc(100vw - 32px)); padding: 12px 14px 12px 17px; border: 1px solid #C9E2D1; border-radius: 10px; background: #F0F7F2; color: #315D3F; box-shadow: 0 8px 30px #0002; font-size: 13px; }
-    .toast button { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
+    .toast { position: fixed; z-index: 20; top: max(18px, env(safe-area-inset-top)); right: max(20px, env(safe-area-inset-right)); display: flex; align-items: center; gap: 14px; max-width: min(440px, calc(100vw - 32px)); padding: 12px 14px 12px 17px; border: 1px solid #C9E2D1; border-radius: 10px; background: #F0F7F2; color: #315D3F; box-shadow: 0 8px 30px #0002; font-size: 13px; }
+    .toast button { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
     .toast button:hover { background: #0001; }
     .workspace.dark .toast { border-color: #294535; background: #1C2D22; color: #B5D4BD; }
     .notice { margin-top: 14px; padding: 11px 14px; border: 1px solid; border-radius: 9px; font-size: 12px; }
@@ -254,21 +255,29 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
       .main { margin-left: 220px; padding-right: 28px; padding-left: 28px; }
       .appointment { grid-template-columns: 46px minmax(0, 1fr); }
       .appointment-actions { grid-column: 2; justify-content: flex-start; }
-      .client-row { grid-template-columns: 36px minmax(120px, 1fr) auto auto; }
+      .client-row { grid-template-columns: 36px minmax(120px, 1fr) auto 54px minmax(0, auto); }
       .client-row .text-button { padding-inline: 5px; }
     }
-    @media (max-width: 720px) {
-      .sidebar { position: fixed; inset: auto 0 0; width: 100%; padding: 7px 10px max(7px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; inset: auto 0 0; width: 100%; padding: 7px max(10px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border: 0; border-top: 1px solid var(--line); }
       .sidebar .brand, .side-label, .sidebar-bottom { display: none; }
       .sidebar nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
       .sidebar nav button { flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 5px 3px; font-size: 10px; }
       .sidebar nav button img { width: 17px; height: 17px; }
-      .main { margin: 0; padding: 0 18px 102px; }
+      .main { margin: 0; padding: 0 18px calc(102px + env(safe-area-inset-bottom)); }
       .topbar { justify-content: space-between; height: 62px; }
       .mobile-brand { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 620; }
       .mobile-brand .brand-mark { width: 30px; height: 30px; border-radius: 9px; font-size: 15px; }
-      .mobile-logout { display: inline-flex; padding: 8px 0; font-size: 11px; }
-      .theme-toggle { margin-left: auto; padding: 7px 9px; font-size: 10px; }
+      .mobile-logout { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 4px; font-size: 11px; }
+      .theme-toggle { min-height: 44px; margin-left: auto; padding: 7px 9px; font-size: 10px; }
+      .primary, .secondary, .today-button { min-height: 44px; }
+      .icon-button { width: 44px; min-width: 44px; min-height: 44px; }
+      .picker-field button { width: 44px; flex: 0 0 44px; min-height: 44px; }
+      .date-chip input, .search input, .settings-card input, .settings-card textarea, .dialog input, .dialog select, .dialog textarea { min-height: 44px; }
+      .appointment-actions button, .text-button { min-height: 44px; padding-inline: 8px; font-size: 11px; }
+      .appointment-actions .edit-appointment, .appointment-actions .delete-appointment { width: 44px; height: 44px; }
+      .dialog .close { width: 44px; height: 44px; }
+      .scrim { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
       .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px; padding: 27px 0 18px; }
       .page-heading h1 { font-size: 29px; }
       .page-heading .primary { margin-left: auto; }
@@ -288,8 +297,9 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
       .client-list { padding: 0 13px; }
       .client-row { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; padding: 10px 0; }
       .client-row .consent-pill { grid-column: 2; justify-self: start; }
+      .client-row-actions { grid-column: 2 / -1; justify-content: flex-start; }
       .client-count { display: none; }
-      .client-row .text-button { min-height: 28px; padding: 0 6px; font-size: 9px; }
+      .client-row .text-button { min-height: 44px; padding: 0 8px; font-size: 10px; }
       .settings-card form { padding: 16px; }
       .dialog { padding: 24px 19px; }
       .dialog h2 { padding-right: 30px; font-size: 21px; }
@@ -297,12 +307,25 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     }
     @media (max-width: 420px) {
       .main { padding-right: 13px; padding-left: 13px; }
-      .page-heading .primary { min-height: 38px; padding-inline: 11px; font-size: 10px; }
+      .datebar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto; gap: 6px; margin-bottom: 14px; }
+      .date-chip { min-width: 0; padding: 6px 8px; }
+      .date-chip input { width: 100%; min-width: 0; font-size: 11px; }
+      .today-button { padding-inline: 10px; font-size: 11px; }
+      .page-heading .primary { min-height: 44px; padding-inline: 11px; font-size: 10px; }
       .stats { gap: 6px; }
       .stats article { padding: 10px 8px; }
       .stats article span { letter-spacing: .02em; }
       .two-fields { gap: 8px; }
       .dialog { padding-inline: 16px; }
+    }
+    @media (pointer: coarse) and (min-width: 901px) {
+      .sidebar nav button, .logout, .theme-toggle, .primary, .secondary, .today-button,
+      .appointment-actions button, .text-button, .dialog .close, .picker-field button { min-height: 44px; }
+      .icon-button { width: 44px; min-width: 44px; min-height: 44px; }
+      .appointment-actions .edit-appointment, .appointment-actions .delete-appointment,
+      .dialog .close, .picker-field button { width: 44px; height: 44px; }
+      .settings-card input, .settings-card textarea, .dialog input, .dialog select, .dialog textarea,
+      .date-chip input, .search input { min-height: 44px; }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

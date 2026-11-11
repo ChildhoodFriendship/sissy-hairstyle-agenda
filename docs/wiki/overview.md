@@ -31,6 +31,10 @@ The wiki is organized into the [agenda area](agenda/overview.md), which document
 
 - Does not verify a live Supabase deployment, SMTP delivery, or WhatsApp delivery as part of a local build.
 
+## Responsive Layout
+
+Login switches to a stacked story-and-form layout at widths up to 900 px, covering tablet portrait widths. On touch-sized layouts the theme toggle and interactive recovery/demo links have at least 44 px height. See the [agenda responsive layout](agenda/overview.md#responsive-layout) for dashboard navigation, safe-area, and small-screen date-control behavior.
+
 ## Interfaces And Protocols
 
 The browser loads `/supabase-config.json` and uses the Supabase JavaScript client with a publishable key. Authenticated data requests use the Supabase Data API for clients, employees, and appointments; row-level security restricts rows to the authenticated owner. Username login exchanges the identifier and password through the `login-with-username` Edge Function, which returns a Supabase session. Password recovery uses Supabase Auth email delivery and a configured application redirect URL.

@@ -100,7 +100,7 @@ import { AuthService } from '../../api/auth.service';
     .panel-card .demo-hint + .demo-hint { margin-top: 10px; color: var(--muted); line-height: 1.55; text-align: center; }
     .form-error { margin: 4px 0; color: #A33F4B; font-size: 11px; }
     .panel-foot { margin: 20px 0 0; color: var(--muted); font-size: 10px; text-align: center; }
-    @media (max-width: 800px) {
+    @media (max-width: 900px) {
       .login-layout { grid-template-columns: 1fr; }
       .login-story { min-height: 37vh; padding: 22px 24px; border-right: 0; border-bottom: 1px solid var(--line); }
       .story-copy { margin: 5vh 0 4vh; }
@@ -108,6 +108,8 @@ import { AuthService } from '../../api/auth.service';
       .story-description { margin-top: 14px; font-size: 12px; }
       .login-panel { padding: 26px 20px 30px; }
       .panel-card { width: min(100%, 460px); }
+      .theme-toggle { min-height: 44px; }
+      .demo-hint:not(p) { display: grid; min-height: 44px; place-items: center; padding: 8px 12px; }
     }
     @media (max-width: 430px) {
       .login-story { min-height: 32vh; padding: 18px; }
