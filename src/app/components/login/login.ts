@@ -11,7 +11,6 @@ import { AuthService } from '../../api/auth.service';
       <section class="login-story" aria-labelledby="login-title">
         <div class="story-top"><span class="brand-mark" aria-hidden="true">S</span><span class="demo-pill">{{ copy.common.demoTag }}</span><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Tema chiaro' : '☾ Tema scuro' }}</button></div>
         <div class="story-copy">
-          <p class="eyebrow">{{ copy.login.eyebrow }}</p>
           <h1 id="login-title">{{ copy.login.title }}</h1>
           <p class="story-description">{{ copy.login.description }}</p>
 

@@ -24,6 +24,8 @@ describe('Login password recovery', () => {
 
     const fixture = TestBed.createComponent(Login);
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.story-top .demo-pill')?.textContent?.trim()).toBe('AREA RISERVATA');
+    expect(fixture.nativeElement.querySelector('.story-copy .eyebrow')).toBeNull();
     const toggle = fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement;
     expect(toggle).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.login-layout')?.classList.contains('dark')).toBe(false);
