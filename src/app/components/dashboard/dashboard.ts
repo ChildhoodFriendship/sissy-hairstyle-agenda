@@ -28,7 +28,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
         <div class="sidebar-bottom"><button class="logout" (click)="logout()"><span>Esci</span><img [class.inverted]="darkMode()" src="/assets/logout.svg" alt="" aria-hidden="true" /></button></div>
       </aside>
       <main class="main">
-        <header class="topbar"><div class="mobile-brand"><span class="brand-mark">S</span> Agenda Sissy</div><span class="demo-label"><i></i> AREA RISERVATA</span><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Modalità chiara' : '☾ Modalità scura' }}</button><button class="mobile-logout" (click)="logout()">Esci</button></header>
+        <header class="topbar"><div class="mobile-brand"><span class="brand-mark">S</span> Agenda Sissy</div><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Modalità chiara' : '☾ Modalità scura' }}</button><button class="mobile-logout" (click)="logout()">Esci</button></header>
         @if (storageWarning()) { <div class="notice warning" role="alert">{{ copy.common.localStorageError }} Puoi continuare a usare questa schermata, ma i dati potrebbero non essere salvati.</div> }
         @if (notice()) { <div class="toast" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()">×</button></div> }
         @if (view()==='agenda') {
@@ -119,8 +119,6 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .logout:hover, .mobile-logout:hover { color: var(--ink); }
     .main { min-height: 100dvh; margin-left: 252px; padding: 0 clamp(24px, 4vw, 58px) 64px; }
     .topbar { display: flex; align-items: center; justify-content: flex-end; gap: 14px; height: 72px; border-bottom: 1px solid var(--line); }
-    .demo-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .1em; }
-    .demo-label i { width: 7px; height: 7px; border-radius: 50%; background: #4F9A78; }
     .mobile-brand, .mobile-logout { display: none; }
     .theme-toggle { padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 550; }
     .theme-toggle:hover { background: var(--surface-muted); }
@@ -269,7 +267,6 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
       .mobile-brand { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 620; }
       .mobile-brand .brand-mark { width: 30px; height: 30px; border-radius: 9px; font-size: 15px; }
       .mobile-logout { display: inline-flex; padding: 8px 0; font-size: 11px; }
-      .demo-label { display: none; }
       .theme-toggle { margin-left: auto; padding: 7px 9px; font-size: 10px; }
       .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px; padding: 27px 0 18px; }
       .page-heading h1 { font-size: 29px; }

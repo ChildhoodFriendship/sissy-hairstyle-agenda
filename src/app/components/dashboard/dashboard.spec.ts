@@ -46,6 +46,7 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('.previous-day img')?.getAttribute('src')).toBe('/assets/arrow_right.svg');
     expect(fixture.nativeElement.querySelector('.next-day img')?.getAttribute('src')).toBe('/assets/arrow_left.svg');
     expect(fixture.nativeElement.querySelector('[aria-label="Navigazione principale"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.demo-label')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .profile')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.getAttribute('src')).toBe('/assets/logout.svg');
   });
