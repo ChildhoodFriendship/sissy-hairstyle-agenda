@@ -34,6 +34,9 @@ This section describes saved client contact records used by the dashboard. A cli
 
 ## Functional Characteristics
 
+- Shows the clients screen under the **Clienti** heading with an inline name-or-phone search beside the add-client button.
+- Shows the directory card heading as **I tuoi clienti**.
+- Shows the WhatsApp reminder consent checkbox with masculine wording: **Il cliente ha acconsentito a ricevere promemoria WhatsApp**.
 - Shows clients in name order and filters the list by name or phone.
 - Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values.
 - Normalizes telephone numbers using `+39` as the default country prefix; explicit international numbers are retained in normalized E.164 form. Invalid numbers prevent saving.

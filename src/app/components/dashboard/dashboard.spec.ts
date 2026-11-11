@@ -66,6 +66,7 @@ describe('Dashboard', () => {
     const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
     expect(dialog.querySelector('h2')?.textContent).toContain('Aggiungi all’agenda');
     expect(dialog.querySelector('select[name="employeeId"] option')?.textContent).toContain('Admin');
+    expect(dialog.textContent).toContain('Il cliente ha acconsentito a ricevere promemoria WhatsApp');
     const clientOption = [...dialog.querySelectorAll('select[name="clientId"] option')].find((option) => (option as HTMLOptionElement).value === sampleClient.id) as HTMLOptionElement;
     expect(clientOption).toBeTruthy();
     expect(clientOption?.textContent?.trim()).toBe(sampleClient.name);
@@ -101,6 +102,14 @@ describe('Dashboard', () => {
     (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('clients');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Aggiungi cliente');
+    expect(fixture.nativeElement.querySelector('.page-heading h1')?.textContent?.trim()).toBe('Clienti');
+    expect(fixture.nativeElement.querySelector('.agenda-card h2')?.textContent?.trim()).toBe('I tuoi clienti');
+    expect(fixture.nativeElement.querySelector('.page-heading')?.textContent).not.toContain('Rubrica del salone sincronizzata');
+    expect(fixture.nativeElement.querySelector('.page-heading')?.textContent).not.toContain('Contatti salvati in modo protetto');
+    const clientActions = fixture.nativeElement.querySelector('.client-actions') as HTMLElement;
+    expect(clientActions.querySelector('.search')).toBeTruthy();
+    expect(clientActions.querySelector('.primary img')?.getAttribute('src')).toBe('/assets/add.svg');
+    expect(clientActions.querySelector('.search')?.parentElement).toBe(clientActions.querySelector('.primary')?.parentElement);
     (fixture.componentInstance as unknown as { addClient(): void }).addClient();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi cliente');
