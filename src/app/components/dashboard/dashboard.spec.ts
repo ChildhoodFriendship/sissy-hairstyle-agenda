@@ -157,6 +157,21 @@ describe('Dashboard', () => {
     expect(dialog.querySelectorAll('input')).toHaveLength(2);
   });
 
+  it('shows save feedback as a dismissible toast instead of inline page text', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (fixture.componentInstance as unknown as { showNotice(message: string): void }).showNotice('Appuntamento salvato.');
+    fixture.detectChanges();
+    const toast = fixture.nativeElement.querySelector('[role="status"]') as HTMLElement;
+    expect(toast.textContent).toContain('Appuntamento salvato.');
+    const close = toast.querySelector('button[aria-label="Chiudi notifica"]') as HTMLButtonElement;
+    expect(close).toBeTruthy();
+    close.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="status"]')).toBeNull();
+  });
+
   it('opens the client editor with the selected client details', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();

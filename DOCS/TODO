@@ -1,7 +1,7 @@
 # TODO
 
 ## 1. Generale
-- [ ] Mostrare il messaggio “Appuntamento salvato.” come popup/toast invece che inline nella pagina. Il popup deve chiudersi automaticamente dopo circa 3 secondi e poter essere chiuso prima tramite una “X”. Applicare lo stesso comportamento a eventuali messaggi di errore del salvataggio dell’appuntamento e ai messaggi relativi all’aggiunta di un cliente in rubrica.
+- [x] Mostrare il messaggio “Appuntamento salvato.” come popup/toast invece che inline nella pagina. Il popup deve chiudersi automaticamente dopo circa 3 secondi e poter essere chiuso prima tramite una “X”. Applicare lo stesso comportamento a eventuali messaggi di errore del salvataggio dell’appuntamento e ai messaggi relativi all’aggiunta di un cliente in rubrica.
 - [ ] Migliorare la gestione dell’inversione colore delle icone/immagini di clienti, rubrica, dipendenti e impostazioni. Per le icone nere, usare una classe CSS con `filter: invert(1)` attivata dinamicamente in base al tema (ad esempio tramite `themeService.invertIcon()`), verificando che il servizio tema sia disponibile e che il risultato sia corretto nei temi supportati.
 
 ## 2. Schermata “Agenda”

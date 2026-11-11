@@ -30,7 +30,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
       <main class="main">
         <header class="topbar"><div class="mobile-brand"><span class="brand-mark">S</span> Agenda Sissy</div><span class="demo-label"><i></i> AREA RISERVATA</span><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Modalità chiara' : '☾ Modalità scura' }}</button><button class="mobile-logout" (click)="logout()">Esci</button></header>
         @if (storageWarning()) { <div class="notice warning" role="alert">{{ copy.common.localStorageError }} Puoi continuare a usare questa schermata, ma i dati potrebbero non essere salvati.</div> }
-        @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
+        @if (notice()) { <div class="toast" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()">×</button></div> }
         @if (view()==='agenda') {
           <section class="page-heading"><div><h1>{{ copy.agenda.title }}</h1></div><button class="primary new-button" (click)="openForm()">＋ <span>{{ copy.common.newAppointment }}</span></button></section>
           <section class="datebar"><button class="icon-button previous-day" (click)="shiftDate(-1)" aria-label="Giorno precedente"><img class="date-arrow" src="/assets/arrow_right.svg" alt="" aria-hidden="true" /></button><label class="date-chip"><span>GIORNO SELEZIONATO</span><input type="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" /></label><button class="icon-button next-day" (click)="shiftDate(1)" aria-label="Giorno successivo"><img class="date-arrow" src="/assets/arrow_left.svg" alt="" aria-hidden="true" /></button><button class="today-button" (click)="selectedDate.set(today)">Oggi</button></section>
@@ -216,9 +216,11 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .service-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; }
     .service-add { display: flex; gap: 8px; }
     .service-add input { flex: 1; min-width: 0; }
-    .notice { margin-top: 14px; padding: 11px 14px; border: 1px solid #C9E2D1; border-radius: 9px; background: #F0F7F2; color: #315D3F; font-size: 12px; }
+    .toast { position: fixed; z-index: 20; top: 18px; right: 20px; display: flex; align-items: center; gap: 18px; max-width: min(440px, calc(100vw - 32px)); padding: 12px 14px 12px 17px; border: 1px solid #C9E2D1; border-radius: 10px; background: #F0F7F2; color: #315D3F; box-shadow: 0 8px 30px #0002; font-size: 13px; }
+    .toast button { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
+    .toast button:hover { background: #0001; }
+    .workspace.dark .toast { border-color: #294535; background: #1C2D22; color: #B5D4BD; }
     .notice.warning { border-color: #EAD9B8; background: #FBF6EA; color: #705825; }
-    .workspace.dark .notice { border-color: #294535; background: #1C2D22; color: #B5D4BD; }
     .workspace.dark .notice.warning { border-color: #4A3E24; background: #302918; color: #E1CE9A; }
     .scrim { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: rgb(17 17 19 / 48%); }
     .scrim.dark { --surface: #1C1C1E; --surface-muted: #242428; --ink: #F5F5F7; --muted: #A1A1A6; --line: #38383D; --accent: #D899A3; --accent-hover: #E5A8B0; --accent-soft: #38292D; --accent-ink: #1D1D1F; color-scheme: dark; background: rgb(0 0 0 / 64%); }
@@ -322,6 +324,7 @@ export class Dashboard {
   protected readonly editingClient = signal<Client | null>(null);
   protected readonly formError = signal('');
   protected readonly notice = signal('');
+  private noticeTimeout: ReturnType<typeof setTimeout> | undefined;
   protected readonly storageWarning = signal(false);
   protected readonly editingId = signal('');
   protected readonly selectedDate = signal(this.localDate());
@@ -342,8 +345,22 @@ export class Dashboard {
     try {
       const [appointments, clients, employees, settings] = await Promise.all([this.repo.listAppointments(), this.repo.listClients(), this.repo.listEmployees(), this.repo.loadSettings()]);
       this.appointments.set(appointments); this.clients.set(clients); this.employees.set(employees); this.settings.set(settings); this.settingsDraft = structuredClone(settings);
-    } catch { this.notice.set(this.copy.ui.genericError); }
+    } catch { this.showNotice(this.copy.ui.genericError); }
     this.storageWarning.set(this.repo.hasStorageWarning());
+  }
+
+  protected showNotice(message: string): void {
+    if (this.noticeTimeout) clearTimeout(this.noticeTimeout);
+    this.notice.set(message);
+    this.noticeTimeout = setTimeout(() => {
+      this.notice.set('');
+      this.noticeTimeout = undefined;
+    }, 3000);
+  }
+  protected dismissNotice(): void {
+    if (this.noticeTimeout) clearTimeout(this.noticeTimeout);
+    this.noticeTimeout = undefined;
+    this.notice.set('');
   }
 
   protected openForm(): void { this.editingId.set(''); Object.assign(this.draft, this.emptyDraft()); this.draft.date = this.selectedDate(); this.formError.set(''); this.formOpen.set(true); }
@@ -358,14 +375,14 @@ export class Dashboard {
     try {
       await this.repo.saveEmployee({ ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName });
       await this.load();
-      this.notice.set(original ? 'Dati dipendente aggiornati.' : 'Dipendente aggiunto.');
+      this.showNotice(original ? 'Dati dipendente aggiornati.' : 'Dipendente aggiunto.');
       this.closeEmployeeForm();
     } catch { this.employeeFormError.set(this.copy.ui.genericError); }
   }
   protected async removeEmployee(employee: Employee): Promise<void> {
     if (!globalThis.confirm(`Eliminare ${employee.firstName} ${employee.lastName}? Gli appuntamenti storici resteranno.`)) return;
-    try { await this.repo.deleteEmployee(employee.id); await this.load(); this.notice.set('Dipendente eliminato.'); }
-    catch { this.notice.set(this.copy.ui.genericError); }
+    try { await this.repo.deleteEmployee(employee.id); await this.load(); this.showNotice('Dipendente eliminato.'); }
+    catch { this.showNotice(this.copy.ui.genericError); }
   }
   protected archivedEmployee(): Employee | null {
     const employeeId = this.draft.employeeId;
@@ -423,10 +440,10 @@ export class Dashboard {
       const client: Client = { ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName, name: `${firstName} ${lastName}`, phone: phone.e164, notes: this.clientDraft.notes.trim(), whatsappConsent: this.clientDraft.whatsappConsent, inContacts: true };
       await this.repo.saveClient(client);
       await this.load();
-      this.notice.set(original ? 'Dati cliente aggiornati.' : 'Cliente aggiunta alla rubrica.');
+      this.showNotice(original ? 'Dati cliente aggiornati.' : 'Cliente aggiunta alla rubrica.');
       this.closeClientForm();
     } catch {
-      this.clientFormError.set(this.copy.ui.genericError);
+      this.showNotice(this.copy.ui.genericError);
     }
   }
   protected async saveAppointment(): Promise<void> {
@@ -450,24 +467,24 @@ export class Dashboard {
         : `${employee.firstName} ${employee.lastName}`
       : 'Admin');
     const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
-    try { await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.notice.set(this.copy.form.saveSuccess); this.closeForm(); }
-    catch { this.formError.set(this.copy.ui.genericError); }
+    try { await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.showNotice(this.copy.form.saveSuccess); this.closeForm(); }
+    catch { this.showNotice(this.copy.ui.genericError); }
   }
-  protected async changeStatus(item: Appointment, status: Appointment['status']): Promise<void> { try { await this.repo.saveAppointment({...item,status}); await this.load(); } catch { this.notice.set(this.copy.ui.genericError); } }
-  protected async removeAppointment(item: Appointment): Promise<void> { if (!globalThis.confirm(this.copy.common.confirmDelete)) return; try { await this.repo.deleteAppointment(item.id); await this.load(); } catch { this.notice.set(this.copy.ui.genericError); } }
-  protected async removeClient(client: Client): Promise<void> { if (!globalThis.confirm(`Eliminare ${client.name} dalla rubrica? Gli appuntamenti restano nell’agenda.`)) return; try { await this.repo.deleteClient(client.id); await this.load(); } catch { this.notice.set(this.copy.ui.genericError); } }
+  protected async changeStatus(item: Appointment, status: Appointment['status']): Promise<void> { try { await this.repo.saveAppointment({...item,status}); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
+  protected async removeAppointment(item: Appointment): Promise<void> { if (!globalThis.confirm(this.copy.common.confirmDelete)) return; try { await this.repo.deleteAppointment(item.id); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
+  protected async removeClient(client: Client): Promise<void> { if (!globalThis.confirm(`Eliminare ${client.name} dalla rubrica? Gli appuntamenti restano nell’agenda.`)) return; try { await this.repo.deleteClient(client.id); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
   protected setServices(value: string): void { this.settingsDraft.services = value.split('\\n').map((item) => item.trim()).filter(Boolean); }
   protected addService(): void { const value = this.newService.trim(); if (value && !this.settingsDraft.services.some((item) => item.toLocaleLowerCase('it') === value.toLocaleLowerCase('it'))) this.settingsDraft.services = [...this.settingsDraft.services, value]; this.newService = ''; }
   protected removeService(index: number): void { this.settingsDraft.services = this.settingsDraft.services.filter((_item, itemIndex) => itemIndex !== index); }
-  protected async saveSettings(): Promise<void> {    try { this.settingsDraft.defaultCountryCode = '+39'; await this.repo.saveSettings(this.settingsDraft); this.settings.set(structuredClone(this.settingsDraft)); this.notice.set(this.copy.settings.saveSuccess); } catch { this.notice.set(this.copy.ui.genericError); } }
-  protected async seedDemo(): Promise<void> { const ok=await this.repo.seedDemoData(); if(!ok){this.notice.set('Per caricare i dati demo, prima esporta o rimuovi gli appuntamenti e clienti già presenti.');return;} this.settingsDraft.demoDataEnabled=true; await this.repo.saveSettings(this.settingsDraft); await this.load(); this.notice.set(this.copy.ui.demoLoaded); }
-  protected async removeDemo(): Promise<void> { await this.repo.removeDemoData(); await this.load(); this.notice.set(this.copy.ui.demoRemoved); }
+  protected async saveSettings(): Promise<void> {    try { this.settingsDraft.defaultCountryCode = '+39'; await this.repo.saveSettings(this.settingsDraft); this.settings.set(structuredClone(this.settingsDraft)); this.showNotice(this.copy.settings.saveSuccess); } catch { this.showNotice(this.copy.ui.genericError); } }
+  protected async seedDemo(): Promise<void> { const ok=await this.repo.seedDemoData(); if(!ok){this.showNotice('Per caricare i dati demo, prima esporta o rimuovi gli appuntamenti e clienti già presenti.');return;} this.settingsDraft.demoDataEnabled=true; await this.repo.saveSettings(this.settingsDraft); await this.load(); this.showNotice(this.copy.ui.demoLoaded); }
+  protected async removeDemo(): Promise<void> { await this.repo.removeDemoData(); await this.load(); this.showNotice(this.copy.ui.demoRemoved); }
 
-  protected async importBackup(event: Event): Promise<void> { const file=(event.target as HTMLInputElement).files?.[0]; if(!file)return; try { const text=await file.text(); const ok=await this.repo.importBackup(text); if(!ok){this.notice.set(this.copy.settings.importError);return;} await this.load();this.notice.set(this.copy.settings.importSuccess); } catch { this.notice.set(this.copy.settings.importError); } finally {(event.target as HTMLInputElement).value='';} }
+  protected async importBackup(event: Event): Promise<void> { const file=(event.target as HTMLInputElement).files?.[0]; if(!file)return; try { const text=await file.text(); const ok=await this.repo.importBackup(text); if(!ok){this.showNotice(this.copy.settings.importError);return;} await this.load();this.showNotice(this.copy.settings.importSuccess); } catch { this.showNotice(this.copy.settings.importError); } finally {(event.target as HTMLInputElement).value='';} }
   protected async seedDemoNoop(): Promise<void> { await this.repo.seedDemoData(); }
   protected preview(item: Appointment, kind:'confirmation'|'reminder'): string { return renderMessageTemplate(this.settings().messageTemplates[kind],{nome:item.clientName.trim().split(/\s+/)[0]||item.clientName,data:this.displayDate(item.date),ora:item.time,servizio:item.service||'il tuo appuntamento',salone:this.settings().salonName}); }
   protected clientConsent(id:string):boolean { return this.clients().find((item)=>item.id===id)?.whatsappConsent===true; }
-  protected openWhatsApp(item:Appointment,kind:'confirmation'|'reminder'): void { if(!this.clientConsent(item.clientId)){this.notice.set(this.copy.messages.consentRequired);return;} const number=item.phone.replace(/\D/g,'');const href=`https://wa.me/${number}?text=${encodeURIComponent(this.preview(item,kind))}`;window.open(href,'_blank','noopener,noreferrer'); }
+  protected openWhatsApp(item:Appointment,kind:'confirmation'|'reminder'): void { if(!this.clientConsent(item.clientId)){this.showNotice(this.copy.messages.consentRequired);return;} const number=item.phone.replace(/\D/g,'');const href=`https://wa.me/${number}?text=${encodeURIComponent(this.preview(item,kind))}`;window.open(href,'_blank','noopener,noreferrer'); }
   protected shiftDate(delta:number):void { const [y,m,d]=this.selectedDate().split('-').map(Number);const date=new Date(y,m-1,d);date.setDate(date.getDate()+delta);this.selectedDate.set(this.localDate(date)); }
   protected displayDate(value:string):string { const [y,m,d]=value.split('-').map(Number);return new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(y,m-1,d)); }
   protected statusLabel(status:Appointment['status']):string { return ({confirmed:'Confermato',cancelled:'Annullato',completed:'Completato'} as const)[status]; }
