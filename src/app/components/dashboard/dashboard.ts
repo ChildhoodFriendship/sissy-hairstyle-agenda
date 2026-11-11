@@ -459,7 +459,7 @@ export class Dashboard {
     const requestedEmployeeName = legacyEmployeeName ?? (employee ? `${employee.firstName} ${employee.lastName}` : 'Admin');
     if (findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
     const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>item.phone===phone.e164);
-    const client: Client = { id:this.draft.clientId||prior?.clientId||matchedClient?.id||crypto.randomUUID(), firstName:this.draft.firstName.trim(), lastName:this.draft.lastName.trim(), name:clientName, phone:phone.e164, whatsappConsent:this.draft.reminderConsent, notes:matchedClient?.notes||'', createdAt:matchedClient?.createdAt||prior?.createdAt||new Date().toISOString(), inContacts:matchedClient?.inContacts !== false || this.draft.addToContacts };
+    const client: Client = { id:this.draft.clientId||prior?.clientId||matchedClient?.id||crypto.randomUUID(), firstName:this.draft.firstName.trim(), lastName:this.draft.lastName.trim(), name:clientName, phone:phone.e164, whatsappConsent:this.draft.reminderConsent, notes:matchedClient?.notes||'', createdAt:matchedClient?.createdAt||prior?.createdAt||new Date().toISOString(), inContacts:this.draft.addToContacts || matchedClient?.inContacts === true };
     const employeeName = legacyEmployeeName ?? (employee
       ? employee.isActive === false && prior?.employeeId === employee.id
         ? prior.employeeName || `${employee.firstName} ${employee.lastName}`

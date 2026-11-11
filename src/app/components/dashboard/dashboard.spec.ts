@@ -124,6 +124,20 @@ describe('Dashboard', () => {
     expect(savedClient?.whatsappConsent).toBe(true);
   });
 
+  it('does not add a new appointment client to the directory when the opt-in is unchecked', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId?: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '+393331234567', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: false, addToContacts: false, employeeId: null });
+    await instance.saveAppointment();
+    expect(savedClient?.inContacts).toBe(false);
+  });
+
   it('prefills appointment details when a saved client is selected', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
