@@ -9,7 +9,7 @@
 - [x] Verificare perché il pulsante WhatsApp resta disabilitato anche quando il consenso è selezionato. Se si tratta di un bug, correggerlo; altrimenti documentare il motivo e mantenere come TODO.
 - [x] Limitare gli orari selezionabili per gli appuntamenti a intervalli di mezz’ora.
 - [x] Nell’aggiunta di un appuntamento, aggiungere un controllo (checkbox/flag) per inserire direttamente il cliente anche in rubrica.
-- [ ] Sostituire l’intestazione attuale con il solo titolo “Agenda”; rimuovere “IL TUO SALONE. IN ORDINE” e “Appuntamenti del giorno, senza perdere il filo.”
+- [x] Sostituire l’intestazione attuale con il solo titolo “Agenda”; rimuovere “IL TUO SALONE. IN ORDINE” e “Appuntamenti del giorno, senza perdere il filo.”
 
 ## 3. Schermata “Impostazioni”
 - [ ] Verificare se e dove viene mostrato il nome del salone.
