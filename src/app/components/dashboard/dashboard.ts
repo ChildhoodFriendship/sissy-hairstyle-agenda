@@ -228,6 +228,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .toast button { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
     .toast button:hover { background: #0001; }
     .workspace.dark .toast { border-color: #294535; background: #1C2D22; color: #B5D4BD; }
+    .notice { margin-top: 14px; padding: 11px 14px; border: 1px solid; border-radius: 9px; font-size: 12px; }
     .notice.warning { border-color: #EAD9B8; background: #FBF6EA; color: #705825; }
     .workspace.dark .notice.warning { border-color: #4A3E24; background: #302918; color: #E1CE9A; }
     .scrim { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: rgb(17 17 19 / 48%); }
