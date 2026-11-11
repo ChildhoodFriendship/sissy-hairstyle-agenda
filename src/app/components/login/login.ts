@@ -15,7 +15,6 @@ import { AuthService } from '../../api/auth.service';
           <p class="story-description">{{ copy.login.description }}</p>
 
         </div>
-        <div class="story-footer"><span>01 / 04</span><span class="footer-line"></span><span>Agenda · Clienti · Messaggi · Note</span></div>
       </section>
       <section class="login-panel" aria-label="Accesso">
         <div class="panel-card">
@@ -77,7 +76,7 @@ import { AuthService } from '../../api/auth.service';
     .login-layout :focus-visible { outline-color: var(--accent); }
     .login-story { display: flex; min-height: 100dvh; flex-direction: column; justify-content: space-between; padding: clamp(28px, 5vw, 72px); border-right: 1px solid var(--line); background: var(--surface-muted); }
     .login-story::after { display: none; }
-    .story-top, .story-footer { display: flex; align-items: center; gap: 12px; }
+    .story-top { display: flex; align-items: center; gap: 12px; }
     .brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: var(--accent); color: var(--accent-ink); font-size: 18px; font-weight: 650; }
     .demo-pill { margin-left: auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .1em; }
     .theme-toggle { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 10px; font-weight: 550; white-space: nowrap; }
@@ -86,8 +85,6 @@ import { AuthService } from '../../api/auth.service';
     .eyebrow { margin: 0 0 15px; color: var(--accent); font-size: 10px; font-weight: 650; letter-spacing: .13em; }
     .story-copy h1 { margin: 0; font-size: clamp(46px, 6vw, 76px); font-weight: 600; letter-spacing: -.065em; line-height: .99; white-space: pre-line; }
     .story-description { max-width: 390px; margin: 23px 0 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
-    .story-footer { color: var(--muted); font-size: 10px; }
-    .footer-line { height: 1px; flex: 1; background: var(--line); }
     .login-panel { display: grid; place-items: center; padding: 38px; background: var(--page); }
     .panel-card { width: min(100%, 420px); padding: clamp(24px, 3vw, 36px); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
     .panel-card h2 { margin: 0 0 24px; font-size: 27px; font-weight: 620; letter-spacing: -.045em; line-height: 1.15; }
@@ -109,7 +106,6 @@ import { AuthService } from '../../api/auth.service';
       .story-copy { margin: 5vh 0 4vh; }
       .story-copy h1 { font-size: clamp(40px, 11vw, 62px); }
       .story-description { margin-top: 14px; font-size: 12px; }
-      .story-footer { display: none; }
       .login-panel { padding: 26px 20px 30px; }
       .panel-card { width: min(100%, 460px); }
     }
