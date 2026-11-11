@@ -59,6 +59,7 @@ describe('Dashboard', () => {
       reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: null, employeeName: 'Admin',
     }]);
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.whatsapp img')?.getAttribute('src')).toBe('/assets/whatsapp.svg');
     expect(fixture.nativeElement.querySelector('.edit-appointment img')?.getAttribute('src')).toBe('/assets/green_edit.svg');
     expect(fixture.nativeElement.querySelector('.delete-appointment img')?.getAttribute('src')).toBe('/assets/red_delete.svg');
     expect(fixture.nativeElement.querySelector('.edit-appointment')?.getAttribute('aria-label')).toBe('Modifica appuntamento');
