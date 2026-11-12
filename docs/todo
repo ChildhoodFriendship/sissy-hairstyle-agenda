@@ -3,7 +3,7 @@
 ## Agenda
 
 - [x] **Altezza controlli data:** rendere i pulsanti “Oggi”, “Giorno successivo” e “Giorno precedente” alti quanto il selettore “Giorno selezionato”.
-- [ ] **Cliente iniziale nell’appuntamento:** quando si apre un nuovo appuntamento, lasciare il selettore cliente vuoto e i campi anagrafici vuoti; precompilare i dati solo dopo una scelta esplicita dalla lista.
+- [x] **Cliente iniziale nell’appuntamento:** quando si apre un nuovo appuntamento, lasciare il selettore cliente vuoto e i campi anagrafici vuoti; precompilare i dati solo dopo una scelta esplicita dalla lista.
 - [ ] **Salvataggio appuntamento:** verificare il flusso di salvataggio, capire perché può sembrare che non funzioni e rendere chiari gli esiti di successo o errore.
 - [ ] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
 

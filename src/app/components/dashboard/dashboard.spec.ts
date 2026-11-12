@@ -147,7 +147,7 @@ describe('Dashboard', () => {
       load(): Promise<void>;
       openForm(): void;
       selectAppointmentClient(id: string): void;
-      draft: { clientName: string; firstName: string; lastName: string; phone: string };
+      draft: { clientId?: string; clientName: string; firstName: string; lastName: string; phone: string };
     };
     await instance.load();
     instance.openForm();
@@ -156,6 +156,15 @@ describe('Dashboard', () => {
     expect(instance.draft.firstName).toBe('Ada');
     expect(instance.draft.lastName).toBe('Lovelace');
     expect(instance.draft.phone).toBe(sampleClient.phone);
+
+    instance.openForm();
+    fixture.detectChanges();
+    expect(instance.draft.clientId).toBe('');
+    expect(instance.draft.clientName).toBe('');
+    expect(instance.draft.firstName).toBe('');
+    expect(instance.draft.lastName).toBe('');
+    expect(instance.draft.phone).toBe('');
+    expect((fixture.nativeElement.querySelector('select[name="clientId"]') as HTMLSelectElement).value).toBe('');
   });
 
   it('offers adding a client directly from the clients screen', async () => {

@@ -43,6 +43,7 @@ This section describes appointment records shown for a selected date in the dash
 - Shows only **Agenda** as the agenda screen heading, without the promotional eyebrow or subtitle.
 - Shows appointments for the selected date in time order; directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today.
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
+- Opens a new appointment with no client selected and blank client-detail fields; explicitly selecting a saved client fills those details, while choosing the empty “Nuova cliente” option clears them. This TODO is complete; remaining requests are in the [project TODO](../../todo).
 - Selects date and time with native browser picker controls; appointment time selection is restricted to 30-minute increments.
 - Adds a new client record when saving an appointment. The **Aggiungi anche alla Rubrica Clienti** checkbox determines whether it appears in the Clients directory; unchecked appointment-linked clients remain available to their appointments but are hidden from the directory.
 - Shows icon-only edit and delete actions for appointment cards; each keeps an accessible text label.
