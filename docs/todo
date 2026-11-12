@@ -9,7 +9,7 @@
 
 ## Popup e icone
 
-- [ ] **Posizione popup:** centrare nello schermo il popup “Dipendente aggiunto” e applicare lo stesso posizionamento a tutti i popup dell’applicazione.
+- [x] **Posizione popup:** centrare nello schermo il popup “Dipendente aggiunto” e applicare lo stesso posizionamento a tutti i popup dell’applicazione.
 - [ ] **Allineamento X e immagini:** centrare sempre la X di chiusura nel suo contenitore e allineare al centro le immagini/icona in tutti i pulsanti che le contengono (per esempio nel popup di aggiunta cliente).
 
 ## Dipendenti

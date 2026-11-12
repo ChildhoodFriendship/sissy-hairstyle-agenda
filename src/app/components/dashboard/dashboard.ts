@@ -225,7 +225,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .service-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; }
     .service-add { display: flex; gap: 8px; }
     .service-add input { flex: 1; min-width: 0; }
-    .toast { position: fixed; z-index: 20; top: max(18px, env(safe-area-inset-top)); right: max(20px, env(safe-area-inset-right)); display: flex; align-items: center; gap: 14px; max-width: min(440px, calc(100vw - 32px)); padding: 12px 14px 12px 17px; border: 1px solid #C9E2D1; border-radius: 10px; background: #F0F7F2; color: #315D3F; box-shadow: 0 8px 30px #0002; font-size: 13px; }
+    .toast { position: fixed; z-index: 20; top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 14px; max-width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 12px 14px 12px 17px; border: 1px solid #C9E2D1; border-radius: 10px; background: #F0F7F2; color: #315D3F; box-shadow: 0 8px 30px #0002; font-size: 13px; }
     .toast button { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
     .toast button:hover { background: #0001; }
     .workspace.dark .toast { border-color: #294535; background: #1C2D22; color: #B5D4BD; }

@@ -231,6 +231,11 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     const toast = fixture.nativeElement.querySelector('[role="status"]') as HTMLElement;
     expect(toast.textContent).toContain('Appuntamento salvato.');
+    const toastStyles = window.getComputedStyle(toast);
+    expect(toastStyles.position).toBe('fixed');
+    expect(toastStyles.top).toBe('50%');
+    expect(toastStyles.left).toBe('50%');
+    expect(toastStyles.transform).not.toBe('none');
     const close = toast.querySelector('button[aria-label="Chiudi notifica"]') as HTMLButtonElement;
     expect(close).toBeTruthy();
     close.click();
