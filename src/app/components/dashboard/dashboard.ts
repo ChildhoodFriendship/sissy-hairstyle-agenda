@@ -51,7 +51,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
         }
 
         @if (view()==='employees') {
-          <section class="page-heading"><div><p class="eyebrow">IL TUO TEAM</p><h1>Dipendenti</h1><p class="subtitle">Gestisci le persone assegnabili agli appuntamenti.</p></div><button class="primary" (click)="addEmployee()">＋ Aggiungi dipendente</button></section>
+          <section class="page-heading"><div><p class="eyebrow">IL TUO TEAM</p><h1>Dipendenti</h1></div><button class="primary" (click)="addEmployee()">＋ Aggiungi dipendente</button></section>
           <section class="agenda-card"><div class="card-title"><div><p class="eyebrow">PERSONALE</p><h2>Il team del salone</h2></div><span class="count-pill">{{ activeEmployees().length }} dipendenti</span></div>
             @if(activeEmployees().length){<div class="client-list">@for(employee of activeEmployees();track employee.id){<article class="employee-row"><span class="client-avatar">{{ initials(employee.firstName+' '+employee.lastName) }}</span><div class="client-info"><b>{{ employee.firstName }} {{ employee.lastName }}</b></div><button class="text-button" (click)="editEmployee(employee)">Modifica</button><button class="text-button danger" (click)="removeEmployee(employee)">Elimina</button></article>}</div>}
             @else{<div class="empty"><span class="empty-art">♙</span><h3>Nessun dipendente ancora</h3><p>Aggiungi nome e cognome per poter assegnare gli appuntamenti.</p><button class="secondary" (click)="addEmployee()">＋ Aggiungi dipendente</button></div>}

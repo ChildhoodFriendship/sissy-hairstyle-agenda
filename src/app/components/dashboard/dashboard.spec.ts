@@ -215,6 +215,7 @@ describe('Dashboard', () => {
     (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('employees');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Dipendenti');
+    expect(fixture.nativeElement.querySelector('.page-heading .subtitle')).toBeNull();
     (fixture.componentInstance as unknown as { addEmployee(): void }).addEmployee();
     fixture.detectChanges();
     const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
