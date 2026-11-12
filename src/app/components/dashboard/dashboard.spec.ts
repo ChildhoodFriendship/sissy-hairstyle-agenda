@@ -238,9 +238,41 @@ describe('Dashboard', () => {
     expect(toastStyles.transform).not.toBe('none');
     const close = toast.querySelector('button[aria-label="Chiudi notifica"]') as HTMLButtonElement;
     expect(close).toBeTruthy();
+    const closeStyles = window.getComputedStyle(close);
+    expect(closeStyles.alignItems).toBe('center');
+    expect(closeStyles.justifyItems).toBe('center');
+    expect(closeStyles.paddingLeft).toBe('0px');
+    expect(closeStyles.paddingRight).toBe('0px');
     close.click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it('centers icon-bearing client actions and popup close controls', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      view: { set(value: 'clients'): void };
+      addClient(): void;
+    };
+    component.view.set('clients');
+    fixture.detectChanges();
+
+    const addButton = fixture.nativeElement.querySelector('.client-actions .primary') as HTMLButtonElement;
+    expect(addButton.querySelector('img')).toBeTruthy();
+    const addButtonStyles = window.getComputedStyle(addButton);
+    expect(addButtonStyles.alignItems).toBe('center');
+    expect(addButtonStyles.justifyContent).toBe('center');
+
+    component.addClient();
+    fixture.detectChanges();
+    const close = fixture.nativeElement.querySelector('.dialog .close') as HTMLButtonElement;
+    const closeStyles = window.getComputedStyle(close);
+    expect(closeStyles.alignItems).toBe('center');
+    expect(closeStyles.justifyItems).toBe('center');
+    expect(closeStyles.paddingLeft).toBe('0px');
+    expect(closeStyles.paddingRight).toBe('0px');
   });
 
   it('opens the client editor with the selected client details', async () => {

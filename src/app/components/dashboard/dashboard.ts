@@ -226,7 +226,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .service-add { display: flex; gap: 8px; }
     .service-add input { flex: 1; min-width: 0; }
     .toast { position: fixed; z-index: 20; top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 14px; max-width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 12px 14px 12px 17px; border: 1px solid #C9E2D1; border-radius: 10px; background: #F0F7F2; color: #315D3F; box-shadow: 0 8px 30px #0002; font-size: 13px; }
-    .toast button { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; }
+    .toast button { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; text-align: center; }
     .toast button:hover { background: #0001; }
     .workspace.dark .toast { border-color: #294535; background: #1C2D22; color: #B5D4BD; }
     .notice { margin-top: 14px; padding: 11px 14px; border: 1px solid; border-radius: 9px; font-size: 12px; }
@@ -239,7 +239,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .dialog > .eyebrow { margin: 0 0 7px; color: var(--accent); }
     .dialog h2 { margin: 0; font-size: 23px; font-weight: 650; letter-spacing: -.035em; }
     .dialog > .subtitle { margin: 6px 0 21px; }
-    .dialog .close { position: absolute; top: 17px; right: 17px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font-size: 20px; line-height: 1; }
+    .dialog .close { position: absolute; top: 17px; right: 17px; display: grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); font-size: 20px; line-height: 1; text-align: center; }
     .dialog .close:hover { background: var(--surface-muted); color: var(--ink); }
     .dialog form { display: grid; gap: 13px; }
     .two-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
