@@ -219,6 +219,7 @@ describe('Dashboard', () => {
     (fixture.componentInstance as unknown as { addEmployee(): void }).addEmployee();
     fixture.detectChanges();
     const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.querySelector('.subtitle')).toBeNull();
     expect(dialog.querySelector('[name="employeeFirstName"]')).toBeTruthy();
     expect(dialog.querySelector('[name="employeeLastName"]')).toBeTruthy();
     expect(dialog.querySelectorAll('input')).toHaveLength(2);

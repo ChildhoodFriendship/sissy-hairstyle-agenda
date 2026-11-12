@@ -37,7 +37,7 @@ This section describes the employee roster available to the salon operator. Empl
 ## Functional Characteristics
 
 - Shows active employees in the team view.
-- Keeps the team-page heading concise without the former explanatory subtitle.
+- Keeps the employee page and add/edit dialog free of redundant helper subtitles; required field labels and validation remain.
 - Manages employee records through a form requiring a non-empty first and last name. The database migration constrains each trimmed name part to 1–100 characters.
 - Offers only active employees for new appointment assignment.
 - Archives an employee when the operator chooses **Elimina** and confirms. The repository updates `is_active` to `false`; it does not physically delete the row.
