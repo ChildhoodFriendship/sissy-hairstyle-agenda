@@ -24,4 +24,4 @@
 
 ## Animazioni
 
-- [ ] Aggiungere animazioni di fade-in e fade-out all’interfaccia, fluide anche su telefono e rispettose della preferenza `prefers-reduced-motion`.
+- [x] Aggiungere animazioni di fade-in e fade-out all’interfaccia, fluide anche su telefono e rispettose della preferenza `prefers-reduced-motion`.

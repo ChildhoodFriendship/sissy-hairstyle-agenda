@@ -5,18 +5,18 @@ import { AuthService } from '../../api/auth.service';
   selector: 'app-forgot-password',
   standalone: true,
   template: `
-    <main class="recovery-page" [class.dark]="darkMode()">
+    <main class="recovery-page" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()">
       <section class="recovery-card" aria-labelledby="recovery-title">
         <a class="back" href="/login">← Torna all’accesso</a>
         <span class="brand-mark" aria-hidden="true">S</span>
         <p class="eyebrow">RECUPERO ACCOUNT</p>
         <h1 id="recovery-title">Password dimenticata?</h1>
         <p class="intro">Inserisci l’email associata al tuo account. Ti invieremo un link per reimpostare la password.</p>
-        <form (submit)="submit($event)">
+        <form animate.enter="ui-fade-in" animate.leave="ui-fade-out" (submit)="submit($event)">
           <label for="recovery-email">Email</label>
           <input id="recovery-email" name="email" type="email" autocomplete="email" required [value]="email()" (input)="email.set(inputValue($event))" />
-          @if(error()){<p class="error" role="alert">{{ error() }}</p>}
-          @if(status()){<p class="status" role="status">{{ status() }}</p>}
+          @if(error()){<p class="error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ error() }}</p>}
+          @if(status()){<p class="status" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status">{{ status() }}</p>}
           <button type="submit">Invia il link</button>
         </form>
       </section>

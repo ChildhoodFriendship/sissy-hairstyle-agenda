@@ -7,7 +7,7 @@ import { AuthService } from '../../api/auth.service';
   selector: 'app-login',
   standalone: true,
   template: `
-    <main class="login-layout" [class.dark]="darkMode()">
+    <main class="login-layout" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()">
       <section class="login-story" aria-labelledby="login-title">
         <div class="story-top"><span class="brand-mark" aria-hidden="true">S</span><span class="demo-pill">{{ copy.common.demoTag }}</span><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Tema chiaro' : '☾ Tema scuro' }}</button></div>
         <div class="story-copy">
@@ -22,38 +22,38 @@ import { AuthService } from '../../api/auth.service';
           @if (recoveryMode()) {
             <h2>Imposta una nuova password</h2>
             <p class="panel-intro">Scegli una password nuova per il tuo account.</p>
-            <form (submit)="saveNewPassword($event)" autocomplete="on">
+            <form animate.enter="ui-fade-in" animate.leave="ui-fade-out" (submit)="saveNewPassword($event)" autocomplete="on">
               <label for="new-password">Nuova password</label>
               <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="8" required [value]="newPassword()" (input)="newPassword.set(inputValue($event))" />
-              @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
-              @if (statusMessage()) { <p role="status">{{ statusMessage() }}</p> }
+              @if (error()) { <p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ error() }}</p> }
+              @if (statusMessage()) { <p animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status">{{ statusMessage() }}</p> }
               <button class="button-primary" type="submit">Salva nuova password</button>
             </form>
           } @else if (registrationMode()) {
             <h2>Crea il tuo account</h2>
             <p class="panel-intro">Imposta i dati di accesso del titolare del salone.</p>
-            <form (submit)="register($event)" autocomplete="on">
+            <form animate.enter="ui-fade-in" animate.leave="ui-fade-out" (submit)="register($event)" autocomplete="on">
               <label for="new-username">Username</label>
               <input id="new-username" name="new-username" type="text" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]+" autocomplete="username" required [value]="registerUsername()" (input)="registerUsername.set(inputValue($event))" />
               <label for="register-email">Email</label>
               <input id="register-email" name="register-email" type="email" autocomplete="email" required [value]="registerEmail()" (input)="registerEmail.set(inputValue($event))" />
               <label for="register-password">Password</label>
               <input id="register-password" name="register-password" type="password" autocomplete="new-password" minlength="8" required [value]="registerPassword()" (input)="registerPassword.set(inputValue($event))" />
-              @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
-              @if (statusMessage()) { <p role="status">{{ statusMessage() }}</p> }
+              @if (error()) { <p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ error() }}</p> }
+              @if (statusMessage()) { <p animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status">{{ statusMessage() }}</p> }
               <button class="button-primary" type="submit">Crea account</button>
             </form>
             <button type="button" class="demo-hint" (click)="registrationMode.set(false)">Torna all’accesso</button>
           } @else {
             <h2>Accedi al tuo spazio</h2>
 
-            <form (submit)="submit($event)" autocomplete="on">
+            <form animate.enter="ui-fade-in" animate.leave="ui-fade-out" (submit)="submit($event)" autocomplete="on">
               <label for="username">{{ copy.login.username }}</label>
               <input id="username" name="username" type="text" autocomplete="username" required [value]="username()" (input)="username.set(inputValue($event))" />
               <label for="password">{{ copy.login.password }}</label>
               <input id="password" name="password" type="password" autocomplete="current-password" required [value]="password()" (input)="password.set(inputValue($event))" />
-              @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
-              @if (statusMessage()) { <p role="status">{{ statusMessage() }}</p> }
+              @if (error()) { <p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ error() }}</p> }
+              @if (statusMessage()) { <p animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status">{{ statusMessage() }}</p> }
               <button class="button-primary" type="submit">{{ copy.login.submit }} <span aria-hidden="true">↗</span></button>
             </form>
             <a class="demo-hint" href="/forgot-password">Password dimenticata?</a>
