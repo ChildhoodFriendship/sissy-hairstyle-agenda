@@ -46,7 +46,7 @@ This section describes appointment records shown for a selected date in the dash
 - Opens a new appointment with no client selected and blank client-detail fields; explicitly selecting a saved client fills those details, while choosing the empty “Nuova cliente” option clears them. This TODO is complete; remaining requests are in the [project TODO](../../todo).
 - Selects date and time with native browser picker controls; appointment time selection is restricted to 30-minute increments.
 - Adds a new client record when saving an appointment. The **Aggiungi anche alla Rubrica Clienti** checkbox determines whether it appears in the Clients directory; unchecked appointment-linked clients remain available to their appointments but are hidden from the directory.
-- Shows icon-only edit and delete actions for appointment cards; each keeps an accessible text label.
+- Shows icon-only edit and delete actions for appointment cards; each keeps an accessible text label. The corresponding TODO is already satisfied in the current interface.
 - Prefills contact fields and consent state when the operator selects a saved client. A matching phone number can also link a new appointment to an existing client.
 - Assigns an appointment to Admin or an active employee. Existing appointments assigned to archived employees or legacy deleted employees retain a non-active historical assignment while edited.
 - Validates phone numbers and checks confirmed appointments for a time slot: no more than three confirmed appointments and no duplicate assignee. Cancelled or completed appointments are excluded from this client-side conflict check.
