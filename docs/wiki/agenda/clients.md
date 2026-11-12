@@ -36,7 +36,7 @@ This section describes saved client contact records used by the dashboard. A cli
 
 ## Functional Characteristics
 
-- Shows the clients screen under the **Clienti** heading with an inline name-or-phone search beside the add-client button.
+- Shows the clients screen under the **Clienti** heading with a name-or-phone search beside the add-client button; the controls use a bounded grid and stack full-width below 420 px to stay within page padding.
 - Shows the directory card heading as **I tuoi clienti**.
 - Shows the WhatsApp reminder consent checkbox with masculine wording: **Il cliente ha acconsentito a ricevere promemoria WhatsApp**.
 - Shows clients marked for the directory, in name order, and filters the list by name or phone. Appointment-linked clients not marked for the directory are excluded.

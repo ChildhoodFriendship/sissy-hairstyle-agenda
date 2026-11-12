@@ -188,7 +188,9 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .search { display: flex; align-items: center; gap: 8px; min-width: min(260px, 100%); padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--muted); }
     .search span { font-size: 18px; }
     .search input { width: 100%; min-width: 0; height: 40px; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
-    .client-actions { display: flex; align-items: center; gap: 10px; }
+    .client-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
+    .client-actions .search { width: 100%; min-width: 0; }
+    .client-actions .primary { min-width: 0; max-width: 100%; }
     .client-actions .primary img { width: 16px; height: 16px; filter: invert(1); }
     .employee-row { display:grid; grid-template-columns:36px minmax(0,1fr) auto auto; align-items:center; gap:11px; min-height:66px; padding:8px 0; border-bottom:1px solid var(--line); }
     .employee-row:last-child { border-bottom:0; }
@@ -283,9 +285,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
       .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px; padding: 27px 0 18px; }
       .page-heading h1 { font-size: 29px; }
       .page-heading .primary { margin-left: auto; }
-      .page-heading .search { order: 3; width: 100%; }
-      .client-actions { width: 100%; }
-      .client-actions .search { flex: 1; min-width: 0; width: auto; }
+      .client-actions { width: 100%; min-width: 0; }
       .client-actions .primary { margin-left: 0; padding-inline: 11px; }
       .stats { gap: 8px; }
       .stats article { padding: 12px 10px; }
@@ -309,6 +309,8 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     }
     @media (max-width: 420px) {
       .main { padding-right: 13px; padding-left: 13px; }
+      .client-actions { grid-template-columns: minmax(0, 1fr); }
+      .client-actions .primary { width: 100%; }
       .datebar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto; gap: 6px; margin-bottom: 14px; }
       .date-chip { min-width: 0; padding: 6px 8px; }
       .date-chip input { width: 100%; min-width: 0; font-size: 11px; }
