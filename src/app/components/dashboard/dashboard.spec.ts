@@ -182,6 +182,14 @@ describe('Dashboard', () => {
     expect(clientActions.querySelector('.search')).toBeTruthy();
     expect(clientActions.querySelector('.primary img')?.getAttribute('src')).toBe('/assets/add.svg');
     expect(clientActions.querySelector('.search')?.parentElement).toBe(clientActions.querySelector('.primary')?.parentElement);
+    const appointmentButton = fixture.nativeElement.querySelector('.client-row-actions .appointment-action') as HTMLButtonElement;
+    expect(appointmentButton.textContent?.trim()).toBe('');
+    expect(appointmentButton.getAttribute('aria-label')).toBe('Crea appuntamento per Ada Lovelace');
+    expect(appointmentButton.querySelector('img')?.getAttribute('src')).toBe('/assets/agenda.svg');
+    const appointmentButtonStyles = window.getComputedStyle(appointmentButton);
+    expect(appointmentButtonStyles.display).toBe('grid');
+    expect(appointmentButtonStyles.alignItems).toBe('center');
+    expect(appointmentButtonStyles.justifyItems).toBe('center');
     (fixture.componentInstance as unknown as { addClient(): void }).addClient();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi cliente');

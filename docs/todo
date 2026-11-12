@@ -20,7 +20,7 @@
 ## Clienti
 
 - [ ] **Ricerca e aggiunta:** allineare il campo di ricerca e il pulsante “Aggiungi cliente” rispettando il padding destro della pagina, senza overflow o contenuti tagliati.
-- [ ] Sostituire il testo “+ Appuntamento” con la sola icona dell’agenda già presente nel progetto.
+- [x] Sostituire il testo “+ Appuntamento” con la sola icona dell’agenda già presente nel progetto.
 
 ## Animazioni
 

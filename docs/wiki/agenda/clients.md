@@ -43,7 +43,7 @@ This section describes saved client contact records used by the dashboard. A cli
 - Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory.
 - Normalizes telephone numbers using `+39` as the default country prefix; explicit international numbers are retained in normalized E.164 form. Invalid numbers prevent saving.
 - Shows whether WhatsApp consent is recorded and counts appointments linked to each client.
-- Opens a new appointment form from a client row and pre-fills the selected client details.
+- Opens a new appointment form from a client row through an agenda-icon-only button with a client-specific accessible label, and pre-fills the selected client details.
 - When a saved client is selected during appointment creation, pre-fills their contact data and consent state. Consent for WhatsApp reminders is checked from the saved client record.
 - Deletes a client only after browser confirmation; the confirmation states that appointments remain in the agenda. Appointment records retain their own name and phone snapshot.
 
