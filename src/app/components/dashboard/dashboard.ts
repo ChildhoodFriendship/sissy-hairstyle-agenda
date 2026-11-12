@@ -131,7 +131,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .primary:hover:not(:disabled) { border-color: var(--accent-hover); background: var(--accent-hover); }
     .secondary, .today-button { border-color: var(--line); background: var(--surface); color: var(--ink); }
     .secondary:hover:not(:disabled), .today-button:hover:not(:disabled) { background: var(--surface-muted); }
-    .datebar { display: flex; align-items: center; gap: 9px; margin-bottom: 18px; }
+    .datebar { display: flex; align-items: stretch; gap: 9px; margin-bottom: 18px; }
     .icon-button { width: 40px; min-width: 40px; padding: 0; border-color: var(--line); background: var(--surface); color: var(--ink); font-size: 16px; }
     .icon-button:hover { background: var(--surface-muted); }
     .date-arrow { width: 16px; height: 16px; }
