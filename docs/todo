@@ -1,0 +1,27 @@
+# TODO — richieste prodotto e interfaccia
+
+## Agenda
+
+- [ ] **Altezza controlli data:** rendere i pulsanti “Oggi”, “Giorno successivo” e “Giorno precedente” alti quanto il selettore “Giorno selezionato”.
+- [ ] **Cliente iniziale nell’appuntamento:** quando si apre un nuovo appuntamento, lasciare il selettore cliente vuoto e i campi anagrafici vuoti; precompilare i dati solo dopo una scelta esplicita dalla lista.
+- [ ] **Salvataggio appuntamento:** verificare il flusso di salvataggio, capire perché può sembrare che non funzioni e rendere chiari gli esiti di successo o errore.
+- [ ] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
+
+## Popup e icone
+
+- [ ] **Posizione popup:** centrare nello schermo il popup “Dipendente aggiunto” e applicare lo stesso posizionamento a tutti i popup dell’applicazione.
+- [ ] **Allineamento X e immagini:** centrare sempre la X di chiusura nel suo contenitore e allineare al centro le immagini/icona in tutti i pulsanti che le contengono (per esempio nel popup di aggiunta cliente).
+
+## Dipendenti
+
+- [ ] Rimuovere dalla schermata Dipendenti il testo “Gestisci le persone assegnabili agli appuntamenti”.
+- [ ] Rimuovere dal popup “Aggiungi dipendente” il testo “Sono sufficienti nome e cognome”.
+
+## Clienti
+
+- [ ] **Ricerca e aggiunta:** allineare il campo di ricerca e il pulsante “Aggiungi cliente” rispettando il padding destro della pagina, senza overflow o contenuti tagliati.
+- [ ] Sostituire il testo “+ Appuntamento” con la sola icona dell’agenda già presente nel progetto.
+
+## Animazioni
+
+- [ ] Aggiungere animazioni di fade-in e fade-out all’interfaccia, fluide anche su telefono e rispettose della preferenza `prefers-reduced-motion`.
