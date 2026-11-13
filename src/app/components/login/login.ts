@@ -176,7 +176,7 @@ export class Login {
     }
     const registered = await this.auth.register(username, this.registerEmail(), this.registerPassword());
     if (registered) {
-      this.statusMessage.set('Account creato. Se la conferma email è attiva, controlla la posta per completare la registrazione.');
+      this.statusMessage.set('Controlla la posta elettronica per completare la registrazione.');
       this.registrationMode.set(false);
       return;
     }

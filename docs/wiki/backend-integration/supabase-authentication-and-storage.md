@@ -52,7 +52,7 @@ The repository contains migration scripts and Edge Function source, but a local 
 
 ## Functional Characteristics
 
-- Registers an account by providing a username, email, and password; Supabase Auth may require email confirmation.
+- Registers an account by providing a username, email, and password; after submission, the UI tells the user to check email to complete registration, while Supabase Auth may require email confirmation.
 - Authenticates with username and password through the `login-with-username` Edge Function, which returns a Supabase session without exposing the email mapping.
 - Checks whether a Supabase session exists before allowing access to the protected agenda route.
 - Requests a password-reset email from the dedicated recovery page, using a generic confirmation that does not reveal whether the email belongs to an account.
