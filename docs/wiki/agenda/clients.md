@@ -32,7 +32,7 @@ This section documents the salon client directory, client details, WhatsApp-cons
 
 ## Description
 
-This section describes saved client contact records used by the dashboard. A client has a name, phone number, WhatsApp-consent flag, notes, and creation time. The application keeps first and last name fields and presents the combined name in the directory. Records are loaded and saved through the configured repository; live persistence depends on the Supabase project and its policies being configured.
+This section describes saved client contact records used by the dashboard. A client has a name, phone number, WhatsApp-consent flag, a directory-visibility flag (`in_contacts`), notes, and creation time. The application keeps first and last name fields and presents the combined name in the directory. Records are loaded and saved through the configured repository; live persistence depends on the Supabase project and its policies being configured.
 
 ## Functional Characteristics
 
@@ -44,12 +44,12 @@ This section describes saved client contact records used by the dashboard. A cli
 - Normalizes telephone numbers using `+39` as the default country prefix; explicit international numbers are retained in normalized E.164 form. Invalid numbers prevent saving.
 - Shows whether WhatsApp consent is recorded and counts appointments linked to each client.
 - Opens a new appointment form from a client row through an agenda-icon-only button with a client-specific accessible label, and pre-fills the selected client details.
-- When a saved client is selected during appointment creation, pre-fills their contact data and consent state. Consent for WhatsApp reminders is checked from the saved client record.
+- When a saved client is selected during appointment creation, pre-fills their contact data and consent state. The appointment consent checkbox is persisted to the client record, so a checked consent enables the WhatsApp action after save.
 - Deletes a client only after browser confirmation; the confirmation states that appointments remain in the agenda. Appointment records retain their own name and phone snapshot.
 
 ## Interfaces And Protocols
 
-The operator searches, adds, edits, or removes client records in the dashboard. The repository maps client fields to the Supabase `clients` table. Appointment creation may also save or update a related client record. Failures are presented as a generic error; this documentation does not establish live backend availability.
+The operator searches, adds, edits, or removes client records in the dashboard. A new client created here is included in the directory. The repository maps client fields to the Supabase `clients` table. Successful saves and repository failures appear in a dismissible toast that auto-closes after about three seconds; form validation remains inline. Appointment creation may also save or update a related client record, using the directory checkbox to control visibility.
 
 ## Dependencies And Relationships
 

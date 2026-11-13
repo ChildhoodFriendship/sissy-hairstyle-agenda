@@ -17,6 +17,7 @@ The wiki is organized into the [agenda area](agenda/overview.md), which document
 ## Functional Characteristics
 
 - Manages client, employee, appointment, and service records through the configured agenda repository and salon settings.
+- Shows only “Agenda” as the agenda page heading, without the promotional eyebrow or subtitle; the dashboard header omits the “Area riservata” label.
 - Assigns confirmed appointments to the admin or one saved employee, with a maximum of three appointments per date/time slot.
 - Registers accounts with username, email, and password and accepts username/password login through a Supabase Edge Function.
 - Shows a dedicated email-based password recovery page.
@@ -27,8 +28,11 @@ The wiki is organized into the [agenda area](agenda/overview.md), which document
 - Authenticates operators through Supabase Auth when the project configuration and database setup are available.
 - Shows a recovery flow for requesting an email link and setting a replacement password after Supabase verifies the recovery session.
 - Uses `+39` as the default telephone country prefix when normalizing Italian numbers.
-- Selects appointment date and time through native picker controls rather than direct text entry.
-
+- Selects appointment date and time through native picker controls rather than direct text entry; time selection uses 30-minute increments.
+- Chooses whether a client created through an appointment also appears in the client directory.
+- Shows save-success and save-failure feedback in dismissible, auto-closing toasts; field validation remains inline and the browser-storage warning remains persistent.
+- Builds reminder templates in a guided editor with insertable appointment fields and a live sample preview.
+- Keeps “Area riservata” on Login only in the pill next to the theme control and removes the decorative Login footer.
 - Does not verify a live Supabase deployment, SMTP delivery, or WhatsApp delivery as part of a local build.
 
 ## Responsive Layout

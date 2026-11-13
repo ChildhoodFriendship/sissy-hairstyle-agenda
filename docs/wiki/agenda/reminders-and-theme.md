@@ -18,6 +18,8 @@ source:
       path: src/app/library/models.ts
     - part: other
       path: src/app/library/domain-utils.ts
+    - part: resource
+      path: public/assets/whatsapp.svg
 ---
 
 ## Short Description
@@ -31,10 +33,12 @@ This section describes two dashboard behaviors: preparing a WhatsApp URL contain
 ## Functional Characteristics
 
 - Shows a reminder count for confirmed, consented appointments on the day following the selected date; the count is a cue to prepare reminders, not a send queue or delivery status.
-- Opens a `wa.me` link only when the associated saved client has WhatsApp consent. If consent is absent, the action is disabled and the application can show a consent-required notice.
+- Opens a `wa.me` link only when the associated saved client has WhatsApp consent. The appointment form persists the consent checkbox to the client record, so a checked value enables the action after the appointment is saved. If consent is absent, the action is disabled and the application can show a consent-required notice.
+- Uses the local `public/assets/whatsapp.svg` icon for the action. The icon glyph is from Simple Icons (CC0 1.0); WhatsApp remains a third-party trademark.
 - Generates message text from the configured template using `nome`, `data`, `ora`, `servizio`, and `salone` placeholders. The link opens in a new tab with the text URL-encoded.
 - Does not send the message, verify WhatsApp delivery, or schedule automatic delivery.
-- Configures light or dark mode with the dashboard theme control and stores the choice in browser local storage. On initialization, the dashboard reads `sissy-agenda-theme`; storage failures can affect retention.
+- Configures light or dark mode with the dashboard theme control and stores the choice in browser local storage. On initialization, the dashboard reads `sissy-agenda-theme`; storage failures can affect retention. Theme-aware icon styling keeps colored navigation icons legible and inverts monochrome logout and date-navigation icons in dark mode.
+- Shows operation feedback in dismissible toasts that auto-close after about three seconds; the browser-storage warning remains a separate persistent alert.
 
 ## Interfaces And Protocols
 

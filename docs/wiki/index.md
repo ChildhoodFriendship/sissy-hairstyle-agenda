@@ -1,6 +1,7 @@
 # Wiki Index
 
 - [Application Overview](overview.md)
+- [User Manual (Italian)](../manual/user-manual-it.md)
 - [Project TODO](../todo)
 - [Agenda Overview](agenda/overview.md)
 - [Appointment Management](agenda/appointments.md)
