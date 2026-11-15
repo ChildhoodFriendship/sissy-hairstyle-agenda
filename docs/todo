@@ -25,3 +25,7 @@
 ## Animazioni
 
 - [x] Aggiungere animazioni di fade-in e fade-out all’interfaccia, fluide anche su telefono e rispettose della preferenza `prefers-reduced-motion`.
+
+## Email e autenticazione
+
+- [ ] **Conferma e consegna email:** sostituire l’SMTP Gmail con un provider transazionale usando un dominio mittente verificato; predisporre il reinvio della conferma agli account non verificati e verificare consegna, conferma e successivo accesso. **Bloccato:** serve un dominio mittente verificabile e accesso ai relativi DNS.

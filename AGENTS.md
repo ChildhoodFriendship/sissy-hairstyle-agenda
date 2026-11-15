@@ -1,105 +1,57 @@
-# AGENTS.md — MACS Webapp
+# AGENTS.md — Sissy Hairstyle Agenda
 
-## Scope and project boundaries
+## Ambito e confini
 
-These instructions apply to the `macs-webapp` repository. The application is an Angular/TypeScript web frontend delivered through npm. The repository contains one Angular application project, not an aggregator or a multi-project Gradle, Java, JavaFX, Flutter, or C++ repository.
+Queste istruzioni si applicano alla repository `sissy-hairstyle-agenda`. È una singola applicazione web Angular/TypeScript per la gestione dell’agenda di un salone. Prima di intervenire, verificare la root Git, branch, remoti, working tree e configurazioni pertinenti; preservare ogni modifica preesistente.
 
-Before modifying the project, inspect its `package.json`, `angular.json`, active `tsconfig*.json`, `src/environments/`, application routes, and the relevant source boundaries under `src/`.
+## Struttura verificata
 
-## Project structure
+- `src/main.ts`, `src/app/` — bootstrap Angular, configurazione e schermate.
+- `src/app/components/` — interfaccia per login, recupero password e agenda.
+- `src/app/api/` — autenticazione, client Supabase e repository dati.
+- `src/app/library/` — modelli e logica di dominio.
+- `src/bundle/` — risorse linguistiche dell’interfaccia.
+- `public/` — asset e configurazione runtime pubblica; non inserire credenziali segrete.
+- `supabase/` — configurazione, migrazioni SQL, Edge Function e istruzioni di setup.
+- `docs/wiki/` — documentazione tecnica e funzionale; `docs/wiki/index.md` è l’indice e `docs/wiki/SCHEMA.md` ne definisce le regole.
+- `docs/manual/` — manuale utente in italiano.
+- `docs/todo` — richieste e attività di prodotto.
+- `package.json`, `package-lock.json`, `angular.json`, `tsconfig*.json` — dipendenze e configurazione Angular/TypeScript.
+- `dist/` — output generato: non trattarlo come fonte e non committarlo salvo richiesta esplicita.
 
-- `src/main.ts`, `src/index.html`, `src/styles.css` — application bootstrap and global presentation.
-- `src/app/components/` — Angular application components and their child components.
-- `src/app/api/` — HTTP, authentication, identity-provider, MQTT, and transport boundaries.
-- `src/app/library/` — domain types, definitions, helpers, shared models, and reusable feature logic.
-- `src/bundle/` — localization resources and message bundles.
-- `src/environments/` — runtime environment files and the active compile-time build configuration.
-- `src/scripts/` — build and post-build scripts.
-- `docs/wiki/` — technical and functional documentation maintained for the application.
-- `docs/build-config-examples/` — maintained product-build examples used to reconcile edition scope.
-- `dist/` — generated build output; do not treat it as source documentation or commit it unless explicitly requested.
-- `package.json`, `package-lock.json`, `angular.json`, and `tsconfig*.json` — toolchain, build, localization, lint, and TypeScript contracts.
+Verificare sempre i percorsi e i simboli nel tree corrente; l’elenco non sostituisce l’ispezione dei file coinvolti.
 
-The exact location of a symbol or resource must be verified from the current tree; do not invent paths from a component name.
+## Applicazione e integrazioni
 
-## Documentation overview
+L’applicazione offre login, recupero password e un’agenda per appuntamenti, clienti, dipendenti e impostazioni del salone. Le route applicative sono definite in `src/app/app.routes.ts`; la configurazione Supabase è caricata a runtime da `/supabase-config.json` in `src/main.ts`. Il codice include repository Supabase e repository locale: verificare il selettore e la configurazione attivi prima di descrivere o modificare il comportamento effettivo.
 
-`macs-webapp` is an Angular browser client for TMACS and the supported product editions. After authentication, it builds a shell with a top bar, sidebar, layout, and dynamic component container; loaded modules manage devices, maps, TLC/VMS control, analysis, logs, and public transport.
+L’autenticazione e i dati remoti dipendono dal progetto Supabase configurato, dalle migrazioni, dalle policy e dalla Edge Function presenti in `supabase/`. L’esistenza dei file non dimostra che un deployment sia attivo o configurato correttamente. I promemoria WhatsApp preparano un collegamento/testo per revisione e invio manuale; non affermare che l’app invii automaticamente messaggi. Consultare la wiki e le istruzioni Supabase per i dettagli verificati e i limiti.
 
-The frontend owns user-visible display, editing, validation, export, navigation, state orchestration, and requests to external services. Backend services, identity providers, HTTP APIs, persistence, retention, backups, notifications, devices, and MQTT brokers are separate boundaries. A frontend source path or successful build does not prove backend persistence, permissions, broker behavior, or complete user-flow acceptance.
+## Strumenti e comandi dichiarati
 
-Product scope is compile-time configuration, not runtime identity, locale, or backend availability. Reconcile the active configuration with every maintained example before documenting an edition-specific claim.
+La repository dichiara npm `11.4.1`, Angular CLI e gli script seguenti in `package.json`:
 
-- `tmacs` — TMACS-Web; RSMP traffic model; TMACS sidebar and map-first startup.
-- `smacs` — SMACS-Web; broad traffic-model list; SMACS sidebar and map-first startup.
-- `predict` — MACS-Predict; broad traffic-model list; Predict sidebar and map-first startup.
-- `rsmp-proxy` — RSMP Proxy; RSMP traffic model; RSMP Proxy sidebar and TLC Status startup.
+- `npm run serve` — server di sviluppo Angular.
+- `npm run build` — build Angular.
+- `npm test` — suite di test dichiarata.
+- `npm run validate-wiki` — validazione documentale.
 
-The project and documentation entry points are:
+Eseguire i comandi dalla root e solo dopo aver controllato le istruzioni di progetto e i vincoli ambientali. Installazioni, build e test non sono autorizzati su questa VM per il lavoro corrente; non aggirare tale limite tramite wrapper o strumenti alternativi. Dichiarare esplicitamente le verifiche non eseguite.
 
-- `docs/wiki/index.md` — published wiki navigation.
-- `docs/wiki/overview.md` — project-level application overview.
-- `docs/wiki/<area>/` — area overviews and section pages.
-- `docs/wiki/SCHEMA.md` — shared normative documentation schema.
-- `docs/manual/README.md` — external user-manual boundary, screenshot contract, and commands.
-- `src/main.ts`, `src/app/app.routes.ts`, and `src/environments/build-config.ts` — application bootstrap, routing, and compile-time product configuration.
+## Convenzioni e sicurezza
 
-## Build and startup
+- Conservare i confini Angular esistenti, i collegamenti template/stili, le route, gli identificatori e i contratti Supabase.
+- Per UI e documentazione rispettare la lingua e i nomi visibili effettivamente presenti; non inventare funzionalità o dati di prodotto.
+- Non leggere, stampare, copiare o committare `.env`, token, password, chiavi private o credenziali. Usare solo valori pubblici e segnaposto nei file di esempio.
+- Non modificare migrazioni, policy o configurazioni di servizi senza comprenderne gli effetti e l’ambito.
 
-- Declared toolchain: Node.js/npm and the Angular CLI; always check `package.json` and the lockfile.
-- Run commands from the repository root.
-- Install locked dependencies: `npm ci`.
-- Start the default development application: `npm run serve`.
-- Start a localized development application: `npm run serve-it`, `npm run serve-en`, or `npm run serve-fi`.
-- Build: `npm run build`.
-- Run lint: `npm run lint`.
-- Run the focused TypeScript check: `npx tsc -p tsconfig.json --noEmit`.
-- Run `git diff --check` before handoff.
+## Documentazione
 
-`npm run build` also runs the repository `postbuild` script and can create generated artifacts under `dist/`. Inspect the command output and report warnings exactly. `package.json` currently does not declare a test script; never report automated tests as passing when no test command was executed.
+Prima di modificare la wiki, leggere `docs/wiki/SCHEMA.md`, `docs/wiki/index.md`, la pagina di area e la pagina bersaglio pertinenti. Verificare i fatti nel codice e nelle configurazioni; aggiornare i collegamenti e l’indice interessati. Mantenere la wiki in inglese come stabilito dallo schema e il manuale utente secondo la lingua del documento. Dopo ogni modifica alla documentazione, aggiornare la pagina o l’indice wiki pertinente. Usare `~/GUIDE/templates/Project-User-Manual-Schema.md` solo come struttura editoriale iniziale: adattarla al prodotto verificato e lasciare segnaposto per i dati ignoti; non dichiarare conformità normativa senza evidenze.
 
-A local build does not verify the identity provider, authenticated HTTP services, permissions, backend persistence, MQTT broker, live device data, or browser acceptance. State these limits explicitly.
+## Verifiche e Git
 
-## Code conventions
-
-- Preserve existing Angular component boundaries, template and style wiring, localization keys, file extensions, endpoints, protocol constants, and serialized contracts.
-- Use UTF-8 and the existing localization-bundle pattern for UI text. Keep backend field names, protocol values, MQTT topics, and data identifiers literal.
-- Keep configuration state, runtime/protocol state, and renderer or view state separate.
-- Verify APIs at external boundaries before changing callers.
-
-## Documentation workflow
-
-`docs/wiki/SCHEMA.md` is the normative source for documentation structure, metadata, source mapping, page types, vocabulary, chapter order, and validation. Do not duplicate those rules here.
-
-Before changing documentation:
-
-1. Read `docs/wiki/SCHEMA.md`, `docs/wiki/index.md`, the relevant area overview, and the target page.
-2. Inspect the implementation sources, templates, styles, configuration, tests, and related documents.
-3. Preserve existing paths and update affected links and indexes.
-4. Run the relevant documentation validation and state any runtime limitations.
-
-## Manual creation workflow
-
-For a standalone manual, read `docs/manual/README.md` for the editorial and screenshot rules, then follow `docs/manual/workflows/manifest.yaml` and its `execution_order`/`depends_on` values. Keep canonical sources separate from generated manuals and outputs; never edit generated Markdown manually.
-
-The workflow is: prepare verified content and evidence, compose the edition/language manual, run `npm run validate-manual`, and build a PDF only when the declared renderer exists and representative pages have been inspected. Keep credentials, tokens, certificates, customer data, and installation-specific values out of all manual inputs and outputs. Source validation does not prove PDF rendering, backend behavior, permissions, persistence, or complete browser acceptance.
-
-## MCP wiki creation and synchronization
-
-When the project exposes a derived wiki through MCP, keep its manifest and generation tooling separate from the technical wiki, and generate the derived tree under the declared documentation output. The technical wiki is authoritative and the generated tree is read-only.
-
-1. Update and validate the technical wiki pages first.
-2. Use the project's declared MCP manifest or generation procedure to create or update the derived tree.
-3. Transfer only verified user-facing behavior, fields, values, actions, warnings, and expected results.
-4. Remove source declarations, internal identifiers, credentials, customer-specific data, and unverified claims.
-5. Read back the generated `index.md`, `overview.md`, and affected pages.
-6. Validate links and ensure every returned path remains inside the configured documentation root.
-
-## Validation and repository safety
-
-- Run the narrowest relevant npm, TypeScript, lint, build, or documentation validation command after changes.
-- For UI changes, verify templates, styles, localization resources, routes, and build configuration.
-- Do not claim tests, backend behavior, MQTT delivery, persistence, permissions, or browser behavior without real command or runtime evidence.
-- Run `git diff --check` and `git status --short` before reporting completion.
-- Do not commit, push, or rewrite history unless explicitly requested.
-- Do not commit `dist/`, generated releases, credentials, or other generated artifacts unless explicitly requested.
+- Non dichiarare build, test, deploy, autenticazione o comportamento di servizi riusciti senza evidenza reale.
+- Quando consentito, eseguire controlli statici circoscritti e `git diff --check`; riportare esattamente cosa è stato eseguito.
+- Prima di ogni commit o push, verificare branch, remote, identità Git, working tree e contenuto completo delle modifiche. Preservare modifiche preesistenti e non includere file generati o segreti.
+- Commit e push sono consentiti solo su richiesta esplicita dell’utente. Dopo un push autorizzato, leggere lo stato remoto per verificarne il risultato.

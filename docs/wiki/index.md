@@ -1,5 +1,6 @@
 # Wiki Index
 
+- [Repository Instructions](../../AGENTS.md)
 - [Application Overview](overview.md)
 - [User Manual (Italian)](../manual/user-manual-it.md)
 - [Project TODO](../todo)
