@@ -123,6 +123,8 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
     .theme-toggle { padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 550; }
     .theme-toggle:hover { background: var(--surface-muted); }
     .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 38px 0 24px; }
+    .page-heading, .page-heading > * { min-width: 0; }
+    .clients-heading .client-actions { flex: 0 1 460px; width: min(100%, 460px); }
     .page-heading .eyebrow, .card-title .eyebrow { margin: 0 0 7px; }
     .page-heading h1 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 650; letter-spacing: -.045em; line-height: 1.12; }
     .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
@@ -286,6 +288,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
       .page-heading h1 { font-size: 29px; }
       .page-heading .primary { margin-left: auto; }
       .client-actions { width: 100%; min-width: 0; }
+      .clients-heading .client-actions { flex: 1 1 100%; width: 100%; max-width: none; }
       .client-actions .primary { margin-left: 0; padding-inline: 11px; }
       .stats { gap: 8px; }
       .stats article { padding: 12px 10px; }
