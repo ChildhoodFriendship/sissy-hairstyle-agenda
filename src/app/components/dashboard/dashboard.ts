@@ -372,7 +372,7 @@ export class Dashboard {
   protected readonly confirmedCount = computed(() => this.todayAppointments().filter((item) => item.status === 'confirmed').length);
   protected readonly dueReminders = computed(() => getDueReminders(this.appointments(), this.selectedDate()));
   protected readonly consentingClients = computed(() => this.clients().filter((item) => item.whatsappConsent));
-  protected readonly directoryClients = computed(() => this.clients().filter((client) => client.inContacts !== false));
+  protected readonly directoryClients = computed(() => this.clients());
   protected readonly filteredClients = computed(() => { const q = this.clientSearch().trim().toLocaleLowerCase('it'); return this.directoryClients().filter((c) => `${c.name} ${c.phone}`.toLocaleLowerCase('it').includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'it')); });
 
   constructor() { void this.load(); }
@@ -441,11 +441,11 @@ export class Dashboard {
     return prior.employeeName;
   }
   protected addClient(): void { this.editingClient.set(null); Object.assign(this.clientDraft, { firstName: '', lastName: '', phone: '', notes: '', whatsappConsent: false }); this.clientFormError.set(''); this.clientFormOpen.set(true); }
-  protected selectAppointmentClient(id: string): void { const client = this.clients().find((item) => item.id === id); this.draft.clientId = client?.id ?? ''; this.draft.addToContacts = client ? client.inContacts !== false : false; if (client) { const parts = client.name.trim().split(/\s+/); this.draft.firstName = client.firstName || parts.shift() || ''; this.draft.lastName = client.lastName || parts.join(' '); this.draft.clientName = client.name; this.draft.phone = client.phone; this.draft.reminderConsent = client.whatsappConsent; } else { this.draft.firstName = ''; this.draft.lastName = ''; this.draft.clientName = ''; this.draft.phone = ''; this.draft.reminderConsent = false; } }
+  protected selectAppointmentClient(id: string): void { const client = this.clients().find((item) => item.id === id); this.draft.clientId = client?.id ?? ''; this.draft.addToContacts = Boolean(client); if (client) { const parts = client.name.trim().split(/\s+/); this.draft.firstName = client.firstName || parts.shift() || ''; this.draft.lastName = client.lastName || parts.join(' '); this.draft.clientName = client.name; this.draft.phone = client.phone; this.draft.reminderConsent = client.whatsappConsent; } else { this.draft.firstName = ''; this.draft.lastName = ''; this.draft.clientName = ''; this.draft.phone = ''; this.draft.reminderConsent = false; } }
   protected showPicker(input: HTMLInputElement): void { try { input.showPicker(); } catch { input.click(); } }
   protected toggleTheme(): void { this.darkMode.update((dark) => !dark); localStorage.setItem('sissy-agenda-theme', this.darkMode() ? 'dark' : 'light'); }
   protected closeForm(): void { this.formOpen.set(false); this.formError.set(''); }
-  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' '),phone:item.phone,date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:linkedClient?.inContacts !== false,employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); this.formError.set(''); this.formOpen.set(true); }
+  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:item.phone,date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); this.formError.set(''); this.formOpen.set(true); }
   protected startAppointment(client: Client): void { this.openForm(); this.selectAppointmentClient(client.id); this.view.set('agenda'); }
   protected editClient(client: Client): void {
     const parts = client.name.trim().split(/\s+/);
@@ -473,7 +473,7 @@ export class Dashboard {
     try {
       const firstName = this.clientDraft.firstName.trim();
       const lastName = this.clientDraft.lastName.trim();
-      const client: Client = { ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName, name: `${firstName} ${lastName}`, phone: phone.e164, notes: this.clientDraft.notes.trim(), whatsappConsent: this.clientDraft.whatsappConsent, inContacts: true };
+      const client: Client = { ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName, name: `${firstName} ${lastName}`, phone: phone.e164, notes: this.clientDraft.notes.trim(), whatsappConsent: this.clientDraft.whatsappConsent };
       await this.repo.saveClient(client);
       await this.load();
       this.showNotice(original ? 'Dati cliente aggiornati.' : 'Cliente aggiunta alla rubrica.');
@@ -496,14 +496,17 @@ export class Dashboard {
     const requestedEmployeeName = legacyEmployeeName ?? (employee ? `${employee.firstName} ${employee.lastName}` : 'Admin');
     if (findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
     const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>item.phone===phone.e164);
-    const client: Client = { id:this.draft.clientId||prior?.clientId||matchedClient?.id||crypto.randomUUID(), firstName:this.draft.firstName.trim(), lastName:this.draft.lastName.trim(), name:clientName, phone:phone.e164, whatsappConsent:this.draft.reminderConsent, notes:matchedClient?.notes||'', createdAt:matchedClient?.createdAt||prior?.createdAt||new Date().toISOString(), inContacts:this.draft.addToContacts || matchedClient?.inContacts === true };
+    const existingClientId = this.draft.clientId || prior?.clientId || matchedClient?.id || '';
+    const isNewClient = !existingClientId && !matchedClient;
+    const clientId = existingClientId || (this.draft.addToContacts && isNewClient ? crypto.randomUUID() : '');
+    const client: Client = { id:clientId, firstName:this.draft.firstName.trim(), lastName:this.draft.lastName.trim(), name:clientName, phone:phone.e164, whatsappConsent:this.draft.reminderConsent, notes:matchedClient?.notes||'', createdAt:matchedClient?.createdAt||prior?.createdAt||new Date().toISOString() };
     const employeeName = legacyEmployeeName ?? (employee
       ? employee.isActive === false && prior?.employeeId === employee.id
         ? prior.employeeName || `${employee.firstName} ${employee.lastName}`
         : `${employee.firstName} ${employee.lastName}`
       : 'Admin');
     const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
-    try { await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.showNotice(this.copy.form.saveSuccess); this.closeForm(); }
+    try { if (isNewClient && this.draft.addToContacts) await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.showNotice(this.copy.form.saveSuccess); this.closeForm(); }
     catch { this.showNotice(this.copy.ui.genericError); }
   }
   protected async changeStatus(item: Appointment, status: Appointment['status']): Promise<void> { try { await this.repo.saveAppointment({...item,status}); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }

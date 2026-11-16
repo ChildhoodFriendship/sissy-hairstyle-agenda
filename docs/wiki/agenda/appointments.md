@@ -24,8 +24,7 @@ source:
       path: supabase/migrations/20261110000000_employees_capacity_and_usernames.sql
     - part: other
       path: supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql
-    - part: other
-      path: supabase/migrations/20261111000000_client_contact_directory_flag.sql
+
     - part: test
       path: src/app/components/dashboard/dashboard.spec.ts
 ---
@@ -45,7 +44,7 @@ This section describes appointment records shown for a selected date in the dash
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
 - Opens a new appointment with no client selected and blank client-detail fields; explicitly selecting a saved client fills those details, while choosing the empty “Nuova cliente” option clears them. This TODO is complete; remaining requests are in the [project TODO](../../todo).
 - Selects date and time with native browser picker controls; appointment time selection is restricted to 30-minute increments.
-- Adds a new client record when saving an appointment. The **Aggiungi anche alla Rubrica Clienti** checkbox determines whether it appears in the Clients directory; unchecked appointment-linked clients remain available to their appointments but are hidden from the directory.
+- Adds a new client record when saving an appointment only when **Aggiungi anche alla Rubrica Clienti** is checked. If the checkbox is cleared, the appointment is saved without a client row and its nullable `client_id` remains empty.
 - Shows appointment save success or repository failure in a dismissible toast that closes after about three seconds; validation and conflict errors remain inline.
 - Shows icon-only edit and delete actions for appointment cards; each keeps an accessible text label. The corresponding TODO is already satisfied in the current interface.
 - Prefills contact fields and consent state when the operator selects a saved client. A matching phone number can also link a new appointment to an existing client.
@@ -57,7 +56,7 @@ This section describes appointment records shown for a selected date in the dash
 
 ## Interfaces And Protocols
 
-The operator uses the date picker, appointment form, and card actions. The dashboard validates the requested confirmed slot before saving, then saves the client and appointment through the repository. Save success and repository failures are shown in a dismissible toast that auto-closes after about three seconds; form validation and slot conflicts remain inline. The Supabase repository sends appointment and client upserts or deletes through the authenticated Data API; live persistence depends on backend configuration and policies.
+The operator uses the date picker, appointment form, and card actions. The dashboard validates the requested confirmed slot before saving, then optionally saves a new client and always saves the appointment through the repository. Save success and repository failures are shown in a dismissible toast that auto-closes after about three seconds; form validation and slot conflicts remain inline. The Supabase repository sends appointment and client upserts or deletes through the authenticated Data API; live persistence depends on backend configuration and policies.
 
 ## Dependencies And Relationships
 

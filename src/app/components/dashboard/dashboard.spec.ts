@@ -6,6 +6,8 @@ import type { Appointment, Client } from '../../library/models';
 
 describe('Dashboard', () => {
   let savedClient: Client | undefined;
+  let saveClientCalls = 0;
+  let savedAppointment: Appointment | undefined;
 
   const sampleClient: Client = {
     id: 'client-1', name: 'Ada Lovelace', firstName: 'Ada', lastName: 'Lovelace',
@@ -16,14 +18,16 @@ describe('Dashboard', () => {
     localStorage.clear();
     sessionStorage.clear();
     savedClient = undefined;
+    saveClientCalls = 0;
+    savedAppointment = undefined;
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [{
         provide: SupabaseAgendaRepository,
         useValue: {
           listAppointments: async () => [], listClients: async () => [sampleClient], listEmployees: async () => [],
-          saveClient: async (client: Client) => { savedClient = client; },
-          saveAppointment: async () => undefined,
+          saveClient: async (client: Client) => { saveClientCalls += 1; savedClient = client; },
+          saveAppointment: async (appointment: Appointment) => { savedAppointment = appointment; },
           saveEmployee: async () => undefined, deleteEmployee: async () => undefined,
           loadSettings: async () => ({ salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false }),
           hasStorageWarning: () => false,
@@ -122,10 +126,12 @@ describe('Dashboard', () => {
     };
     Object.assign(instance.draft, { clientId: sampleClient.id, firstName: 'Ada', lastName: 'Lovelace', phone: '+393331234567', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: true, addToContacts: true, employeeId: null });
     await instance.saveAppointment();
-    expect(savedClient?.whatsappConsent).toBe(true);
+    expect(saveClientCalls).toBe(0);
+    expect(savedAppointment?.clientId).toBe(sampleClient.id);
+    expect(savedAppointment?.reminderConsent).toBe(true);
   });
 
-  it('does not add a new appointment client to the directory when the opt-in is unchecked', async () => {
+  it('saves a new appointment without a client when the directory opt-in is unchecked', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -134,9 +140,26 @@ describe('Dashboard', () => {
       draft: { clientId?: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '+393331234567', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: false, addToContacts: false, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '+393331234568', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: false, addToContacts: false, employeeId: null });
     await instance.saveAppointment();
-    expect(savedClient?.inContacts).toBe(false);
+    expect(saveClientCalls).toBe(0);
+    expect(savedAppointment?.clientId).toBe('');
+  });
+
+  it('saves a new client before its appointment when the directory opt-in is checked', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId?: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '+393331234569', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    await instance.saveAppointment();
+    expect(saveClientCalls).toBe(1);
+    expect(savedClient?.name).toBe('Katherine Johnson');
+    expect(savedAppointment?.clientId).toBe(savedClient?.id);
   });
 
   it('prefills appointment details when a saved client is selected', async () => {

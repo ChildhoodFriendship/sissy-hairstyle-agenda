@@ -10,7 +10,6 @@ interface ClientRow {
   last_name: string;
   phone: string;
   whatsapp_consent: boolean;
-  in_contacts: boolean;
   notes: string;
   created_at: string;
 }
@@ -99,7 +98,6 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       lastName: row.last_name,
       phone: row.phone,
       whatsappConsent: row.whatsapp_consent,
-      inContacts: row.in_contacts ?? true,
       notes: row.notes,
       createdAt: row.created_at,
     }));
@@ -115,7 +113,6 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       last_name: lastName,
       phone: item.phone,
       whatsapp_consent: item.whatsappConsent,
-      in_contacts: item.inContacts !== false,
       notes: item.notes,
       created_at: item.createdAt,
     });

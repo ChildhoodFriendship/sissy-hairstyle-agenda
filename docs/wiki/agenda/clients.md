@@ -22,8 +22,7 @@ source:
       path: src/app/api/supabase-agenda-repository.ts
     - part: other
       path: supabase/migrations/20261107000000_create_agenda_core.sql
-    - part: other
-      path: supabase/migrations/20261111000000_client_contact_directory_flag.sql
+
 ---
 
 ## Short Description
@@ -32,14 +31,14 @@ This section documents the salon client directory, client details, WhatsApp-cons
 
 ## Description
 
-This section describes saved client contact records used by the dashboard. A client has a name, phone number, WhatsApp-consent flag, a directory-visibility flag (`in_contacts`), notes, and creation time. The application keeps first and last name fields and presents the combined name in the directory. Records are loaded and saved through the configured repository; live persistence depends on the Supabase project and its policies being configured.
+This section describes saved client contact records used by the dashboard. A client has a name, phone number, WhatsApp-consent flag, notes, and creation time. The application keeps first and last name fields and presents the combined name in the directory. Records are loaded and saved through the configured repository; live persistence depends on the Supabase project and its policies being configured.
 
 ## Functional Characteristics
 
 - Shows the clients screen under the **Clienti** heading with a name-or-phone search beside the add-client button; the controls use a bounded grid and stack full-width below 420 px to stay within page padding.
 - Shows the directory card heading as **I tuoi clienti**.
 - Shows the WhatsApp reminder consent checkbox with masculine wording: **Il cliente ha acconsentito a ricevere promemoria WhatsApp**.
-- Shows clients marked for the directory, in name order, and filters the list by name or phone. Appointment-linked clients not marked for the directory are excluded.
+- Shows saved clients in name order and filters the list by name or phone.
 - Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory.
 - Normalizes telephone numbers using `+39` as the default country prefix; explicit international numbers are retained in normalized E.164 form. Invalid numbers prevent saving.
 - Shows whether WhatsApp consent is recorded and counts appointments linked to each client.
@@ -49,7 +48,7 @@ This section describes saved client contact records used by the dashboard. A cli
 
 ## Interfaces And Protocols
 
-The operator searches, adds, edits, or removes client records in the dashboard. A new client created here is included in the directory. The repository maps client fields to the Supabase `clients` table. Successful saves and repository failures appear in a dismissible toast that auto-closes after about three seconds; form validation remains inline. Appointment creation may also save or update a related client record, using the directory checkbox to control visibility.
+The operator searches, adds, edits, or removes client records in the dashboard. A new client created here is included in the directory. The repository maps client fields to the Supabase `clients` table. Successful saves and repository failures appear in a dismissible toast that auto-closes after about three seconds; form validation remains inline. Appointment creation inserts a related client only when the directory checkbox is selected; otherwise it saves the appointment without a client link.
 
 ## Dependencies And Relationships
 
