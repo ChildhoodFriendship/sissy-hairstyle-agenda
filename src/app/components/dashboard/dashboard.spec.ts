@@ -63,17 +63,28 @@ describe('Dashboard', () => {
       selectedDate(): string;
       appointments: { set(value: Appointment[]): void };
     };
-    instance.appointments.set([{
+    const appointment: Appointment = {
       id: 'appointment-1', clientId: sampleClient.id, clientName: sampleClient.name, phone: sampleClient.phone,
       date: instance.selectedDate(), time: '09:00', service: 'Taglio', notes: '', status: 'confirmed',
       reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: null, employeeName: 'Admin',
-    }]);
+    };
+    instance.appointments.set([appointment]);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.whatsapp img')?.getAttribute('src')).toBe('/assets/whatsapp.svg');
-    expect(fixture.nativeElement.querySelector('.edit-appointment img')?.getAttribute('src')).toBe('/assets/green_edit.svg');
+    const statusAction = fixture.nativeElement.querySelector('.appointment-status-action') as HTMLButtonElement;
+    const editAction = fixture.nativeElement.querySelector('.edit-appointment') as HTMLButtonElement;
+    expect(statusAction.getAttribute('aria-label')).toBe('Annulla appuntamento');
+    expect(statusAction.querySelector('svg[data-icon="close"]')).toBeTruthy();
+    expect(statusAction.nextElementSibling).toBe(editAction);
+    expect(editAction.querySelector('img')?.getAttribute('src')).toBe('/assets/green_edit.svg');
     expect(fixture.nativeElement.querySelector('.delete-appointment img')?.getAttribute('src')).toBe('/assets/red_delete.svg');
-    expect(fixture.nativeElement.querySelector('.edit-appointment')?.getAttribute('aria-label')).toBe('Modifica appuntamento');
+    expect(editAction.getAttribute('aria-label')).toBe('Modifica appuntamento');
     expect(fixture.nativeElement.querySelector('.delete-appointment')?.getAttribute('aria-label')).toBe('Elimina appuntamento');
+    instance.appointments.set([{ ...appointment, status: 'cancelled' }]);
+    fixture.detectChanges();
+    const confirmAction = fixture.nativeElement.querySelector('.appointment-status-action') as HTMLButtonElement;
+    expect(confirmAction.getAttribute('aria-label')).toBe('Conferma appuntamento');
+    expect(confirmAction.querySelector('svg[data-icon="check"]')).toBeTruthy();
   });
 
   it('exposes the theme toggle in the top bar and applies the dark theme', async () => {
@@ -101,6 +112,8 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     const dialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
     expect(dialog.querySelector('h2')?.textContent).toContain('Aggiungi all’agenda');
+    expect(dialog.querySelector('input[name="phone"]')?.getAttribute('placeholder')).toBe('333 1234567');
+    expect(dialog.querySelector('.close svg[data-icon="close"]')).toBeTruthy();
     expect(dialog.querySelector('select[name="employeeId"] option')?.textContent).toContain('Admin');
     expect(dialog.textContent).toContain('Il cliente ha acconsentito a ricevere promemoria WhatsApp');
     const clientOption = [...dialog.querySelectorAll('select[name="clientId"] option')].find((option) => (option as HTMLOptionElement).value === sampleClient.id) as HTMLOptionElement;
@@ -301,6 +314,7 @@ describe('Dashboard', () => {
     component.addClient();
     fixture.detectChanges();
     const close = fixture.nativeElement.querySelector('.dialog .close') as HTMLButtonElement;
+    expect(close.querySelector('svg[data-icon="close"]')).toBeTruthy();
     const closeStyles = window.getComputedStyle(close);
     expect(closeStyles.alignItems).toBe('center');
     expect(closeStyles.justifyItems).toBe('center');

@@ -39,7 +39,7 @@ This section describes saved client contact records used by the dashboard. A cli
 - Shows the directory card heading as **I tuoi clienti**.
 - Shows the WhatsApp reminder consent checkbox with masculine wording: **Il cliente ha acconsentito a ricevere promemoria WhatsApp**.
 - Shows saved clients in name order and filters the list by name or phone.
-- Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory.
+- Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory. The add/edit dialog centers its close icon.
 - Normalizes telephone numbers using `+39` as the default country prefix; explicit international numbers are retained in normalized E.164 form. Invalid numbers prevent saving.
 - Shows whether WhatsApp consent is recorded and counts appointments linked to each client.
 - Opens a new appointment form from a client row through an agenda-icon-only button with a client-specific accessible label, and pre-fills the selected client details.
