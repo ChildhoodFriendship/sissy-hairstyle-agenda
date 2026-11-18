@@ -87,18 +87,20 @@ describe('Dashboard', () => {
     expect(confirmAction.querySelector('svg[data-icon="check"]')).toBeTruthy();
   });
 
-  it('exposes the theme toggle in the top bar and applies the dark theme', async () => {
+  it('opens in the dark theme and persists a light-theme choice', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement;
-    expect(button.textContent).toContain('Modalità scura');
+    expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(true);
+    expect(button.textContent).toContain('Modalità chiara');
     button.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(true);
-    expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.classList.contains('inverted')).toBe(true);
-    expect(button.textContent).toContain('Modalità chiara');
+    expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.classList.contains('inverted')).toBe(false);
+    expect(button.textContent).toContain('Modalità scura');
+    expect(localStorage.getItem('sissy-agenda-theme')).toBe('light');
   });
 
   it('opens the appointment form from the main action', async () => {

@@ -14,6 +14,14 @@ source:
   references:
     - part: component
       path: src/app/components/dashboard/dashboard.ts
+    - part: component
+      path: src/app/components/login/login.ts
+    - part: component
+      path: src/app/components/login/forgot-password.ts
+    - part: stylesheet
+      path: src/styles.css
+    - part: other
+      path: src/app/library/theme.ts
     - part: model
       path: src/app/library/models.ts
     - part: other
@@ -24,11 +32,11 @@ source:
 
 ## Short Description
 
-This section documents consent-gated WhatsApp reminder link preparation and the dashboard's browser-persisted light and dark appearance choice.
+This section documents consent-gated WhatsApp reminder link preparation and the application's browser-persisted, dark-first light and dark appearance choice.
 
 ## Description
 
-This section describes two dashboard behaviors: preparing a WhatsApp URL containing a rendered message, and toggling the visual theme. The application does not send WhatsApp messages itself. The operator reviews and sends the prepared message in WhatsApp. The selected theme is stored in the browser under `sissy-agenda-theme`.
+This section describes two dashboard behaviors: preparing a WhatsApp URL containing a rendered message, and toggling the visual theme. The application does not send WhatsApp messages itself. The operator reviews and sends the prepared message in WhatsApp. The selected theme is stored in the browser under `sissy-agenda-theme`; a first visit defaults to dark unless a saved light choice exists. Shared palette, typography, and motion tokens are defined in `src/styles.css` without external font or animation dependencies.
 
 ## Functional Characteristics
 
@@ -37,7 +45,8 @@ This section describes two dashboard behaviors: preparing a WhatsApp URL contain
 - Uses the local `public/assets/whatsapp.svg` icon for the action. The icon glyph is from Simple Icons (CC0 1.0); WhatsApp remains a third-party trademark.
 - Generates message text from the configured template using `nome`, `data`, `ora`, `servizio`, and `salone` placeholders. The link opens in a new tab with the text URL-encoded.
 - Does not send the message, verify WhatsApp delivery, or schedule automatic delivery.
-- Configures light or dark mode with the dashboard theme control and stores the choice in browser local storage. On initialization, the dashboard reads `sissy-agenda-theme`; storage failures can affect retention. Theme-aware icon styling keeps colored navigation icons legible and inverts monochrome logout and date-navigation icons in dark mode.
+- Configures light or dark mode with the login or dashboard theme control and stores the explicit choice in browser local storage. On initialization, the application reads `sissy-agenda-theme`; when no valid light choice is stored, it opens in dark mode. Storage failures do not prevent an in-session theme change, but can affect retention.
+- Synchronizes the browser `theme-color` metadata with the active palette. The login, password-recovery, and dashboard surfaces use the same warm-neutral palette; the dashboard retains its native date and form controls in the selected color scheme.
 - Shows operation feedback in dismissible toasts that auto-close after about three seconds; the browser-storage warning remains a separate persistent alert.
 
 ## Interfaces And Protocols

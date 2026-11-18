@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { Router } from '@angular/router';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
+import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../library/theme';
 
 @Component({
   selector: 'app-login',
@@ -70,9 +71,9 @@ import { AuthService } from '../../api/auth.service';
     /* Previous login styling retired; the clean design system follows.
     :host{display:block;min-height:100dvh;color:#18304b;font-family:Arial,sans-serif}.login-layout{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(380px,.92fr);background:#f7fbff}.login-story{position:relative;min-height:100dvh;padding:clamp(24px,5vw,72px);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;background:#e8f2fc}.login-story:after{content:"";position:absolute;width:min(58vw,720px);aspect-ratio:1;border:1px solid #c6d9ed;border-radius:50%;right:-18%;bottom:-35%;box-shadow:0 0 0 46px #e8f2fc,0 0 0 47px #c6d9ed,0 0 0 104px #e8f2fc,0 0 0 105px #c6d9ed;opacity:.72}.story-top,.story-footer{position:relative;z-index:1;display:flex;align-items:center;gap:12px;font-size:13px;letter-spacing:.04em}.brand-mark{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#3978b8;color:#fff;font:italic 22px Georgia,serif}.demo-pill{margin-left:auto;border:1px solid #b8cee4;border-radius:99px;padding:7px 12px;font-size:10px;letter-spacing:.14em}.story-copy{position:relative;z-index:1;max-width:590px;margin:12vh 0}.eyebrow{margin:0 0 18px;color:#3978b8;font-size:10px;font-weight:700;letter-spacing:.18em}.story-copy h1{white-space:pre-line;margin:0;font:400 clamp(48px,7vw,96px)/.98 Georgia,serif;letter-spacing:-.055em}.story-description{max-width:390px;margin:24px 0;color:#526982;font-size:15px;line-height:1.7}.story-footer{font-size:10px;color:#647b94}.footer-line{height:1px;flex:1;background:#c6d9ed}.login-panel{display:grid;place-items:center;padding:40px 30px}.panel-card{width:min(100%,390px)}.panel-card h2{margin:0 0 28px;font:400 34px/1.12 Georgia,serif;letter-spacing:-.04em}.panel-intro{margin:12px 0 32px;color:#71849a;font-size:13px;line-height:1.6}.panel-card form{display:grid;gap:10px}.panel-card label{margin-top:10px;font-size:11px;font-weight:700;color:#314b66}.panel-card input{width:100%;height:48px;border:1px solid #d4e1ee;border-radius:10px;background:#fff;padding:0 14px;font-size:13px;outline:0}.panel-card input:focus{border-color:#3978b8;box-shadow:0 0 0 3px #3978b822}.button-primary{height:48px;margin-top:10px;border:0;border-radius:9px;background:#3978b8;color:#fff;font-size:12px;font-weight:700}.button-primary span{float:right}.button-primary:hover{background:#28639e}.demo-hint{display:block;margin:20px auto 0;border:0;background:none;color:#3978b8;font-size:11px}.panel-card .demo-hint+ .demo-hint{margin-top:10px;color:#71849a;line-height:1.6;text-align:center}.form-error{color:#a34036;font-size:11px}.panel-foot{align-self:end;margin:32px 0 0;color:#8093a8;font-size:10px;text-align:center}@media(max-width:800px){.login-layout{grid-template-columns:1fr}.login-story{min-height:38vh;padding:22px 24px}.story-copy{margin:5vh 0 3vh}.story-copy h1{font-size:clamp(42px,12vw,70px)}.story-description{margin:14px 0;font-size:13px}.story-footer{display:none}.login-story:after{width:80vw;right:-44%;bottom:-65%}.login-panel{padding:38px 24px 24px}.panel-foot{align-self:auto}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
     */
-    :host { --page: #F5F5F7; --surface: #FFFFFF; --surface-muted: #F0F0F2; --ink: #1D1D1F; --muted: #6B6B70; --line: #E2E2E7; --accent: #7D3F4C; --accent-hover: #6E3440; --accent-soft: #F5ECEE; --accent-ink: #FFFFFF; display: block; min-height: 100dvh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :host { --page: var(--sissy-light-page); --surface: var(--sissy-light-surface); --surface-muted: var(--sissy-light-raised); --ink: var(--sissy-light-text); --muted: var(--sissy-light-muted); --line: var(--sissy-light-line); --accent: var(--sissy-light-accent); --accent-hover: var(--sissy-light-accent-hover); --accent-soft: var(--sissy-light-accent-soft); --accent-ink: var(--sissy-light-accent-ink); --danger: var(--sissy-light-danger); display: block; min-height: 100dvh; font-family: var(--sissy-font-ui); }
     .login-layout { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(390px, .9fr); background: var(--page); color: var(--ink); color-scheme: light; }
-    .login-layout.dark { --page: #111113; --surface: #1C1C1E; --surface-muted: #242428; --ink: #F5F5F7; --muted: #A1A1A6; --line: #38383D; --accent: #D899A3; --accent-hover: #E5A8B0; --accent-soft: #38292D; --accent-ink: #1D1D1F; color-scheme: dark; }
+    .login-layout.dark { --page: var(--sissy-dark-page); --surface: var(--sissy-dark-surface); --surface-muted: var(--sissy-dark-raised); --ink: var(--sissy-dark-text); --muted: var(--sissy-dark-muted); --line: var(--sissy-dark-line); --accent: var(--sissy-dark-accent); --accent-hover: var(--sissy-dark-accent-hover); --accent-soft: var(--sissy-dark-accent-soft); --accent-ink: var(--sissy-dark-accent-ink); --danger: var(--sissy-dark-danger); color-scheme: dark; }
     .login-layout :focus-visible { outline-color: var(--accent); }
     .login-story { display: flex; min-height: 100dvh; flex-direction: column; justify-content: space-between; padding: clamp(28px, 5vw, 72px); border-right: 1px solid var(--line); background: var(--surface-muted); }
     .login-story::after { display: none; }
@@ -119,12 +120,66 @@ import { AuthService } from '../../api/auth.service';
       .login-panel { padding-inline: 14px; }
       .panel-card { padding: 22px 18px; }
     }
+
+    /* An editorial entry surface, with the form as the quiet focal point. */
+    :host { font-family: var(--sissy-font-ui); }
+    .login-layout { grid-template-columns: minmax(0, 1.1fr) minmax(400px, .9fr); background: var(--page); }
+    .login-story { position: relative; min-width: 0; border-right: 1px solid var(--line); background: var(--sissy-light-sidebar); }
+    .login-layout.dark .login-story { background: var(--sissy-dark-sidebar); }
+    .story-top { z-index: 1; gap: 14px; }
+    .brand-mark { width: 40px; height: 40px; border: 1px solid var(--accent); border-radius: 50%; background: transparent; color: var(--accent); font: italic 22px/1 var(--sissy-font-editorial); }
+    .demo-pill { padding: 7px 11px; border-radius: 4px; color: var(--muted); font-size: 9px; letter-spacing: .15em; }
+    .theme-toggle { min-height: 40px; padding-inline: 12px; border-radius: 4px; background: transparent; color: var(--muted); }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--ink); }
+    .story-copy { max-width: 620px; margin: auto 0; padding-block: 12vh; }
+    .story-copy h1 { font-family: var(--sissy-font-editorial); font-size: clamp(58px, 7vw, 92px); font-weight: 400; letter-spacing: -.055em; line-height: .96; }
+    .story-description { max-width: 370px; margin-top: 25px; color: var(--muted); font-size: 14px; line-height: 1.75; }
+    .login-panel { background: var(--page); }
+    .panel-card { width: min(100%, 410px); padding: 0; border: 0; border-radius: 0; background: transparent; }
+    .panel-card .eyebrow { margin-bottom: 17px; color: var(--accent); font-size: 9px; letter-spacing: .17em; }
+    .panel-card h2 { margin-bottom: 24px; font-family: var(--sissy-font-editorial); font-size: 33px; font-weight: 400; letter-spacing: -.035em; line-height: 1.12; }
+    .panel-intro { margin: -9px 0 24px; color: var(--muted); }
+    .panel-card form { gap: 9px; }
+    .panel-card label { margin-top: 10px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+    .panel-card input { height: 48px; padding-inline: 13px; border-color: var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); font-size: 13px; }
+    .panel-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+    .button-primary { min-height: 48px; margin-top: 14px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 650; }
+    .button-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); transform: translateY(-1px); }
+    .demo-hint { color: var(--accent); font-size: 11px; }
+    .demo-hint:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .panel-card .demo-hint + .demo-hint { color: var(--muted); }
+    .form-error { color: var(--danger); }
+    .panel-card [role="status"] { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .panel-foot { margin-top: 25px; color: var(--muted); font-size: 10px; }
+    .login-layout :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    @media (max-width: 900px) {
+      .login-layout { grid-template-columns: minmax(0, 1fr); }
+      .login-story { min-height: 38dvh; padding: 23px 26px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .story-copy { margin: auto 0; padding-block: 6vh 4vh; }
+      .story-copy h1 { font-size: clamp(46px, 11vw, 68px); }
+      .story-description { margin-top: 16px; font-size: 12px; }
+      .login-panel { padding: 35px 24px 42px; }
+      .panel-card { width: min(100%, 460px); }
+      .theme-toggle { min-height: 44px; }
+      .button-primary { min-height: 48px; }
+    }
+    @media (max-width: 430px) {
+      .login-story { min-height: 34dvh; padding: 18px; }
+      .story-top { gap: 8px; }
+      .brand-mark { width: 36px; height: 36px; font-size: 19px; }
+      .demo-pill { padding: 6px 7px; font-size: 8px; }
+      .theme-toggle { padding-inline: 8px; font-size: 10px; }
+      .story-copy { padding-block: 4vh 3vh; }
+      .story-description { max-width: 310px; }
+      .login-panel { padding-inline: 20px; }
+      .panel-card h2 { font-size: 29px; }
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login {
   protected readonly copy = it;
-  protected readonly darkMode = signal(localStorage.getItem('sissy-agenda-theme') === 'dark');
+  protected readonly darkMode = signal(initialDarkMode());
   protected readonly username = signal('');
   protected readonly registrationMode = signal(false);
   protected readonly registerUsername = signal('');
@@ -144,6 +199,7 @@ export class Login {
   });
 
   constructor() {
+    syncThemeColor(this.darkMode());
     inject(DestroyRef).onDestroy(() => this.recoverySubscription?.unsubscribe());
   }
 
@@ -153,7 +209,7 @@ export class Login {
 
   protected toggleTheme(): void {
     this.darkMode.update((dark) => !dark);
-    localStorage.setItem('sissy-agenda-theme', this.darkMode() ? 'dark' : 'light');
+    saveThemePreference(this.darkMode());
   }
 
   protected async submit(event: Event): Promise<void> {
