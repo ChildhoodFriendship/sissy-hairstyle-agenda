@@ -23,6 +23,9 @@
   --sissy-dark-accent-hover: #E4C99B;
   --sissy-dark-accent-soft: #322D23;
   --sissy-dark-accent-ink: #18150F;
+  --sissy-dark-secondary: #D899A3;
+  --sissy-dark-secondary-hover: #E5A8B0;
+  --sissy-dark-secondary-soft: #38292D;
   --sissy-dark-success: #B8D3BC;
   --sissy-dark-danger: #E2A8A7;
 
@@ -37,6 +40,9 @@
   --sissy-light-accent-hover: #5D4428;
   --sissy-light-accent-soft: #EFE7DA;
   --sissy-light-accent-ink: #FFFCF7;
+  --sissy-light-secondary: #7D3F4C;
+  --sissy-light-secondary-hover: #6E3440;
+  --sissy-light-secondary-soft: #F5ECEE;
   --sissy-light-success: #2C6A48;
   --sissy-light-danger: #A14549;
 }

@@ -44,7 +44,7 @@ This section documents consent-gated WhatsApp reminder link preparation and the 
 
 ## Description
 
-This section describes two dashboard behaviors: preparing a WhatsApp URL containing a rendered message, and toggling the visual theme. The application does not send WhatsApp messages itself. The operator reviews and sends the prepared message in WhatsApp. The selected theme is stored in the browser under `sissy-agenda-theme`; a first visit defaults to dark unless a saved light choice exists. Shared palette, typography, and motion tokens are defined in `src/styles.css` without external font or animation dependencies. Dashboard presentation rules are split across four ordered component stylesheets, preserving Angular encapsulation and lazy loading.
+This section describes two dashboard behaviors: preparing a WhatsApp URL containing a rendered message, and toggling the visual theme. The application does not send WhatsApp messages itself. The operator reviews and sends the prepared message in WhatsApp. The selected theme is stored in the browser under `sissy-agenda-theme`; a first visit defaults to dark unless a saved light choice exists. Shared palette, typography, and motion tokens are defined in `src/styles.css` without external font or animation dependencies. Dashboard presentation rules are split across four ordered component stylesheets, preserving Angular encapsulation and lazy loading. Gold remains the primary action accent; the restored burgundy secondary accent is `#7D3F4C` in light mode and `#D899A3` in dark mode.
 
 ## Functional Characteristics
 

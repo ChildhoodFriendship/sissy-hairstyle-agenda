@@ -23,7 +23,9 @@
 .primary { min-height: 42px; padding-inline: 16px; font-size: 11px; letter-spacing: .01em; }
 .primary:hover:not(:disabled) { transform: translateY(-1px); }
 .secondary, .today-button { min-height: 40px; background: var(--surface); color: var(--ink); font-size: 11px; }
-.secondary:hover:not(:disabled), .today-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.secondary { border-color: color-mix(in srgb, var(--secondary) 42%, var(--line)); color: var(--secondary); }
+.secondary:hover:not(:disabled) { border-color: var(--secondary-hover); background: var(--secondary-soft); color: var(--secondary-hover); }
+.today-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .datebar { align-items: center; gap: 8px; margin-bottom: 24px; padding: 0 0 18px; border-bottom: 1px solid var(--line); }
 .icon-button { width: 38px; min-width: 38px; min-height: 38px; border-color: var(--line); background: transparent; }
 .icon-button:hover { border-color: var(--accent); background: var(--accent-soft); }

@@ -12,6 +12,7 @@ button { cursor: pointer; }
   --page: var(--sissy-light-page); --surface: var(--sissy-light-surface); --surface-muted: var(--sissy-light-raised);
   --ink: var(--sissy-light-text); --muted: var(--sissy-light-muted); --line: var(--sissy-light-line);
   --accent: var(--sissy-light-accent); --accent-hover: var(--sissy-light-accent-hover); --accent-soft: var(--sissy-light-accent-soft); --accent-ink: var(--sissy-light-accent-ink);
+  --secondary: var(--sissy-light-secondary); --secondary-hover: var(--sissy-light-secondary-hover); --secondary-soft: var(--sissy-light-secondary-soft);
   --success: var(--sissy-light-success); --danger: var(--sissy-light-danger);
   min-height: 100dvh; color: var(--ink); background: var(--page); color-scheme: light;
 }
@@ -19,6 +20,7 @@ button { cursor: pointer; }
   --page: var(--sissy-dark-page); --surface: var(--sissy-dark-surface); --surface-muted: var(--sissy-dark-raised);
   --ink: var(--sissy-dark-text); --muted: var(--sissy-dark-muted); --line: var(--sissy-dark-line);
   --accent: var(--sissy-dark-accent); --accent-hover: var(--sissy-dark-accent-hover); --accent-soft: var(--sissy-dark-accent-soft); --accent-ink: var(--sissy-dark-accent-ink);
+  --secondary: var(--sissy-dark-secondary); --secondary-hover: var(--sissy-dark-secondary-hover); --secondary-soft: var(--sissy-dark-secondary-soft);
   --success: var(--sissy-dark-success); --danger: var(--sissy-dark-danger);
   color-scheme: dark;
 }

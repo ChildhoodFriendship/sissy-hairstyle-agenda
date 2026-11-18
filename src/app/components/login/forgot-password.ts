@@ -24,12 +24,12 @@ import { initialDarkMode, syncThemeColor } from '../../library/theme';
     </main>
   `,
   styles: `
-    :host { --page:var(--sissy-light-page); --surface:var(--sissy-light-surface); --ink:var(--sissy-light-text); --muted:var(--sissy-light-muted); --line:var(--sissy-light-line); --accent:var(--sissy-light-accent); --accent-hover:var(--sissy-light-accent-hover); --accent-soft:var(--sissy-light-accent-soft); --accent-ink:var(--sissy-light-accent-ink); --danger:var(--sissy-light-danger); display:block; min-height:100dvh; }
+    :host { --page:var(--sissy-light-page); --surface:var(--sissy-light-surface); --ink:var(--sissy-light-text); --muted:var(--sissy-light-muted); --line:var(--sissy-light-line); --accent:var(--sissy-light-accent); --accent-hover:var(--sissy-light-accent-hover); --accent-soft:var(--sissy-light-accent-soft); --accent-ink:var(--sissy-light-accent-ink); --secondary:var(--sissy-light-secondary); --secondary-hover:var(--sissy-light-secondary-hover); --secondary-soft:var(--sissy-light-secondary-soft); --danger:var(--sissy-light-danger); display:block; min-height:100dvh; }
     .recovery-page { display:grid; min-height:100dvh; place-items:center; padding:24px; background:var(--page); color:var(--ink); color-scheme:light; font-family:var(--sissy-font-ui); }
-    .recovery-page.dark { --page:var(--sissy-dark-page); --surface:var(--sissy-dark-surface); --ink:var(--sissy-dark-text); --muted:var(--sissy-dark-muted); --line:var(--sissy-dark-line); --accent:var(--sissy-dark-accent); --accent-hover:var(--sissy-dark-accent-hover); --accent-soft:var(--sissy-dark-accent-soft); --accent-ink:var(--sissy-dark-accent-ink); --danger:var(--sissy-dark-danger); color-scheme:dark; }
+    .recovery-page.dark { --page:var(--sissy-dark-page); --surface:var(--sissy-dark-surface); --ink:var(--sissy-dark-text); --muted:var(--sissy-dark-muted); --line:var(--sissy-dark-line); --accent:var(--sissy-dark-accent); --accent-hover:var(--sissy-dark-accent-hover); --accent-soft:var(--sissy-dark-accent-soft); --accent-ink:var(--sissy-dark-accent-ink); --secondary:var(--sissy-dark-secondary); --secondary-hover:var(--sissy-dark-secondary-hover); --secondary-soft:var(--sissy-dark-secondary-soft); --danger:var(--sissy-dark-danger); color-scheme:dark; }
     .recovery-card { width:min(100%,440px); padding:clamp(26px,5vw,44px); border:1px solid var(--line); border-radius:8px; background:var(--surface); }
     .back { display:inline-block; min-height:44px; margin-bottom:30px; color:var(--muted); font-size:12px; line-height:44px; text-decoration:none; }
-    .back:hover { color:var(--accent); }
+    .back:hover { color:var(--secondary-hover); }
     .brand-mark { display:grid; width:40px; height:40px; place-items:center; border:1px solid var(--accent); border-radius:50%; background:transparent; color:var(--accent); font:italic 22px/1 var(--sissy-font-editorial); }
     .eyebrow { margin:26px 0 8px; color:var(--accent); font-size:9px; font-weight:650; letter-spacing:.16em; }
     h1 { margin:0; font-family:var(--sissy-font-editorial); font-size:clamp(28px,7vw,36px); font-weight:400; letter-spacing:-.045em; line-height:1.08; }
