@@ -14,6 +14,14 @@ source:
   references:
     - part: component
       path: src/app/components/dashboard/dashboard.ts
+    - part: stylesheet
+      path: src/app/components/dashboard/dashboard-shell.css
+    - part: stylesheet
+      path: src/app/components/dashboard/dashboard-content.css
+    - part: stylesheet
+      path: src/app/components/dashboard/dashboard-responsive.css
+    - part: stylesheet
+      path: src/app/components/dashboard/dashboard-premium.css
     - part: component
       path: src/app/components/login/login.ts
     - part: component
@@ -36,7 +44,7 @@ This section documents consent-gated WhatsApp reminder link preparation and the 
 
 ## Description
 
-This section describes two dashboard behaviors: preparing a WhatsApp URL containing a rendered message, and toggling the visual theme. The application does not send WhatsApp messages itself. The operator reviews and sends the prepared message in WhatsApp. The selected theme is stored in the browser under `sissy-agenda-theme`; a first visit defaults to dark unless a saved light choice exists. Shared palette, typography, and motion tokens are defined in `src/styles.css` without external font or animation dependencies.
+This section describes two dashboard behaviors: preparing a WhatsApp URL containing a rendered message, and toggling the visual theme. The application does not send WhatsApp messages itself. The operator reviews and sends the prepared message in WhatsApp. The selected theme is stored in the browser under `sissy-agenda-theme`; a first visit defaults to dark unless a saved light choice exists. Shared palette, typography, and motion tokens are defined in `src/styles.css` without external font or animation dependencies. Dashboard presentation rules are split across four ordered component stylesheets, preserving Angular encapsulation and lazy loading.
 
 ## Functional Characteristics
 
