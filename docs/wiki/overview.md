@@ -10,7 +10,7 @@ This application manages a salon's appointment agenda and client contact records
 
 ## Description
 
-This application provides the salon operator with a daily agenda, a manageable client list, a team roster, configurable services, WhatsApp reminder preparation, and salon preferences. Appointments can be assigned to the admin or a saved employee; each confirmed time slot accepts up to three appointments, with no duplicate assignee in the same slot. Existing clients can be selected when creating appointments, and their contact details are prefilled. The interface offers persistent light and dark themes. Supabase Auth manages account credentials, while row-level security scopes salon records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
+This application provides the salon operator with a daily agenda, a manageable client list, a team roster, configurable services, WhatsApp reminder preparation, and salon preferences. Appointments can be assigned to Sissy or a saved employee; each confirmed time slot accepts up to three appointments, with no duplicate assignee in the same slot. Existing clients can be selected when creating appointments, and their contact details are prefilled. The interface offers persistent light and dark themes. Supabase Auth manages account credentials, while row-level security scopes salon records to the signed-in account. WhatsApp links prepare a reminder for manual review and sending; they do not transmit a message.
 
 The wiki is organized into the [agenda area](agenda/overview.md), which documents appointment, client, employee, salon-setting, and reminder behavior, and the [backend integration area](backend-integration/overview.md), which documents authentication, the database boundary, activation prerequisites, and verified limitations.
 
@@ -18,7 +18,7 @@ The wiki is organized into the [agenda area](agenda/overview.md), which document
 
 - Manages client, employee, appointment, and service records through the configured agenda repository and salon settings.
 - Shows only “Agenda” as the agenda page heading, without the promotional eyebrow or subtitle; the dashboard header omits the “Area riservata” label.
-- Assigns confirmed appointments to the admin or one saved employee, with a maximum of three appointments per date/time slot.
+- Assigns confirmed appointments to Sissy or one saved employee, with a maximum of three appointments per date/time slot.
 - Registers accounts with username, email, and password and accepts username/password login through a Supabase Edge Function.
 - Shows a dedicated email-based password recovery page.
 - Prefills appointment contact details when the operator selects a saved client.

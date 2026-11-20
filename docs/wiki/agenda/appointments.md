@@ -35,12 +35,12 @@ This section describes creating, editing, assigning, changing the status of, and
 
 ## Description
 
-This section describes appointment records shown for a selected date in the dashboard. An appointment contains client identity and contact details, date and time, optional service and notes, status, reminder-consent state, creation time, and an Admin or employee assignment. The configured repository maps these records to the Supabase `appointments` table. Historical employee assignment is retained as an employee reference and display-name snapshot; older assignments without a surviving employee ID can be represented by the saved name.
+This section describes appointment records shown for a selected date in the dashboard. An appointment contains client identity and contact details, date and time, optional service and notes, status, reminder-consent state, creation time, and a Sissy or employee assignment. The configured repository maps these records to the Supabase `appointments` table. Historical employee assignment is retained as an employee reference and display-name snapshot; older assignments without a surviving employee ID can be represented by the saved name.
 
 ## Functional Characteristics
 
 - Shows only **Agenda** as the agenda screen heading, without the promotional eyebrow or subtitle.
-- Shows appointments for the selected date in time order, grouped into one column for Admin and one for each registered employee. Columns show appointment counts and remain visible when empty; historical assignments without a current employee record remain visible in a separate historical column. Directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today. The layout for large employee rosters is deferred in the [project TODO](../../todo).
+- Shows appointments for the selected date in time order, grouped into one column for Sissy and one for each registered employee. Columns show appointment counts and remain visible when empty; historical assignments without a current employee record remain visible in a separate historical column. Directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today. The layout for large employee rosters is deferred in the [project TODO](../../todo).
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
 - Centers the close icon in the appointment form dialog.
 - Opens a new appointment with no client selected and blank client-detail fields; explicitly selecting a saved client fills those details, while choosing the empty “Nuova cliente” option clears them. This TODO is complete; remaining requests are in the [project TODO](../../todo).
@@ -49,7 +49,7 @@ This section describes appointment records shown for a selected date in the dash
 - Shows appointment save success or repository failure in a dismissible toast that closes after about three seconds; validation and conflict errors remain inline.
 - Shows icon-only status, edit, and delete actions on appointment cards after the WhatsApp action: the status control precedes edit, showing a green check to confirm a cancelled appointment and an X to cancel. All icon-only actions retain accessible labels.
 - Prefills contact fields and consent state when the operator selects a saved client. A matching phone number can also link a new appointment to an existing client.
-- Assigns an appointment to Admin or an active employee. Existing appointments assigned to archived employees or legacy deleted employees retain a non-active historical assignment while edited.
+- Assigns an appointment to Sissy or an active employee. Existing appointments assigned to archived employees or legacy deleted employees retain a non-active historical assignment while edited.
 - Validates phone numbers using `+39` as the default country code; the appointment phone field shows an Italian national-number example without the `+39` prefix. Checks confirmed appointments for a time slot: no more than three confirmed appointments and no duplicate assignee. Cancelled or completed appointments are excluded from this client-side conflict check.
 - Manages status changes between confirmed and cancelled from the appointment card; the interface also displays completed status when present in data.
 - Deletes an appointment only after browser confirmation. Deleting a client does not delete appointments.

@@ -5,9 +5,10 @@
 - [x] **Altezza controlli data:** rendere i pulsanti “Oggi”, “Giorno successivo” e “Giorno precedente” alti quanto il selettore “Giorno selezionato”.
 - [x] **Cliente iniziale nell’appuntamento:** quando si apre un nuovo appuntamento, lasciare il selettore cliente vuoto e i campi anagrafici vuoti; precompilare i dati solo dopo una scelta esplicita dalla lista.
 - [ ] **Salvataggio appuntamento:** verificare il flusso di salvataggio, capire perché può sembrare che non funzioni e rendere chiari gli esiti di successo o errore.
-- [x] **Agenda per assegnatario:** mostrare l’agenda in colonne separate, una per ogni dipendente registrato più una colonna Admin; gli appuntamenti vengono raggruppati per assegnatario.
+- [x] **Agenda per assegnatario:** mostrare l’agenda in colonne separate, una per ogni dipendente registrato più una colonna Sissy; gli appuntamenti vengono raggruppati per assegnatario.
+- [x] **Nome assegnatario titolare:** mostrare “Sissy” nell’intestazione dell’agenda e nel selettore “Seguito da”. Il valore sentinella `Admin` nel database e nella logica di compatibilità resta invariato; nessuna migrazione o modifica live al database eseguita.
 - [ ] **Scelta visuale degli orari:** per la data e il dipendente selezionati, mostrare fasce cliccabili di 30 minuti soltanto per gli slot liberi; le fasce già occupate non devono comparire.
-- [ ] **Layout per team numerosi:** adattare la griglia a roster più ampi e a viewport strette. La versione attuale genera una colonna per dipendente registrato più Admin e non è ottimizzata per molti dipendenti.
+- [ ] **Layout per team numerosi:** adattare la griglia a roster più ampi e a viewport strette. La versione attuale genera una colonna per dipendente registrato più Sissy e non è ottimizzata per molti dipendenti.
 - [x] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
 
 ## Popup e icone

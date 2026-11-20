@@ -87,7 +87,7 @@ describe('Dashboard', () => {
     expect(confirmAction.querySelector('svg[data-icon="check"]')).toBeTruthy();
   });
 
-  it('shows a separate agenda column for Admin and each registered employee', async () => {
+  it('shows a separate agenda column for Sissy and each registered employee', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -110,7 +110,7 @@ describe('Dashboard', () => {
 
     const columns = Array.from(fixture.nativeElement.querySelectorAll('.employee-agenda-column')) as HTMLElement[];
     expect(columns).toHaveLength(3);
-    expect(columns.map((column) => column.querySelector('.employee-agenda-heading h3')?.textContent?.trim())).toEqual(['Admin', 'Lara Rossi', 'Mia Bianchi']);
+    expect(columns.map((column) => column.querySelector('.employee-agenda-heading h3')?.textContent?.trim())).toEqual(['Sissy', 'Lara Rossi', 'Mia Bianchi']);
     expect(columns.map((column) => column.querySelectorAll('.appointment').length)).toEqual([1, 1, 0]);
   });
 
@@ -143,7 +143,7 @@ describe('Dashboard', () => {
     expect(dialog.querySelector('h2')?.textContent).toContain('Aggiungi all’agenda');
     expect(dialog.querySelector('input[name="phone"]')?.getAttribute('placeholder')).toBe('333 1234567');
     expect(dialog.querySelector('.close svg[data-icon="close"]')).toBeTruthy();
-    expect(dialog.querySelector('select[name="employeeId"] option')?.textContent).toContain('Admin');
+    expect(dialog.querySelector('select[name="employeeId"] option')?.textContent).toContain('Sissy');
     expect(dialog.textContent).toContain('Il cliente ha acconsentito a ricevere promemoria WhatsApp');
     const clientOption = [...dialog.querySelectorAll('select[name="clientId"] option')].find((option) => (option as HTMLOptionElement).value === sampleClient.id) as HTMLOptionElement;
     expect(clientOption).toBeTruthy();

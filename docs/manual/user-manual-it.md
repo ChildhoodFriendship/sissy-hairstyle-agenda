@@ -74,7 +74,7 @@ La guida non sostituisce la configurazione dell’istanza: registrazione, confer
 Sissy Hairstyle Agenda permette di:
 
 - consultare gli appuntamenti per una data selezionata;
-- creare e modificare appuntamenti e assegnarli all’amministratore o a un dipendente attivo;
+- creare e modificare appuntamenti e assegnarli a Sissy o a un dipendente attivo;
 - gestire clienti e dipendenti;
 - impostare il nome del salone, i servizi e il testo dei promemoria;
 - preparare un messaggio WhatsApp da controllare e inviare manualmente;
@@ -136,7 +136,7 @@ Le immagini delle schermate sono lasciate come attività editoriale: non sono st
 | Aggiungi anche alla Rubrica Clienti | Selezionalo per rendere visibile nella schermata **Clienti** la nuova cliente creata dall’appuntamento. |
 | Nome, Cognome, Telefono | Dati obbligatori della cliente. Il telefono viene controllato e normalizzato; per i numeri italiani il prefisso predefinito è `+39`. |
 | Data, Ora | Dati obbligatori scelti con i selettori del browser. L’orario è selezionabile a intervalli di 30 minuti. |
-| Seguito da | Scegli **Admin** o un dipendente attivo. |
+| Seguito da | Scegli **Sissy** o un dipendente attivo. |
 | Servizio, Note | Informazioni facoltative; il servizio può rimanere non indicato. |
 | Il cliente ha acconsentito a ricevere promemoria WhatsApp | Registra il consenso del cliente. È necessario per abilitare la preparazione del promemoria WhatsApp. |
 
