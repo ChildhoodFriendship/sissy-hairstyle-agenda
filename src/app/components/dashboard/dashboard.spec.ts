@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Dashboard } from './dashboard';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
 import { SUPABASE_CLIENT } from '../../api/supabase-client';
-import type { Appointment, Client } from '../../library/models';
+import type { Appointment, Client, Employee } from '../../library/models';
 
 describe('Dashboard', () => {
   let savedClient: Client | undefined;
@@ -85,6 +85,33 @@ describe('Dashboard', () => {
     const confirmAction = fixture.nativeElement.querySelector('.appointment-status-action') as HTMLButtonElement;
     expect(confirmAction.getAttribute('aria-label')).toBe('Conferma appuntamento');
     expect(confirmAction.querySelector('svg[data-icon="check"]')).toBeTruthy();
+  });
+
+  it('shows a separate agenda column for Admin and each registered employee', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      appointments: { set(value: Appointment[]): void };
+      employees: { set(value: Employee[]): void };
+    };
+    const employees: Employee[] = [
+      { id: 'employee-1', firstName: 'Lara', lastName: 'Rossi', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'employee-2', firstName: 'Mia', lastName: 'Bianchi', createdAt: '2026-01-01T00:00:00.000Z' },
+    ];
+    const appointments: Appointment[] = [
+      { id: 'admin-appointment', clientId: '', clientName: 'Ada Lovelace', phone: '+393****4567', date: instance.selectedDate(), time: '09:00', service: 'Taglio', notes: '', status: 'confirmed', reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: null, employeeName: 'Admin' },
+      { id: 'employee-appointment', clientId: '', clientName: 'Grace Hopper', phone: '+393****4568', date: instance.selectedDate(), time: '10:00', service: 'Piega', notes: '', status: 'confirmed', reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: 'employee-1', employeeName: 'Lara Rossi' },
+    ];
+    instance.employees.set(employees);
+    instance.appointments.set(appointments);
+    fixture.detectChanges();
+
+    const columns = Array.from(fixture.nativeElement.querySelectorAll('.employee-agenda-column')) as HTMLElement[];
+    expect(columns).toHaveLength(3);
+    expect(columns.map((column) => column.querySelector('.employee-agenda-heading h3')?.textContent?.trim())).toEqual(['Admin', 'Lara Rossi', 'Mia Bianchi']);
+    expect(columns.map((column) => column.querySelectorAll('.appointment').length)).toEqual([1, 1, 0]);
   });
 
   it('opens in the dark theme and persists a light-theme choice', async () => {
