@@ -44,7 +44,7 @@ This section describes appointment records shown for a selected date in the dash
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
 - Centers the close icon in the appointment form dialog.
 - Opens a new appointment with no client selected and blank client-detail fields; explicitly selecting a saved client fills those details, while choosing the empty “Nuova cliente” option clears them. This TODO is complete; remaining requests are in the [project TODO](../../todo).
-- Selects date and time with native browser picker controls; appointment time selection is restricted to 30-minute increments.
+- Selects date and time with native browser picker controls; appointment time selection is restricted to 30-minute increments. Per-person working hours and booking from free slots in the daily columns are planned in the [project TODO](../../todo), not available in the current picker.
 - Adds a new client record when saving an appointment only when **Aggiungi anche alla Rubrica Clienti** is checked. If the checkbox is cleared, the appointment is saved without a client row and its nullable `client_id` remains empty.
 - Shows appointment save success or repository failure in a dismissible toast that closes after about three seconds; validation and conflict errors remain inline.
 - Shows icon-only status, edit, and delete actions on appointment cards after the WhatsApp action: the status control precedes edit, showing a green check to confirm a cancelled appointment and an X to cancel. All icon-only actions retain accessible labels.
