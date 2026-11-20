@@ -7,11 +7,12 @@
 - [ ] **Salvataggio appuntamento:** verificare il flusso di salvataggio, capire perché può sembrare che non funzioni e rendere chiari gli esiti di successo o errore.
 - [x] **Agenda per assegnatario:** mostrare l’agenda in colonne separate, una per ogni dipendente registrato più una colonna Sissy; gli appuntamenti vengono raggruppati per assegnatario.
 - [x] **Nome assegnatario titolare:** mostrare “Sissy” nell’intestazione dell’agenda e nel selettore “Seguito da”. Il valore sentinella `Admin` nel database e nella logica di compatibilità resta invariato; nessuna migrazione o modifica live al database eseguita.
-- [ ] **Orari di lavoro per persona:** permettere di impostare, per ogni giorno, le fasce in cui lavorano Sissy e ciascun dipendente. Cambiare l’orario di una persona non deve modificare quello delle altre.
-- [ ] **Creare e consultare gli appuntamenti nell’agenda giornaliera:** usare la colonna di ogni persona sia per leggere gli appuntamenti sia per scegliere quando prenotare.
+- [x] **Orari di lavoro per persona:** permettere di impostare, per ogni giorno, le fasce in cui lavorano Sissy e ciascun dipendente. Cambiare l’orario di una persona non deve modificare quello delle altre.
+- [x] **Creare e consultare gli appuntamenti nell’agenda giornaliera:** usare la colonna di ogni persona sia per leggere gli appuntamenti sia per scegliere quando prenotare.
   - **Creazione:** mostrare come scelte cliccabili solo le fasce libere di 30 minuti che rientrano nell’orario di lavoro della persona. Al clic aprire il modulo con persona, data e ora già selezionate. Se non ci sono fasce libere, indicarlo.
   - **Consultazione:** mantenere visibili le prenotazioni nella colonna della persona, in ordine di orario, con ora, cliente e servizio (se indicato). L’appuntamento resta visibile anche se il suo orario non compare più tra quelli prenotabili.
   - **Esempio di verifica:** se Sissy è prenotata alle 10:00 e una dipendente è in turno e libera alla stessa ora, le 10:00 sono selezionabili solo nella colonna della dipendente.
+- [ ] **Attivazione turni condivisi:** dopo autorizzazione, applicare `supabase/migrations/20261121000000_daily_work_schedules.sql` al progetto Supabase. Verificare la prenotazione dalla colonna e la lettura dei turni da un secondo dispositivo con lo stesso account. La migrazione non è stata eseguita.
 - [ ] **Layout per team numerosi:** adattare la griglia a roster più ampi e a viewport strette. La versione attuale genera una colonna per dipendente registrato più Sissy e non è ottimizzata per molti dipendenti.
 - [x] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
 

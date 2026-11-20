@@ -1,0 +1,6 @@
+.column-availability { display: grid; gap: .5rem; margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--line); }
+.column-availability h4, .column-availability p { margin: 0; font-size: .8rem; }
+.shift-action { justify-self: start; padding-inline: 0; }
+.free-slot-list { display: flex; flex-wrap: wrap; gap: .4rem; }
+.free-slot { min-height: 44px; padding: .35rem .65rem; border-radius: 8px; border: 1px solid var(--line); background: var(--accent-soft); color: var(--accent); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.free-slot:focus-visible, .shift-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

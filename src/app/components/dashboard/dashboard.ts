@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { WorkHoursEditor } from '../work-hours-editor/work-hours-editor';
+import { freeTimesForPerson, type DailyWorkSchedule } from '../../library/work-schedule';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
@@ -10,12 +12,13 @@ import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../libr
 const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
 
  type View = 'agenda' | 'clients' | 'employees' | 'settings';
-type AgendaColumn = { id: string; name: string; appointments: Appointment[] };
+type AgendaColumn = { id: string; name: string; appointments: Appointment[]; bookable: boolean; freeTimes: string[] };
+type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, WorkHoursEditor],
   template: `
     <div class="workspace" [class.dark]="darkMode()">
       <aside class="sidebar">
@@ -35,10 +38,27 @@ type AgendaColumn = { id: string; name: string; appointments: Appointment[] };
         @if (notice()) { <div class="toast" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()">×</button></div> }
         @if (view()==='agenda') {
           <section class="page-heading" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><h1>{{ copy.agenda.title }}</h1></div><button class="primary new-button" (click)="openForm()">＋ <span>{{ copy.common.newAppointment }}</span></button></section>
-          <section class="datebar" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><button class="icon-button previous-day" (click)="shiftDate(-1)" aria-label="Giorno precedente"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_right.svg" alt="" aria-hidden="true" /></button><label class="date-chip"><span>GIORNO SELEZIONATO</span><input type="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" /></label><button class="icon-button next-day" (click)="shiftDate(1)" aria-label="Giorno successivo"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_left.svg" alt="" aria-hidden="true" /></button><button class="today-button" (click)="selectedDate.set(today)">Oggi</button></section>
+          <section class="datebar" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><button class="icon-button previous-day" (click)="shiftDate(-1)" aria-label="Giorno precedente"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_right.svg" alt="" aria-hidden="true" /></button><label class="date-chip"><span>GIORNO SELEZIONATO</span><input type="date" [ngModel]="selectedDate()" (ngModelChange)="selectDay($event)" /></label><button class="icon-button next-day" (click)="shiftDate(1)" aria-label="Giorno successivo"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_left.svg" alt="" aria-hidden="true" /></button><button class="today-button" (click)="selectDay(today)">Oggi</button></section>
           <section class="stats" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article><span>APPUNTAMENTI</span><strong>{{ todayAppointments().length }}</strong><small>nel giorno selezionato</small></article><article><span>CONFERMATI</span><strong>{{ confirmedCount() }}</strong><small>orari riservati</small></article><article><span>PROMEMORIA</span><strong>{{ dueReminders().length }}</strong><small>da preparare · non inviati</small></article></section>
           <section class="agenda-card" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div class="card-title"><div><p class="eyebrow">{{ selectedDate() === today ? 'OGGI' : 'AGENDA DEL GIORNO' }}</p><h2>{{ displayDate(selectedDate()) }}</h2></div><span class="count-pill">{{ todayAppointments().length }} {{ copy.ui.appointmentCount }}</span></div>
-            <div class="appointment-list" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [style.grid-template-columns]="'repeat(' + agendaColumns().length + ', minmax(0, 1fr))'">@for (column of agendaColumns(); track column.id) { <section class="employee-agenda-column" role="group" [attr.aria-label]="'Agenda di '+column.name"><header class="employee-agenda-heading"><h3>{{ column.name }}</h3><span class="employee-agenda-count">{{ column.appointments.length }} {{ column.appointments.length === 1 ? 'appuntamento' : 'appuntamenti' }}</span></header>@if(column.appointments.length){<div class="employee-appointments">@for (item of column.appointments; track item.id) { <article class="appointment" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.cancelled]="item.status==='cancelled'"><div class="appointment-time">{{ item.time }}</div><div class="appointment-body"><div class="appointment-top"><h4>{{ item.clientName }}</h4><span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span></div><p>{{ item.service || 'Servizio non indicato' }} <span>·</span> {{ item.phone }}</p>@if(item.notes){<small>{{ item.notes }}</small>}</div><div class="appointment-actions"><button class="whatsapp" [disabled]="!item.reminderConsent" (click)="openWhatsApp(item,'reminder')" [attr.aria-label]="item.reminderConsent ? 'Prepara promemoria WhatsApp per '+item.clientName : 'Consenso WhatsApp non registrato'"><img src="/assets/whatsapp.svg" alt="" aria-hidden="true" />Messaggio</button><button class="appointment-status-action" [class.confirm]="item.status==='cancelled'" [class.cancel]="item.status!=='cancelled'" (click)="changeStatus(item, item.status==='cancelled'?'confirmed':'cancelled')" [attr.aria-label]="item.status==='cancelled'?'Conferma appuntamento':'Annulla appuntamento'" [title]="item.status==='cancelled'?'Conferma appuntamento':'Annulla appuntamento'">@if(item.status==='cancelled'){<svg class="material-icon" data-icon="check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 16.17 4.83 12 3.41 13.41 9 19 21 7 19.59 5.59z"/></svg>}@else{<svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>}</button><button class="edit-appointment" (click)="edit(item)" aria-label="Modifica appuntamento"><img src="/assets/green_edit.svg" alt="" aria-hidden="true" /></button><button class="delete-appointment" (click)="removeAppointment(item)" aria-label="Elimina appuntamento"><img src="/assets/red_delete.svg" alt="" aria-hidden="true" /></button></div></article> }</div> } @else if(todayAppointments().length){<p class="employee-agenda-empty">Nessun appuntamento</p>}</section> }</div>@if(!todayAppointments().length){ <div class="empty" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span class="empty-art">✳</span><h3>{{ copy.agenda.emptyTitle }}</h3><p>{{ copy.agenda.emptyText }}</p><button class="secondary" (click)="openForm()">＋ Crea appuntamento</button></div> }
+            @if (shiftState() === 'missing') {
+              <p class="muted" role="status">I turni per persona non sono ancora attivi. Puoi continuare a prenotare dall’agenda.</p>
+            } @else if (shiftState() === 'error') {
+              <p role="alert">Disponibilità non caricata. <button class="text-button" (click)="refreshHours()">Riprova</button></p>
+            } @else if (shiftState() === 'loading') { <p class="muted" role="status">Caricamento dei turni…</p> }
+            <div class="appointment-list" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [style.grid-template-columns]="'repeat(' + agendaColumns().length + ', minmax(0, 1fr))'">@for (column of agendaColumns(); track column.id) { <section class="employee-agenda-column" role="group" [attr.aria-label]="'Agenda di '+column.name"><header class="employee-agenda-heading"><h3>{{ column.name }}</h3><span class="employee-agenda-count">{{ column.appointments.length }} {{ column.appointments.length === 1 ? 'appuntamento' : 'appuntamenti' }}</span></header>@if(column.appointments.length){<div class="employee-appointments">@for (item of column.appointments; track item.id) { <article class="appointment" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.cancelled]="item.status==='cancelled'"><div class="appointment-time">{{ item.time }}</div><div class="appointment-body"><div class="appointment-top"><h4>{{ item.clientName }}</h4><span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span></div><p>{{ item.service || 'Servizio non indicato' }} <span>·</span> {{ item.phone }}</p>@if(item.notes){<small>{{ item.notes }}</small>}</div><div class="appointment-actions"><button class="whatsapp" [disabled]="!item.reminderConsent" (click)="openWhatsApp(item,'reminder')" [attr.aria-label]="item.reminderConsent ? 'Prepara promemoria WhatsApp per '+item.clientName : 'Consenso WhatsApp non registrato'"><img src="/assets/whatsapp.svg" alt="" aria-hidden="true" />Messaggio</button><button class="appointment-status-action" [class.confirm]="item.status==='cancelled'" [class.cancel]="item.status!=='cancelled'" (click)="changeStatus(item, item.status==='cancelled'?'confirmed':'cancelled')" [attr.aria-label]="item.status==='cancelled'?'Conferma appuntamento':'Annulla appuntamento'" [title]="item.status==='cancelled'?'Conferma appuntamento':'Annulla appuntamento'">@if(item.status==='cancelled'){<svg class="material-icon" data-icon="check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 16.17 4.83 12 3.41 13.41 9 19 21 7 19.59 5.59z"/></svg>}@else{<svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>}</button><button class="edit-appointment" (click)="edit(item)" aria-label="Modifica appuntamento"><img src="/assets/green_edit.svg" alt="" aria-hidden="true" /></button><button class="delete-appointment" (click)="removeAppointment(item)" aria-label="Elimina appuntamento"><img src="/assets/red_delete.svg" alt="" aria-hidden="true" /></button></div></article> }</div> } @else if(todayAppointments().length){<p class="employee-agenda-empty">Nessun appuntamento</p>}
+                @if (column.bookable && shiftState() === 'ready' && loadedShiftDate() === selectedDate()) {
+                  <div class="column-availability">
+                    <button type="button" class="shift-action text-button" [attr.aria-label]="'Modifica turno di ' + column.name" (click)="editHours(column)">Modifica turno</button>
+                    <h4>Orari liberi</h4>
+                    @if (column.freeTimes.length) {
+                      <div class="free-slot-list">@for (time of column.freeTimes; track time) {
+                        <button type="button" class="free-slot" [attr.aria-label]="'Prenota alle ' + time + ' con ' + column.name" (click)="bookSlot(column, time)">{{ time }}</button>
+                      }</div>
+                    } @else { <p class="muted">Nessuna fascia libera.</p> }
+                  </div>
+                }
+              </section> }</div>@if(!todayAppointments().length && shiftState() !== 'ready'){ <div class="empty" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span class="empty-art">✳</span><h3>{{ copy.agenda.emptyTitle }}</h3><p>{{ copy.agenda.emptyText }}</p><button class="secondary" (click)="openForm()">＋ Crea appuntamento</button></div> }
           </section>
           @if(dueReminders().length){<section class="reminder-card" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><span class="reminder-icon">◷</span><div><b>Promemoria da preparare</b><p>{{ dueReminders().length }} appuntamenti per domani. Si aprono da ogni appuntamento.</p></div></div></section>}
         }
@@ -65,7 +85,23 @@ type AgendaColumn = { id: string; name: string; appointments: Appointment[] };
         }
       </main>
     </div>
-    @if(formOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label class="check"><input type="checkbox" name="addToContacts" [(ngModel)]="draft.addToContacts" /><span>Aggiungi anche alla Rubrica Clienti</span></label><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" required autocomplete="tel" placeholder="333 1234567" [(ngModel)]="draft.phone" /></label><div class="two-fields"><label>Data *<div class="picker-field"><input #datePicker name="date" type="date" required tabindex="-1" [(ngModel)]="draft.date" /><button type="button" (click)="showPicker(datePicker)" aria-label="Scegli la data">▦</button></div></label><label>Ora *<div class="picker-field"><input #timePicker name="time" type="time" step="1800" required tabindex="-1" [(ngModel)]="draft.time" /><button type="button" (click)="showPicker(timePicker)" aria-label="Scegli l’ora">◷</button></div></label></div><label>Seguito da<select name="employeeId" [(ngModel)]="draft.employeeId"><option [ngValue]="null">Sissy</option>@if(legacyEmployeeName(); as legacyName){<option [ngValue]="legacyEmployeeAssignmentValue" disabled>{{ legacyName }} (non attivo)</option>}@if(archivedEmployee(); as archived){<option [ngValue]="archived.id" disabled>{{ archivedEmployeeName() }} (non attivo)</option>}@for(employee of activeEmployees();track employee.id){<option [ngValue]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>}</select></label><label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>Il cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeForm()">Annulla</button><button class="primary" type="submit">{{ editingId()?'Salva modifiche':'Salva appuntamento' }}</button></div></form></section></div> }
+    @if (shiftEditor(); as editor) {
+      <app-work-hours-editor [class.dark]="darkMode()" [personName]="editor.name" [date]="editor.schedule.date" [slots]="editor.schedule.slots"
+        [saving]="shiftSaving()" [error]="shiftError()" (dismiss)="closeShiftEditor()" (saveHours)="saveHours($event)" />
+    }
+    @if(formOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label class="check"><input type="checkbox" name="addToContacts" [(ngModel)]="draft.addToContacts" /><span>Aggiungi anche alla Rubrica Clienti</span></label><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" required autocomplete="tel" placeholder="333 1234567" [(ngModel)]="draft.phone" /></label>
+      <div class="two-fields"><label>Data *<div class="picker-field"><input #datePicker name="date" type="date" required [ngModel]="draft.date" (ngModelChange)="changeDraftDate($event)" /><button type="button" (click)="showPicker(datePicker)" aria-label="Scegli la data">▦</button></div></label>
+      <label>Seguito da<select name="employeeId" [ngModel]="draft.employeeId" (ngModelChange)="changeDraftPerson($event)"><option [ngValue]="null">Sissy</option>@if(legacyEmployeeName(); as legacyName){<option [ngValue]="legacyEmployeeAssignmentValue" disabled>{{ legacyName }} (non attivo)</option>}@if(archivedEmployee(); as archived){<option [ngValue]="archived.id" disabled>{{ archivedEmployeeName() }} (non attivo)</option>}@for(employee of activeEmployees();track employee.id){<option [ngValue]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>}</select></label></div>
+      @if (shiftState() === 'missing') {
+        <label>Ora *<div class="picker-field"><input #timePicker name="time" type="time" step="1800" required [(ngModel)]="draft.time" /><button type="button" (click)="showPicker(timePicker)" aria-label="Scegli l’ora">◷</button></div></label>
+      } @else {
+        @let choices = formTimes();
+        <label>Ora *<select name="time" required [(ngModel)]="draft.time"><option value="">Scegli un orario</option>@for (time of choices; track time) {<option [value]="time">{{ time }}</option>}</select></label>
+        @if (shiftState() === 'error') {<p role="alert">Disponibilità non caricata. <button class="text-button" type="button" (click)="refreshHours()">Riprova</button></p>}
+        @else if (shiftState() === 'loading') {<small role="status">Caricamento dei turni…</small>}
+        @else if (!choices.length) {<small role="status">Nessuna fascia libera per questa persona. Scegli un’altra data o persona, oppure imposta il turno nell’agenda.</small>}
+      }
+      <label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>Il cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeForm()">Annulla</button><button class="primary" type="submit">{{ editingId()?'Salva modifiche':'Salva appuntamento' }}</button></div></form></section></div> }
     @if(reminderEditorOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="reminderEditorOpen.set(false)"><section class="dialog reminder-dialog" role="dialog" aria-modal="true" aria-labelledby="reminder-editor-title" (click)="$event.stopPropagation()"><button class="close" type="button" (click)="reminderEditorOpen.set(false)" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PROMEMORIA WHATSAPP</p><h2 id="reminder-editor-title">Crea il tuo messaggio</h2><p class="subtitle">Scrivi come parleresti alla cliente. Per aggiungere un dato, premi uno dei pulsanti qui sotto: verrà inserito nel punto in cui si trova il cursore.</p><label>Il tuo messaggio<textarea #reminderEditor name="reminder" rows="5" [(ngModel)]="settingsDraft.messageTemplates.reminder"></textarea></label><div class="placeholder-tools" aria-label="Dati da inserire nel messaggio"><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{nome}')">Nome cliente</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{data}')">Data appuntamento</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{ora}')">Ora</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{servizio}')">Servizio</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{salone}')">Nome salone</button></div><section class="reminder-preview" aria-live="polite"><h3>Anteprima di esempio</h3><p>{{ reminderPreview() }}</p></section><div class="dialog-actions"><button class="primary" type="button" (click)="reminderEditorOpen.set(false)">Fatto</button></div></section></div> }
     @if(employeeFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeEmployeeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="employee-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeEmployeeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PERSONALE</p><h2 id="employee-form-title">{{ editingEmployee() ? 'Modifica dipendente' : 'Aggiungi dipendente' }}</h2><form (submit)="$event.preventDefault(); saveEmployee()"><label>Nome *<input name="employeeFirstName" required autocomplete="given-name" [(ngModel)]="employeeDraft.firstName" /></label><label>Cognome *<input name="employeeLastName" required autocomplete="family-name" [(ngModel)]="employeeDraft.lastName" /></label>@if(employeeFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ employeeFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeEmployeeForm()">Annulla</button><button class="primary" type="submit">Salva dipendente</button></div></form></section></div> }\n    @if(clientFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeClientForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="client-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeClientForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">RUBRICA CLIENTI</p><h2 id="client-form-title">{{ editingClient() ? 'Modifica cliente' : 'Aggiungi cliente' }}</h2><p class="subtitle">Inserisci i dati della cliente.</p><form (submit)="$event.preventDefault(); saveClient()"><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="clientDraft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="clientDraft.lastName" /></label><label>Telefono *<input name="clientPhone" type="tel" required autocomplete="tel" placeholder="+39 333 1234567" [(ngModel)]="clientDraft.phone" /></label><label>Note<textarea name="clientNotes" rows="2" [(ngModel)]="clientDraft.notes"></textarea></label><label class="check"><input type="checkbox" name="clientConsent" [(ngModel)]="clientDraft.whatsappConsent" /><span>Consenso WhatsApp registrato</span></label>@if(clientFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ clientFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeClientForm()">Annulla</button><button class="primary" type="submit">Salva cliente</button></div></form></section></div> }
   `,
@@ -74,6 +110,7 @@ type AgendaColumn = { id: string; name: string; appointments: Appointment[] };
     './dashboard-content.css',
     './dashboard-responsive.css',
     './dashboard-premium.css',
+    './dashboard-slots.css',
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -111,6 +148,13 @@ export class Dashboard {
   protected readonly clientSearch = signal('');
   protected readonly draft = this.emptyDraft();
   protected readonly todayAppointments = computed(() => this.appointments().filter((item) => item.date === this.selectedDate()).sort((a,b) => a.time.localeCompare(b.time)));
+  private readonly schedules = signal<DailyWorkSchedule[]>([]);
+  protected readonly loadedShiftDate = signal('');
+  protected readonly shiftState = signal<'loading' | 'ready' | 'missing' | 'error'>('loading');
+  protected readonly shiftEditor = signal<ShiftEditor | null>(null);
+  protected readonly shiftSaving = signal(false);
+  protected readonly shiftError = signal('');
+  private shiftRequest = 0;
   protected readonly agendaColumns = computed<AgendaColumn[]>(() => {
     const appointments = this.todayAppointments();
     const employeeColumns = this.employees().map((employee) => {
@@ -118,6 +162,8 @@ export class Dashboard {
       return {
         id: employee.id,
         name,
+        bookable: employee.isActive !== false,
+        freeTimes: employee.isActive === false ? [] : this.availableTimes(this.selectedDate(), employee.id),
         appointments: appointments.filter((item) => item.employeeId === employee.id || (!item.employeeId && item.employeeName === name)),
       };
     });
@@ -129,11 +175,13 @@ export class Dashboard {
     const legacyKeys = [...new Set(legacyAppointments.map((item) => item.employeeId ?? item.employeeName ?? 'unknown'))];
     const legacyColumns = legacyKeys.map((key) => {
       const assigned = legacyAppointments.filter((item) => (item.employeeId ?? item.employeeName ?? 'unknown') === key);
-      return { id: `legacy:${key}`, name: `Storico · ${assigned[0]?.employeeName || 'dipendente'}`, appointments: assigned };
+      return { id: `legacy:${key}`, bookable: false, freeTimes: [], name: `Storico · ${assigned[0]?.employeeName || 'dipendente'}`, appointments: assigned };
     });
     const adminColumn = {
       id: 'admin',
       name: 'Sissy',
+      bookable: true,
+      freeTimes: this.availableTimes(this.selectedDate(), null),
       appointments: appointments.filter((item) => !item.employeeId && (!item.employeeName || item.employeeName === 'Admin')),
     };
     return [adminColumn, ...employeeColumns, ...legacyColumns];
@@ -145,7 +193,90 @@ export class Dashboard {
   protected readonly directoryClients = computed(() => this.clients());
   protected readonly filteredClients = computed(() => { const q = this.clientSearch().trim().toLocaleLowerCase('it'); return this.directoryClients().filter((c) => `${c.name} ${c.phone}`.toLocaleLowerCase('it').includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'it')); });
 
-  constructor() { syncThemeColor(this.darkMode()); void this.load(); }
+  constructor() {
+    syncThemeColor(this.darkMode());
+    void this.load();
+    void this.fetchHours(this.selectedDate());
+  }
+
+  private async fetchHours(date: string, force = false): Promise<void> {
+    if (!force && this.loadedShiftDate() === date && this.shiftState() !== 'error') return;
+    const request = ++this.shiftRequest;
+    this.loadedShiftDate.set(date);
+    this.schedules.set([]);
+    this.shiftState.set('loading');
+    if (!date) return;
+    try {
+      const schedules = await this.repo.listWorkSchedules(date);
+      if (request !== this.shiftRequest) return;
+      this.schedules.set(schedules);
+      this.shiftState.set('ready');
+    } catch (err) {
+      if (request !== this.shiftRequest) return;
+      const code = (err as {code?: string} | null)?.code;
+      // Only a missing relation enables the pre-migration native picker. Other failures fail closed.
+      this.shiftState.set(code === 'PGRST205' || code === '42P01' ? 'missing' : 'error');
+    }
+  }
+  protected refreshHours(): void { void this.fetchHours(this.formOpen() ? this.draft.date : this.selectedDate(), true); }
+  protected selectDay(date: string): void {
+    if (!date) return;
+    this.selectedDate.set(date);
+    void this.fetchHours(date);
+  }
+  private availableTimes(date: string, employeeId: string | null, excludeId?: string): string[] {
+    if (this.shiftState() !== 'ready' || this.loadedShiftDate() !== date) return [];
+    return freeTimesForPerson(this.schedules(), this.appointments(), date, employeeId, excludeId);
+  }
+  private originalFormTime(): string | undefined {
+    const prior = this.appointments().find(item => item.id === this.editingId());
+    if (!prior || prior.date !== this.draft.date) return undefined;
+    const assignee = prior.employeeId ?? (prior.employeeName && prior.employeeName !== 'Admin' ? LEGACY_EMPLOYEE_ASSIGNMENT : null);
+    return assignee === this.draft.employeeId ? prior.time : undefined;
+  }
+  protected formTimes(): string[] {
+    const id = this.draft.employeeId;
+    const times = id === null || this.activeEmployees().some(person => person.id === id)
+      ? this.availableTimes(this.draft.date, id, this.editingId() || undefined) : [];
+    // An unchanged historical booking remains editable even if the shift was removed later.
+    const original = this.originalFormTime();
+    if (original && !times.includes(original)) times.push(original);
+    return times.sort();
+  }
+  protected changeDraftDate(date: string): void {
+    this.draft.date = date;
+    this.draft.time = '';
+    void this.fetchHours(date);
+  }
+  protected changeDraftPerson(id: string | null): void { this.draft.employeeId = id; this.draft.time = ''; }
+  protected bookSlot(column: AgendaColumn, time: string): void {
+    if (!column.bookable || !column.freeTimes.includes(time)) return;
+    this.openForm();
+    this.draft.employeeId = column.id === 'admin' ? null : column.id;
+    this.draft.time = time;
+  }
+  protected editHours(column: AgendaColumn): void {
+    if (!column.bookable || this.shiftState() !== 'ready' || this.loadedShiftDate() !== this.selectedDate()) return;
+    const employeeId = column.id === 'admin' ? null : column.id;
+    const date = this.selectedDate();
+    const slots = this.schedules().find(row => row.employeeId === employeeId && row.date === date)?.slots ?? [];
+    this.shiftError.set('');
+    this.shiftEditor.set({ name: column.name, schedule: { date, employeeId, slots: [...slots] } });
+  }
+  protected closeShiftEditor(): void { if (!this.shiftSaving()) this.shiftEditor.set(null); }
+  protected async saveHours(slots: number[]): Promise<void> {
+    const editor = this.shiftEditor();
+    if (!editor || this.shiftSaving()) return;
+    this.shiftSaving.set(true);
+    this.shiftError.set('');
+    try {
+      await this.repo.saveWorkSchedule({ ...editor.schedule, slots });
+      this.shiftEditor.set(null);
+      await this.fetchHours(this.selectedDate(), true);
+      this.showNotice('Turno salvato.');
+    } catch { this.shiftError.set('Turno non salvato. Le modifiche sono ancora qui: riprova.'); }
+    finally { this.shiftSaving.set(false); }
+  }
 
   private async load(): Promise<void> {
     try {
@@ -169,7 +300,7 @@ export class Dashboard {
     this.notice.set('');
   }
 
-  protected openForm(): void { this.editingId.set(''); Object.assign(this.draft, this.emptyDraft()); this.draft.date = this.selectedDate(); this.formError.set(''); this.formOpen.set(true); }
+  protected openForm(): void { this.editingId.set(''); Object.assign(this.draft, this.emptyDraft()); this.draft.date = this.selectedDate(); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
   protected addEmployee(): void { this.editingEmployee.set(null); this.employeeDraft.firstName = ''; this.employeeDraft.lastName = ''; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
   protected editEmployee(employee: Employee): void { this.editingEmployee.set(employee); this.employeeDraft.firstName = employee.firstName; this.employeeDraft.lastName = employee.lastName; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
   protected closeEmployeeForm(): void { this.employeeFormOpen.set(false); this.employeeFormError.set(''); }
@@ -214,8 +345,8 @@ export class Dashboard {
   protected selectAppointmentClient(id: string): void { const client = this.clients().find((item) => item.id === id); this.draft.clientId = client?.id ?? ''; this.draft.addToContacts = Boolean(client); if (client) { const parts = client.name.trim().split(/\s+/); this.draft.firstName = client.firstName || parts.shift() || ''; this.draft.lastName = client.lastName || parts.join(' '); this.draft.clientName = client.name; this.draft.phone = client.phone; this.draft.reminderConsent = client.whatsappConsent; } else { this.draft.firstName = ''; this.draft.lastName = ''; this.draft.clientName = ''; this.draft.phone = ''; this.draft.reminderConsent = false; } }
   protected showPicker(input: HTMLInputElement): void { try { input.showPicker(); } catch { input.click(); } }
   protected toggleTheme(): void { this.darkMode.update((dark) => !dark); saveThemePreference(this.darkMode()); }
-  protected closeForm(): void { this.formOpen.set(false); this.formError.set(''); }
-  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:item.phone,date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); this.formError.set(''); this.formOpen.set(true); }
+  protected closeForm(): void { this.formOpen.set(false); this.formError.set(''); void this.fetchHours(this.selectedDate()); }
+  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:item.phone,date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
   protected startAppointment(client: Client): void { this.openForm(); this.selectAppointmentClient(client.id); this.view.set('agenda'); }
   protected editClient(client: Client): void {
     const parts = client.name.trim().split(/\s+/);
@@ -264,7 +395,11 @@ export class Dashboard {
     const legacyEmployeeName = this.legacyEmployeeName();
     const requestedEmployeeId = this.draft.employeeId === LEGACY_EMPLOYEE_ASSIGNMENT ? null : this.draft.employeeId ?? null;
     const requestedEmployeeName = legacyEmployeeName ?? (employee ? `${employee.firstName} ${employee.lastName}` : 'Admin');
-    if (findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
+    const sameBooking = !!prior && this.originalFormTime() === this.draft.time;
+    if (!sameBooking && this.shiftState() !== 'missing' && !this.formTimes().includes(this.draft.time)) {
+      this.formError.set('Questa fascia non è disponibile per la persona selezionata. Scegli un altro orario.'); return;
+    }
+    if (!sameBooking && findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
     const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>item.phone===phone.e164);
     const existingClientId = this.draft.clientId || prior?.clientId || matchedClient?.id || '';
     const isNewClient = !existingClientId && !matchedClient;
@@ -277,7 +412,13 @@ export class Dashboard {
       : 'Admin');
     const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
     try { if (isNewClient && this.draft.addToContacts) await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.showNotice(this.copy.form.saveSuccess); this.closeForm(); }
-    catch { this.showNotice(this.copy.ui.genericError); }
+    catch (err) {
+      const code = (err as {code?: string} | null)?.code;
+      if (code === '23514' || code === '23505' || code === '23P01') {
+        await Promise.all([this.fetchHours(this.draft.date, true), this.load()]);
+        this.formError.set('L’orario non è più disponibile. Controlla il turno e scegli un’altra fascia.');
+      } else { this.showNotice(this.copy.ui.genericError); }
+    }
   }
   protected async changeStatus(item: Appointment, status: Appointment['status']): Promise<void> { try { await this.repo.saveAppointment({...item,status}); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
   protected async removeAppointment(item: Appointment): Promise<void> { if (!globalThis.confirm(this.copy.common.confirmDelete)) return; try { await this.repo.deleteAppointment(item.id); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
@@ -309,7 +450,7 @@ export class Dashboard {
   protected async seedDemoNoop(): Promise<void> { await this.repo.seedDemoData(); }
   protected preview(item: Appointment, kind:'confirmation'|'reminder'): string { return renderMessageTemplate(this.settings().messageTemplates[kind],{nome:item.clientName.trim().split(/\s+/)[0]||item.clientName,data:this.displayDate(item.date),ora:item.time,servizio:item.service||'il tuo appuntamento',salone:this.settings().salonName}); }
   protected openWhatsApp(item:Appointment,kind:'confirmation'|'reminder'): void { if(!item.reminderConsent){this.showNotice(this.copy.messages.consentRequired);return;} const number=item.phone.replace(/\D/g,'');const href=`https://wa.me/${number}?text=${encodeURIComponent(this.preview(item,kind))}`;window.open(href,'_blank','noopener,noreferrer'); }
-  protected shiftDate(delta:number):void { const [y,m,d]=this.selectedDate().split('-').map(Number);const date=new Date(y,m-1,d);date.setDate(date.getDate()+delta);this.selectedDate.set(this.localDate(date)); }
+  protected shiftDate(delta:number):void { const [y,m,d]=this.selectedDate().split('-').map(Number);const date=new Date(y,m-1,d);date.setDate(date.getDate()+delta);this.selectDay(this.localDate(date)); }
   protected displayDate(value:string):string { const [y,m,d]=value.split('-').map(Number);return new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(y,m-1,d)); }
   protected statusLabel(status:Appointment['status']):string { return ({confirmed:'Confermato',cancelled:'Annullato',completed:'Completato'} as const)[status]; }
   protected clientAppointments(id:string):number { return this.appointments().filter((item)=>item.clientId===id).length; }

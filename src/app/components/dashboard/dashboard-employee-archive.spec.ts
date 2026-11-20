@@ -34,6 +34,7 @@ describe('Dashboard archived employee assignments', () => {
     const repository = {
       listAppointments: vi.fn().mockResolvedValue([assignedAppointment]),
       listClients: vi.fn().mockResolvedValue([]),
+      listWorkSchedules: vi.fn().mockResolvedValue([]),
       listEmployees: vi.fn().mockResolvedValue([archivedEmployee]),
       loadSettings: vi.fn().mockResolvedValue({
         salonName: 'Salone', defaultCountryCode: '+39', services: [],
@@ -91,6 +92,7 @@ describe('Dashboard archived employee assignments', () => {
     const repository = {
       listAppointments: vi.fn().mockResolvedValue([legacyAppointment]),
       listClients: vi.fn().mockResolvedValue([]),
+      listWorkSchedules: vi.fn().mockResolvedValue([]),
       listEmployees: vi.fn().mockResolvedValue([]),
       loadSettings: vi.fn().mockResolvedValue({
         salonName: 'Salone', defaultCountryCode: '+39', services: [],

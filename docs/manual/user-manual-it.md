@@ -135,10 +135,18 @@ Le immagini delle schermate sono lasciate come attività editoriale: non sono st
 | Cliente | Seleziona un cliente salvato oppure **Nuova cliente**. Quando selezioni un cliente salvato, i suoi dati vengono precompilati; scegliendo **Nuova cliente** i campi si svuotano. |
 | Aggiungi anche alla Rubrica Clienti | Selezionalo per rendere visibile nella schermata **Clienti** la nuova cliente creata dall’appuntamento. |
 | Nome, Cognome, Telefono | Dati obbligatori della cliente. Il telefono viene controllato e normalizzato; per i numeri italiani il prefisso predefinito è `+39`. |
-| Data, Ora | Dati obbligatori scelti con i selettori del browser. L’orario è selezionabile a intervalli di 30 minuti. |
+| Data, Ora | Scegli il giorno e la persona. Con i turni attivi, il menu Ora propone le mezze ore disponibili; finché i turni non sono attivati sul database resta il selettore di orario precedente. |
 | Seguito da | Scegli **Sissy** o un dipendente attivo. |
 | Servizio, Note | Informazioni facoltative; il servizio può rimanere non indicato. |
 | Il cliente ha acconsentito a ricevere promemoria WhatsApp | Registra il consenso del cliente. È necessario per abilitare la preparazione del promemoria WhatsApp. |
+
+**Impostare un turno e prenotare dalla colonna**
+
+1. Dopo l’attivazione dei turni su Supabase, scegli il giorno nell’**Agenda**. Nella colonna di Sissy o di un dipendente attivo scegli **Modifica turno**.
+2. Imposta le fasce di lavoro di quella persona per quella data. Per una pausa, usa due fasce separate; per un giorno di riposo, non inserire fasce. Salva il turno: gli altri giorni e le altre persone non cambiano.
+3. In **Orari liberi** scegli una mezz’ora. Il modulo si apre con data, ora e persona già impostate: inserisci il cliente e salva. Se non ci sono fasce libere, gli appuntamenti già registrati restano consultabili.
+
+Esempio: se Sissy ha un appuntamento confermato alle 10:00, non puoi prenotare un altro cliente per lei alle 10:00. Se una dipendente è in turno e libera, lo stesso orario rimane disponibile nella sua colonna, entro la capienza del salone.
 
 **Creare un appuntamento**
 

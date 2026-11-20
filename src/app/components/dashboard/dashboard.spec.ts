@@ -14,7 +14,11 @@ describe('Dashboard', () => {
     phone: '+393331234567', whatsappConsent: false, notes: '', createdAt: '2026-01-01T00:00:00.000Z',
   };
 
+  let readShifts: (date: string) => Promise<{ date: string; employeeId: string | null; slots: number[] }[]>;
+
   beforeEach(async () => {
+    // Exercise the pre-migration fallback in the existing native-picker scenarios.
+    readShifts = async () => { throw { code: 'PGRST205', message: 'public.daily_work_schedules not found' }; };
     localStorage.clear();
     sessionStorage.clear();
     savedClient = undefined;
@@ -25,6 +29,7 @@ describe('Dashboard', () => {
       providers: [{
         provide: SupabaseAgendaRepository,
         useValue: {
+          listWorkSchedules: (date: string) => readShifts(date),
           listAppointments: async () => [], listClients: async () => [sampleClient], listEmployees: async () => [],
           saveClient: async (client: Client) => { saveClientCalls += 1; savedClient = client; },
           saveAppointment: async (appointment: Appointment) => { savedAppointment = appointment; },
@@ -112,6 +117,29 @@ describe('Dashboard', () => {
     expect(columns).toHaveLength(3);
     expect(columns.map((column) => column.querySelector('.employee-agenda-heading h3')?.textContent?.trim())).toEqual(['Sissy', 'Lara Rossi', 'Mia Bianchi']);
     expect(columns.map((column) => column.querySelectorAll('.appointment').length)).toEqual([1, 1, 0]);
+  });
+
+  it('books a free employee half hour without offering the same occupied time for Sissy', async () => {
+    readShifts = async date => [null, 'employee-1'].map(employeeId => ({ date, employeeId, slots: [20] }));
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const state = fixture.componentInstance as unknown as {
+      selectedDate(): string; appointments: { set(values: Appointment[]): void }; employees: { set(values: Employee[]): void };
+      draft: { employeeId: string | null; date: string; time: string };
+    };
+    const date = state.selectedDate();
+    state.employees.set([{ id: 'employee-1', firstName: 'Mia', lastName: 'Rossi', createdAt: date }]);
+    state.appointments.set([{ id: 'a', clientId: '', clientName: 'Cliente A', date, time: '10:00', status: 'confirmed', employeeId: null, employeeName: 'Admin', phone: '', service: '', notes: '', reminderConsent: false, createdAt: date }]);
+    fixture.detectChanges();
+    const [sissy, mia] = Array.from(fixture.nativeElement.querySelectorAll('.employee-agenda-column')) as HTMLElement[];
+    expect(sissy.textContent).toContain('Cliente A');
+    expect(sissy.querySelector('.free-slot')).toBeNull();
+    const slot = mia.querySelector<HTMLButtonElement>('.free-slot')!;
+    expect(slot.textContent?.trim()).toBe('10:00');
+    slot.click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(state.draft).toMatchObject({ date, employeeId: 'employee-1', time: '10:00' });
   });
 
   it('opens in the dark theme and persists a light-theme choice', async () => {

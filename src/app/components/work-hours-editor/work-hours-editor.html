@@ -1,0 +1,57 @@
+<dialog #dialog aria-labelledby="work-hours-title" aria-describedby="work-hours-date"
+  [attr.aria-busy]="saving()" (cancel)="$event.preventDefault(); requestDismiss()"
+  (click)="$event.target === dialog && requestDismiss()">
+  <section class="panel">
+    <header>
+      <p class="eyebrow">Orario di lavoro</p>
+      <h2 id="work-hours-title" tabindex="-1" autofocus>Orari di {{ personName() }}</h2>
+      <time id="work-hours-date" [attr.datetime]="date()">{{ date() | date: 'dd/MM/yyyy' }}</time>
+    </header>
+
+    <fieldset class="controls" [disabled]="saving()">
+      <legend class="sr-only">Fasce di lavoro</legend>
+      @for (band of bands(); track band.id; let number = $index) {
+        <fieldset class="band">
+          <legend>Fascia {{ number + 1 }}</legend>
+          <div class="band-fields">
+            <label>Dalle
+              <select #start (change)="editBand(band.id, 'start', start.value)">
+                <option value="" [selected]="band.start === null">Scegli</option>
+                @for (time of starts; track time.slot) {
+                  <option [value]="time.slot" [selected]="time.slot === band.start">{{ time.label }}</option>
+                }
+              </select>
+            </label>
+            <label>Alle
+              <select #end (change)="editBand(band.id, 'end', end.value)">
+                <option value="" [selected]="band.end === null">Scegli</option>
+                @for (time of ends; track time.slot) {
+                  <option [value]="time.slot" [selected]="time.slot === band.end">{{ time.label }}</option>
+                }
+              </select>
+            </label>
+            <button type="button" class="remove" [attr.aria-label]="'Rimuovi fascia ' + (number + 1)"
+              (click)="removeBand(band.id)">Rimuovi</button>
+          </div>
+        </fieldset>
+      } @empty {
+        <p class="off-day"><strong>Giorno di riposo</strong>Nessuna fascia di lavoro per questa data.</p>
+      }
+      <div class="actions">
+        <button type="button" (click)="addBand()">Aggiungi fascia</button>
+        @if (bands().length) {
+          <button type="button" (click)="bands.set([])">Imposta giorno di riposo</button>
+        }
+      </div>
+    </fieldset>
+
+    <p class="feedback" role="status">{{ selection().error }}</p>
+    @if (error()) { <p class="feedback" role="alert">{{ error() }}</p> }
+    <footer>
+      <button type="button" [disabled]="saving()" (click)="requestDismiss()">Annulla</button>
+      <button type="button" class="primary" [disabled]="saving() || !!selection().error" (click)="save()">
+        {{ saving() ? 'Salvataggio…' : 'Salva orari' }}
+      </button>
+    </footer>
+  </section>
+</dialog>

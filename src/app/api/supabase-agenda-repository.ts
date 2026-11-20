@@ -3,6 +3,7 @@ import type { AppointmentRepository, ClientRepository, EmployeeRepository } from
 import { LocalStorageRepository } from './local-storage-repository';
 import { SUPABASE_CLIENT } from './supabase-client';
 import type { Appointment, Client, Employee } from '../library/models';
+import type { DailyWorkSchedule } from '../library/work-schedule';
 
 interface ClientRow {
   id: string;
@@ -152,6 +153,21 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
     if (error) throw error;
   }
 
+  async listWorkSchedules(date: string): Promise<DailyWorkSchedule[]> {
+    const { data, error } = await this.requireClient().from('daily_work_schedules')
+      .select('work_date,employee_id,slots').eq('work_date', date);
+    if (error) throw error;
+    return data.map((row) => ({ date: row.work_date, employeeId: row.employee_id, slots: row.slots }));
+  }
+
+  async saveWorkSchedule(schedule: DailyWorkSchedule): Promise<void> {
+    const { error } = await this.requireClient().from('daily_work_schedules').upsert({
+      work_date: schedule.date,
+      employee_id: schedule.employeeId,
+      slots: schedule.slots,
+    }, { onConflict: 'owner_id,work_date,employee_id' });
+    if (error) throw error;
+  }
 
   override async importBackup(_text: string): Promise<boolean> {
     return false;
