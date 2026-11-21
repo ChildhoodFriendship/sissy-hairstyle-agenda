@@ -417,7 +417,7 @@ export class Dashboard {
         !this.schedules().some(row => row.date === appointment.date && row.employeeId === appointment.employeeId)) {
         const defaultSchedule: DailyWorkSchedule = {
           date: appointment.date,
-          employeeId: appointment.employeeId,
+          employeeId: appointment.employeeId ?? null,
           slots: [...DEFAULT_WORK_SLOTS],
         };
         await this.repo.saveWorkSchedule(defaultSchedule);
