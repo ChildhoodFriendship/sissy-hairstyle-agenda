@@ -48,4 +48,5 @@
 
 ## Email e autenticazione
 
+- [x] **Creazione utente:** l’utente riferisce che la registrazione dal frontend ora ha funzionato; il problema sembra risolto. Non sono state verificate separatamente consegna email, conferma account o accesso successivo.
 - [ ] **Conferma e consegna email:** sostituire l’SMTP Gmail con un provider transazionale usando un dominio mittente verificato; predisporre il reinvio della conferma agli account non verificati e verificare consegna, conferma e successivo accesso. **Bloccato:** serve un dominio mittente verificabile e accesso ai relativi DNS.

@@ -1,7 +1,7 @@
 :host {
   --page: #F5F5F7; --surface: #FFFFFF; --surface-muted: #F0F0F2;
   --ink: #1D1D1F; --muted: #6B6B70; --line: #E2E2E7;
-  --accent: #7D3F4C; --accent-hover: #6E3440; --accent-soft: #F5ECEE; --accent-ink: #FFFFFF;
+  --accent: var(--sissy-light-accent); --accent-hover: var(--sissy-light-accent-hover); --accent-soft: var(--sissy-light-accent-soft); --accent-ink: var(--sissy-light-accent-ink);
   display: block; min-height: 100dvh; color: var(--ink); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 * { box-sizing: border-box; }
