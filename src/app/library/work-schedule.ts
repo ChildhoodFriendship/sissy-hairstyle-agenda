@@ -8,6 +8,9 @@ export interface DailyWorkSchedule {
   slots: number[];
 }
 
+/** Default daily schedule: appointment starts every 30 minutes from 08:30 to 19:30. */
+export const DEFAULT_WORK_SLOTS = Array.from({ length: 23 }, (_value, index) => index + 17);
+
 export function freeTimesForPerson(
   schedules: DailyWorkSchedule[],
   appointments: Appointment[],
@@ -15,7 +18,8 @@ export function freeTimesForPerson(
   employeeId: string | null,
   excludeId?: string,
 ): string[] {
-  const slots = new Set<number>();
+  const matchingSchedules = schedules.filter((row) => row.date === date && row.employeeId === employeeId);
+  const slots = new Set<number>(matchingSchedules.length ? [] : DEFAULT_WORK_SLOTS);
   for (const row of schedules) {
     if (row.date !== date || row.employeeId !== employeeId) continue;
     for (const slot of row.slots) {

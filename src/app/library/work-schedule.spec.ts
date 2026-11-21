@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Appointment } from './models';
-import { freeTimesForPerson, type DailyWorkSchedule } from './work-schedule';
+import { DEFAULT_WORK_SLOTS, freeTimesForPerson, type DailyWorkSchedule } from './work-schedule';
 
 const date = '2026-11-20';
 const otherDate = '2026-11-21';
@@ -12,11 +12,22 @@ const booking = (id: string, employeeId: string | null, overrides: Partial<Appoi
 });
 
 describe('freeTimesForPerson', () => {
-  it('returns no times without explicitly configured slots for this person and date', () => {
+  it('uses the default 08:30–20:00 schedule when no schedule exists for that person and date', () => {
     const rows = [schedule('ada', []), schedule(null, [20]), { ...schedule('ada', [21]), date: otherDate }];
-    expect(freeTimesForPerson([], [], date, null)).toEqual([]);
+    expect(DEFAULT_WORK_SLOTS).toHaveLength(23);
+    expect(freeTimesForPerson([], [], date, null)).toEqual(
+      Array.from({ length: 23 }, (_value, index) => {
+        const slot = index + 17;
+        return `${String(Math.floor(slot / 2)).padStart(2, '0')}:${slot % 2 === 0 ? '00' : '30'}`;
+      }),
+    );
     expect(freeTimesForPerson(rows, [], date, 'ada')).toEqual([]);
-    expect(freeTimesForPerson(rows, [], date, 'bea')).toEqual([]);
+    expect(freeTimesForPerson(rows, [], date, 'bea')).toHaveLength(23);
+  });
+
+  it('preserves explicit custom or empty schedules instead of applying defaults', () => {
+    expect(freeTimesForPerson([schedule('ada', [20])], [], date, 'ada')).toEqual(['10:00']);
+    expect(freeTimesForPerson([schedule('ada', [])], [], date, 'ada')).toEqual([]);
   });
 
   it('combines matching rows into sorted unique half-hour starts without filling shift gaps', () => {

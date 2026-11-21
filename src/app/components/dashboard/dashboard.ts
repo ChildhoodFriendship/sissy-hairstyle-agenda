@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { WorkHoursEditor } from '../work-hours-editor/work-hours-editor';
-import { freeTimesForPerson, type DailyWorkSchedule } from '../../library/work-schedule';
+import { DEFAULT_WORK_SLOTS, freeTimesForPerson, type DailyWorkSchedule } from '../../library/work-schedule';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
@@ -259,7 +259,8 @@ export class Dashboard {
     if (!column.bookable || this.shiftState() !== 'ready' || this.loadedShiftDate() !== this.selectedDate()) return;
     const employeeId = column.id === 'admin' ? null : column.id;
     const date = this.selectedDate();
-    const slots = this.schedules().find(row => row.employeeId === employeeId && row.date === date)?.slots ?? [];
+    const savedSchedule = this.schedules().find(row => row.employeeId === employeeId && row.date === date);
+    const slots = savedSchedule?.slots ?? [...DEFAULT_WORK_SLOTS];
     this.shiftError.set('');
     this.shiftEditor.set({ name: column.name, schedule: { date, employeeId, slots: [...slots] } });
   }
@@ -411,7 +412,24 @@ export class Dashboard {
         : `${employee.firstName} ${employee.lastName}`
       : 'Admin');
     const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
-    try { if (isNewClient && this.draft.addToContacts) await this.repo.saveClient(client); await this.repo.saveAppointment(appointment); await this.load(); this.selectedDate.set(appointment.date); this.showNotice(this.copy.form.saveSuccess); this.closeForm(); }
+    try {
+      if (!sameBooking && appointment.status === 'confirmed' && !legacyEmployeeName && this.shiftState() === 'ready' &&
+        !this.schedules().some(row => row.date === appointment.date && row.employeeId === appointment.employeeId)) {
+        const defaultSchedule: DailyWorkSchedule = {
+          date: appointment.date,
+          employeeId: appointment.employeeId,
+          slots: [...DEFAULT_WORK_SLOTS],
+        };
+        await this.repo.saveWorkSchedule(defaultSchedule);
+        this.schedules.update(rows => [...rows, defaultSchedule]);
+      }
+      if (isNewClient && this.draft.addToContacts) await this.repo.saveClient(client);
+      await this.repo.saveAppointment(appointment);
+      await this.load();
+      this.selectedDate.set(appointment.date);
+      this.showNotice(this.copy.form.saveSuccess);
+      this.closeForm();
+    }
     catch (err) {
       const code = (err as {code?: string} | null)?.code;
       if (code === '23514' || code === '23505' || code === '23P01') {
