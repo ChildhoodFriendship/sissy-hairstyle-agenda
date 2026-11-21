@@ -117,6 +117,26 @@ describe('Dashboard', () => {
     expect(columns).toHaveLength(3);
     expect(columns.map((column) => column.querySelector('.employee-agenda-heading h3')?.textContent?.trim())).toEqual(['Sissy', 'Lara Rossi', 'Mia Bianchi']);
     expect(columns.map((column) => column.querySelectorAll('.appointment').length)).toEqual([1, 1, 0]);
+    expect(window.getComputedStyle(columns[1].querySelector('h3') as HTMLElement).whiteSpace).toBe('nowrap');
+
+    const toggle = fixture.nativeElement.querySelector('.agenda-view-toggle') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    const selector = fixture.nativeElement.querySelector('.agenda-single-selector select') as HTMLSelectElement;
+    selector.value = 'employee-2';
+    selector.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    const singleColumn = fixture.nativeElement.querySelectorAll('.employee-agenda-column');
+    expect(singleColumn).toHaveLength(1);
+    expect(singleColumn[0].querySelector('.employee-agenda-heading h3')?.textContent?.trim()).toBe('Mia Bianchi');
+    expect(fixture.nativeElement.querySelector('.appointment-list')?.classList.contains('single-employee-view')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.appointment-list')?.style.getPropertyValue('--agenda-column-count')).toBe('1');
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.employee-agenda-column')).toHaveLength(3);
   });
 
   it('books a free employee half hour without offering the same occupied time for Sissy', async () => {

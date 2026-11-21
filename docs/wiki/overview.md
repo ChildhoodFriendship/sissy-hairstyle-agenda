@@ -37,7 +37,7 @@ The wiki is organized into the [agenda area](agenda/overview.md), which document
 
 ## Responsive Layout
 
-Login switches to a stacked story-and-form layout at widths up to 900 px, covering tablet portrait widths. On touch-sized layouts the theme toggle and interactive recovery/demo links have at least 44 px height. See the [agenda responsive layout](agenda/overview.md#responsive-layout) for dashboard navigation, safe-area, and small-screen date-control behavior.
+Login switches to a stacked story-and-form layout at widths up to 900 px, covering tablet portrait widths. On touch-sized layouts the theme toggle and interactive recovery/demo links have at least 44 px height. See the [agenda responsive layout](agenda/overview.md#responsive-layout) for dashboard navigation, safe-area, small-screen date controls, and mobile employee-column behavior.
 
 ## Interfaces And Protocols
 

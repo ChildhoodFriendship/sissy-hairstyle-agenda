@@ -14,6 +14,8 @@ source:
   references:
     - part: component
       path: src/app/components/dashboard/dashboard.ts
+    - part: resource
+      path: src/bundle/it.ts
     - part: model
       path: src/app/library/models.ts
     - part: other
@@ -40,7 +42,7 @@ This section describes appointment records shown for a selected date in the dash
 ## Functional Characteristics
 
 - Shows only **Agenda** as the agenda screen heading, without the promotional eyebrow or subtitle.
-- Shows appointments for the selected date in time order, grouped into one column for Sissy and one for each registered employee. Columns show appointment counts and remain visible when empty; historical assignments without a current employee record remain visible in a separate historical column. Directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today. The layout for large employee rosters is deferred in the [project TODO](../../todo).
+- Shows appointments for the selected date in time order, grouped into one column for Sissy and one for each registered employee. Columns show appointment counts and remain visible when empty; historical assignments without a current employee record remain visible in a separate historical column. On mobile, at most two columns are visible at once and additional columns can be reached by horizontal scrolling. The **Vista singola** control and person selector show one selected person's agenda. Employee names remain horizontal. Directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today.
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
 - Centers the close icon in the appointment form dialog.
 - Opens a new appointment with no client selected and blank client-detail fields; explicitly selecting a saved client fills those details, while choosing the empty “Nuova cliente” option clears them. This TODO is complete; remaining requests are in the [project TODO](../../todo).

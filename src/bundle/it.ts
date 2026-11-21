@@ -28,6 +28,8 @@ export const it = {
     appointments: 'Appuntamenti', confirmed: 'Confermati', reminders: 'Promemoria pronti',
     emptyTitle: 'La giornata è tutta da scrivere', emptyText: 'Aggiungi il primo appuntamento e costruisci la tua agenda.',
     noReminders: 'Nessun promemoria in scadenza oggi.', conflict: 'Esiste già un appuntamento confermato in questo orario.',
+    singleView: 'Vista singola', personFilter: 'Persona', scrollHint: 'Scorri per le altre persone →',
+    singleAgendaLabel: 'Agenda del giorno per', allAgendasLabel: 'Agende del giorno per tutte le persone',
     status: { confirmed: 'Confermato', cancelled: 'Annullato', completed: 'Completato' },
   },
   form: {

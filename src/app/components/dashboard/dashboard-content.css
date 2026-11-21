@@ -1,8 +1,8 @@
-.appointment-list { display: grid; gap: 0; padding: 0; }
+.appointment-list { display: grid; grid-template-columns: repeat(var(--agenda-column-count, 1), minmax(0, 1fr)); gap: 0; padding: 0; }
 .employee-agenda-column { min-width: 0; padding: 16px; border-right: 1px solid var(--line); }
 .employee-agenda-column:last-child { border-right: 0; }
 .employee-agenda-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.employee-agenda-heading h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 620; }
+.employee-agenda-heading h3 { min-width: 0; margin: 0; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; white-space: nowrap; writing-mode: horizontal-tb; font-size: 13px; font-weight: 620; }
 .employee-agenda-count { color: var(--muted); font-size: 10px; white-space: nowrap; }
 .employee-appointments { display: grid; align-content: start; gap: 10px; }
 .employee-agenda-empty { margin: 0; padding: 12px 0; color: var(--muted); font-size: 11px; }
