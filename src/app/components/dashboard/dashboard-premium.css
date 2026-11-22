@@ -39,7 +39,7 @@
 .stats article span { font-size: 9px; letter-spacing: .12em; }
 .stats article strong { font-family: var(--sissy-font-editorial); font-size: 30px; font-weight: 400; letter-spacing: -.035em; line-height: 1; }
 .stats article small { font-size: 10px; }
-.agenda-card, .reminder-card { border-color: var(--line); border-radius: 8px; background: var(--surface); }
+.agenda-card { border-color: var(--line); border-radius: 8px; background: var(--surface); }
 .card-title { padding: 21px 23px; }
 .card-title h2 { font-family: var(--sissy-font-editorial); font-size: 22px; font-weight: 400; letter-spacing: -.025em; }
 .count-pill, .consent-pill { min-height: 24px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font-size: 9px; letter-spacing: .02em; }
@@ -49,7 +49,7 @@
 .appointment:last-child { border-bottom: 1px solid var(--line); }
 .appointment-time { padding: 0; color: var(--accent); font: 500 12px/1.4 var(--sissy-font-mono); font-variant-numeric: tabular-nums; }
 .appointment-top { gap: 9px; }
-.appointment-body h4 { font-size: 14px; font-weight: 580; letter-spacing: -.01em; }
+.appointment-top h4 { font-size: 14px; font-weight: 580; letter-spacing: -.01em; }
 .appointment-body p { margin-top: 5px; font-size: 11px; line-height: 1.55; }
 .appointment-body small { margin-top: 6px; font-size: 10px; }
 .status { min-height: 21px; padding: 0 7px; border: 1px solid var(--line); border-radius: 3px; background: transparent; color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
@@ -68,8 +68,6 @@
 .empty-art { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: transparent; font-family: var(--sissy-font-editorial); }
 .empty h3 { font-family: var(--sissy-font-editorial); font-size: 20px; font-weight: 400; }
 .empty p { font-size: 11px; }
-.reminder-card { margin-top: 13px; padding: 15px 18px; }
-.reminder-icon { border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
 .search { border-radius: 5px; }
 .search input { font-size: 11px; }
 .client-list { padding-inline: 22px; }
@@ -139,6 +137,10 @@
   .stats article small { font-size: 9px; }
   .appointment-list { padding-inline: 14px; }
   .appointment { grid-template-columns: minmax(0, 1fr); gap: 9px; padding: 12px; }
+  .appointment-summary { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 2px 7px; }
+  .appointment-summary .appointment-time { grid-column: 1; grid-row: 1; }
+  .appointment-summary .appointment-top { grid-column: 1; grid-row: 2; }
+  .appointment-summary .appointment-toggle { grid-column: 2; grid-row: 1 / span 2; }
   .appointment-top { align-items: flex-start; }
   .appointment-actions { flex-wrap: wrap; }
   .appointment-actions button { min-height: 44px; }

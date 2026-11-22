@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   findAppointmentConflict,
-  getDueReminders,
   normalizePhoneNumber,
+  phoneForDisplay,
   renderMessageTemplate,
 } from './domain-utils';
 import type { Appointment } from './models';
@@ -30,12 +30,26 @@ describe('normalizePhoneNumber', () => {
     });
   });
 
-  it('preserves an explicit international country code', () => {
-    expect(normalizePhoneNumber('+44 20 7946 0958', '+39').e164).toBe('+442079460958');
+  it('accepts the Italian country code when explicitly entered', () => {
+    expect(normalizePhoneNumber('0039 333 1234567', '+39').e164).toBe('+393331234567');
+  });
+
+  it('rejects a foreign prefix instead of saving it as an Italian contact', () => {
+    expect(normalizePhoneNumber('+30 333 1234567', '+39').e164).toBeNull();
+    expect(normalizePhoneNumber('0030 333 1234567', '+39').error).toBeTruthy();
+    expect(normalizePhoneNumber('+44 20 7946 0958', '+39').e164).toBeNull();
   });
 
   it('rejects values that cannot be a valid international phone number', () => {
     expect(normalizePhoneNumber('123', '+39').error).toBeTruthy();
+  });
+});
+
+describe('phoneForDisplay', () => {
+  it('hides only the Italian prefix while preserving the rest of the number', () => {
+    expect(phoneForDisplay('+393331234567')).toBe('3331234567');
+    expect(phoneForDisplay('0039 333 1234567')).toBe('333 1234567');
+    expect(phoneForDisplay('+44 20 7946 0958')).toBe('+44 20 7946 0958');
   });
 });
 
@@ -102,21 +116,5 @@ describe('findAppointmentConflict', () => {
     expect(findAppointmentConflict([legacyAssignment], {
       date: '2026-11-06', time: '10:30', employeeId: null, employeeName: 'Admin',
     })).toBe(false);
-  });
-});
-
-describe('getDueReminders', () => {
-  it('returns only confirmed appointments for tomorrow with explicit reminder consent', () => {
-    const result = getDueReminders(
-      [
-        appointment(),
-        appointment({ id: 'no-consent', reminderConsent: false }),
-        appointment({ id: 'cancelled', status: 'cancelled' }),
-        appointment({ id: 'later', date: '2026-11-07' }),
-      ],
-      '2026-11-05',
-    );
-
-    expect(result.map(({ id }) => id)).toEqual(['a-1']);
   });
 });

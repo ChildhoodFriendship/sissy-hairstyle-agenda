@@ -134,7 +134,7 @@ Le immagini delle schermate sono lasciate come attività editoriale: non sono st
 |---|---|
 | Cliente | Seleziona un cliente salvato oppure **Nuova cliente**. Quando selezioni un cliente salvato, i suoi dati vengono precompilati; scegliendo **Nuova cliente** i campi si svuotano. |
 | Aggiungi anche alla Rubrica Clienti | Selezionalo per rendere visibile nella schermata **Clienti** la nuova cliente creata dall’appuntamento. |
-| Nome, Cognome, Telefono | Dati obbligatori della cliente. Il telefono viene controllato e normalizzato; per i numeri italiani il prefisso predefinito è `+39`. |
+| Nome, Cognome, Telefono | Dati obbligatori della cliente. Inserisci il numero italiano senza prefisso; l’app lo salva con `+39` e rifiuta altri prefissi internazionali. |
 | Data, Ora | Scegli il giorno e la persona. Con i turni attivi, il menu Ora propone le mezze ore disponibili; finché i turni non sono attivati sul database resta il selettore di orario precedente. |
 | Seguito da | Scegli **Sissy** o un dipendente attivo. |
 | Servizio, Note | Informazioni facoltative; il servizio può rimanere non indicato. |
@@ -161,6 +161,7 @@ I nuovi appuntamenti occupano l’orario scelto senza richiedere una conferma se
 **Consultare e gestire gli appuntamenti**
 
 - Usa il selettore **Giorno selezionato**, i pulsanti **Giorno precedente** e **Giorno successivo**, oppure **Oggi**.
+- Usa la freccia nella scheda per ridurre un singolo appuntamento a ora e nome, o per riaprirne dettagli e azioni. Questa scelta non modifica l’appuntamento.
 - Nella scheda di un appuntamento scegli **Modifica appuntamento** per aggiornare i dati.
 - Non è presente un’azione di annullamento o riattivazione; gli appuntamenti annullati o completati già registrati mantengono la loro etichetta di stato.
 - Scegli **Elimina appuntamento** e conferma la richiesta del browser per cancellare la scheda.
@@ -177,7 +178,7 @@ I nuovi appuntamenti occupano l’orario scelto senza richiedere una conferma se
 
 | Campo | Descrizione |
 |---|---|
-| Nome, Cognome, Telefono | Obbligatori per creare o modificare un contatto. Un numero non valido impedisce il salvataggio. |
+| Nome, Cognome, Telefono | Obbligatori per creare o modificare un contatto. Inserisci il numero nazionale: il prefisso italiano non compare nel campo né nell’elenco clienti, ma viene mantenuto nei dati per il contatto WhatsApp. Un numero non valido o con un prefisso internazionale diverso da `+39` impedisce il salvataggio. I numeri già registrati con un prefisso errato non vengono corretti automaticamente. |
 | Note | Informazione facoltativa. |
 | Consenso WhatsApp registrato | Indica se il cliente ha espresso il consenso. |
 
@@ -235,10 +236,10 @@ Le preferenze del salone sono conservate nel browser. Non presumere che siano si
 **Preparare un promemoria**
 
 1. Verifica che il cliente abbia il consenso WhatsApp registrato.
-2. Nella scheda dell’appuntamento scegli **Messaggio**. Se il consenso non è registrato, l’azione è disabilitata.
+2. Nella scheda dell’appuntamento seleziona l’icona di WhatsApp. Se il consenso non è registrato, l’azione è disabilitata.
 3. Si apre WhatsApp con un testo precompilato. Rileggilo e invialo manualmente solo se corretto e autorizzato.
 
-L’app non invia messaggi, non verifica la consegna e non programma invii automatici. Il conteggio **Promemoria da preparare** segnala appuntamenti attivi e consenzienti del giorno successivo alla data selezionata: non è una coda d’invio.
+L’app non invia messaggi, non verifica la consegna e non programma invii automatici. Non mostra un conteggio dei promemoria da preparare o inviati: l’icona WhatsApp è disponibile nella scheda aperta dell’appuntamento, se il consenso è registrato e il numero salvato è valido.
 
 **Modificare il testo del promemoria**
 

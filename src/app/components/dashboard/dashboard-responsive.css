@@ -24,6 +24,7 @@
   .date-chip input, .search input, .settings-card input, .settings-card textarea, .dialog input, .dialog select, .dialog textarea { min-height: 44px; }
   .appointment-actions button, .text-button { min-height: 44px; padding-inline: 8px; font-size: 11px; }
   .appointment-actions .edit-appointment, .appointment-actions .delete-appointment { width: 44px; height: 44px; }
+  .appointment-toggle { flex-basis: 44px; width: 44px; height: 44px; }
   .dialog .close { width: 44px; height: 44px; }
   .scrim { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
   .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px; padding: 27px 0 18px; }
@@ -72,7 +73,8 @@
   .appointment-actions button, .text-button, .dialog .close, .picker-field button { min-height: 44px; }
   .icon-button { width: 44px; min-width: 44px; min-height: 44px; }
   .appointment-actions .edit-appointment, .appointment-actions .delete-appointment,
-  .dialog .close, .picker-field button { width: 44px; height: 44px; }
+  .appointment-toggle, .dialog .close, .picker-field button { width: 44px; height: 44px; }
+  .appointment-toggle { flex-basis: 44px; }
   .settings-card input, .settings-card textarea, .dialog input, .dialog select, .dialog textarea,
   .date-chip input, .search input { min-height: 44px; }
 }

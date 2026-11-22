@@ -74,7 +74,6 @@ export const it = {
     createClient: 'Aggiungi cliente',
     clientName: 'Cliente',
     consent: 'Consenso',
-    reminderToday: 'Promemoria da preparare',
     dateLabel: 'Seleziona la data',
     timeLabel: 'Orario',
     selectService: 'Scegli un servizio',

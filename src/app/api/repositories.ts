@@ -21,6 +21,8 @@ export interface EmployeeRepository {
 export interface SettingsRepository {
   loadSettings(): Promise<SalonSettings>;
   saveSettings(settings: SalonSettings): Promise<void>;
+  listServices(): Promise<string[]>;
+  saveServices(services: string[]): Promise<void>;
 }
 
 export interface AgendaBackup {

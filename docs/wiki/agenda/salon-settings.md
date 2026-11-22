@@ -32,6 +32,7 @@ This section describes the salon preferences form. `SalonSettings` also defines 
 
 - Configures the salon name and the list of service names.
 - Adds a non-empty service name unless a case-insensitive duplicate is already present; removes a service from the draft list using its row action.
+- Loads service names from `public.salon_services` and saves additions/removals to Supabase when **Salva impostazioni** is selected. The table is owner-scoped with RLS; if it is unavailable, the settings page shows a database setup warning instead of presenting browser-only services as saved.
 - Uses the full available content width for the settings panel.
 - Configures the reminder template in a guided dialog rather than asking the operator to memorize placeholder syntax. The operator writes ordinary text, places the cursor, and inserts client name, date, time, service, or salon name using labeled buttons.
 - Shows a live example preview with sample appointment values; it is illustrative and does not send a message.
@@ -41,7 +42,11 @@ This section describes the salon preferences form. `SalonSettings` also defines 
 
 ## Interfaces And Protocols
 
-The operator edits the settings form and selects **Salva impostazioni**. The repository's `saveSettings` operation is the persistence boundary. A dismissible toast reports success or a generic error and closes automatically after about three seconds. The Supabase repository inherits settings storage behavior from `LocalStorageRepository`; therefore, do not assume these preferences are stored in the Supabase database. A runtime storage warning can indicate that browser storage failed.
+The operator edits the settings form and selects **Salva impostazioni**. The salon name and message preferences are stored through `LocalStorageRepository`; services are loaded from and saved to `public.salon_services` through the Supabase repository. A dismissible toast reports success or a generic error and closes automatically after about three seconds. A database warning appears if the services table cannot be reached. A runtime storage warning can indicate that browser storage failed.
+
+## Database Setup
+
+Apply [`20261122000000_create_salon_services.sql`](../../../supabase/migrations/20261122000000_create_salon_services.sql) in the configured Supabase project. To add the example salon services, run [`seed-salon-services.sql`](../../../supabase/seed-salon-services.sql) after replacing its placeholder with the signed-in operator's Auth user UUID. The seed is idempotent. These SQL files have not been applied to a live project by the application.
 
 ## Dependencies And Relationships
 

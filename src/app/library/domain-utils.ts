@@ -5,6 +5,10 @@ export interface PhoneNormalizationResult {
   error: string | null;
 }
 
+export function phoneForDisplay(phone: string): string {
+  return phone.replace(/^(?:\+39|0039)[\s().-]*/, '');
+}
+
 export function normalizePhoneNumber(input: string, defaultCountryCode: string): PhoneNormalizationResult {
   const normalizedCountryCode = defaultCountryCode.replace(/[^\d]/g, '');
   if (!/^[1-9]\d{0,2}$/.test(normalizedCountryCode)) {
@@ -19,6 +23,9 @@ export function normalizePhoneNumber(input: string, defaultCountryCode: string):
   }
 
   const nationalDigits = digits.replace(/^\+/, '');
+  if (normalizedCountryCode === '39' && isInternational && !nationalDigits.startsWith('39')) {
+    return { e164: null, error: 'Inserisci un numero italiano senza prefisso internazionale.' };
+  }
   const internationalDigits = isInternational ? nationalDigits : `${normalizedCountryCode}${nationalDigits}`;
   if (!/^[1-9]\d{7,14}$/.test(internationalDigits)) {
     return { e164: null, error: 'Il numero deve contenere da 8 a 15 cifre in formato internazionale.' };
@@ -58,23 +65,4 @@ function assigneeKey(employeeId: string | null | undefined, employeeName: string
   if (employeeId) return `employee:${employeeId}`;
   if (employeeName && employeeName !== 'Admin') return `legacy:${appointmentId}`;
   return 'admin';
-}
-
-export function getDueReminders(appointments: Appointment[], today: string): Appointment[] {
-  const dueDate = nextIsoDate(today);
-  if (!dueDate) return [];
-  return appointments.filter(
-    (item) => item.status === 'confirmed' && item.reminderConsent && item.date === dueDate,
-  );
-}
-
-function nextIsoDate(value: string): string | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    return null;
-  }
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
 }

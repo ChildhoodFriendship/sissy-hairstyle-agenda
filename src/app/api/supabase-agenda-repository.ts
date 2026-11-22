@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import type { AppointmentRepository, ClientRepository, EmployeeRepository } from './repositories';
+import type { AppointmentRepository, ClientRepository, EmployeeRepository, SettingsRepository } from './repositories';
 import { LocalStorageRepository } from './local-storage-repository';
 import { SUPABASE_CLIENT } from './supabase-client';
-import type { Appointment, Client, Employee } from '../library/models';
+import type { Appointment, Client, Employee, SalonSettings } from '../library/models';
 import type { DailyWorkSchedule } from '../library/work-schedule';
 
 interface ClientRow {
@@ -40,7 +40,7 @@ interface EmployeeRow {
 }
 
 @Injectable({ providedIn: 'root' })
-export class SupabaseAgendaRepository extends LocalStorageRepository implements AppointmentRepository, ClientRepository, EmployeeRepository {
+export class SupabaseAgendaRepository extends LocalStorageRepository implements AppointmentRepository, ClientRepository, EmployeeRepository, SettingsRepository {
   private readonly supabase = inject(SUPABASE_CLIENT);
 
   override async listAppointments(): Promise<Appointment[]> {
@@ -167,6 +167,45 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       slots: schedule.slots,
     }, { onConflict: 'owner_id,work_date,employee_id' });
     if (error) throw error;
+  }
+
+  override async listServices(): Promise<string[]> {
+    const { data, error } = await this.requireClient().from('salon_services')
+      .select('name').order('position').order('name');
+    if (error) throw error;
+    return (data as { name: string }[]).map((row) => row.name);
+  }
+
+  override async saveSettings(settings: SalonSettings): Promise<void> {
+    await super.saveSettings({ ...settings, services: [] });
+  }
+
+  override async saveServices(services: string[]): Promise<void> {
+    const client = this.requireClient();
+    const uniqueNames = new Map<string, string>();
+    for (const service of services) {
+      const name = service.trim();
+      const key = name.toLocaleLowerCase();
+      if (key && !uniqueNames.has(key)) uniqueNames.set(key, name);
+    }
+    const names = [...uniqueNames.values()];
+    const { data, error } = await client.from('salon_services').select('id,name');
+    if (error) throw error;
+
+    const wanted = new Set(names.map((name) => name.toLocaleLowerCase()));
+    const removedIds = (data as { id: string; name: string }[])
+      .filter((row) => !wanted.has(row.name.toLocaleLowerCase())).map((row) => row.id);
+    if (removedIds.length) {
+      const { error: deleteError } = await client.from('salon_services').delete().in('id', removedIds);
+      if (deleteError) throw deleteError;
+    }
+    if (names.length) {
+      const { error: upsertError } = await client.from('salon_services').upsert(
+        names.map((name, position) => ({ name, position })),
+        { onConflict: 'owner_id,name' },
+      );
+      if (upsertError) throw upsertError;
+    }
   }
 
   override async importBackup(_text: string): Promise<boolean> {

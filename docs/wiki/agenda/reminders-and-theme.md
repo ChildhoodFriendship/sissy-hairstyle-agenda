@@ -48,8 +48,8 @@ This section describes two dashboard behaviors: preparing a WhatsApp URL contain
 
 ## Functional Characteristics
 
-- Shows a reminder count for confirmed, consented appointments on the day following the selected date; the count is a cue to prepare reminders, not a send queue or delivery status.
-- Opens a `wa.me` link only when the associated saved client has WhatsApp consent. The appointment form persists the consent checkbox to the client record, so a checked value enables the action after the appointment is saved. If consent is absent, the action is disabled and the application can show a consent-required notice.
+- Does not show a reminder counter or a pending-reminder card: the previous calculation counted consented appointments for the next day but could not track whether a message was prepared or sent. The appointment's WhatsApp action is icon-only in its expanded card and retains an accessible name.
+- Opens a `wa.me` link only when consent is recorded on the appointment and the saved phone number is valid for the Italian destination. If consent is absent, the action is disabled; if the saved prefix is invalid, a notice appears without opening WhatsApp.
 - Uses the local `public/assets/whatsapp.svg` icon for the action. The icon glyph is from Simple Icons (CC0 1.0); WhatsApp remains a third-party trademark.
 - Generates message text from the configured template using `nome`, `data`, `ora`, `servizio`, and `salone` placeholders. The link opens in a new tab with the text URL-encoded.
 - Does not send the message, verify WhatsApp delivery, or schedule automatic delivery.
@@ -63,4 +63,4 @@ The operator opens a reminder from an appointment card. The browser opens `https
 
 ## Dependencies And Relationships
 
-Reminder eligibility depends on appointment status, appointment date, appointment consent, and the saved client's consent flag. Message rendering depends on the template in [Salon Settings](salon-settings.md). Appointment consent and client fields are described in [Appointment Management](appointments.md) and [Client Management](clients.md).
+Reminder preparation depends on the appointment's consent and saved phone number; it does not track delivery. Message rendering depends on the template in [Salon Settings](salon-settings.md). Appointment consent and client fields are described in [Appointment Management](appointments.md) and [Client Management](clients.md).

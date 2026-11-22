@@ -16,7 +16,7 @@ The wiki is organized into the [agenda area](agenda/overview.md), which document
 
 ## Functional Characteristics
 
-- Manages client, employee, appointment, and service records through the configured agenda repository and salon settings.
+- Manages client, employee, appointment, and service records through the configured agenda repository; salon services are stored in the owner-scoped `public.salon_services` table.
 - Shows only “Agenda” as the agenda page heading, without the promotional eyebrow or subtitle; the dashboard header omits the “Area riservata” label.
 - Assigns confirmed appointments to Sissy or one saved employee, with a maximum of three appointments per date/time slot.
 - Registers accounts with username, email, and password and accepts username/password login through a Supabase Edge Function.
@@ -45,16 +45,18 @@ The browser loads `/supabase-config.json` and uses the Supabase JavaScript clien
 
 ## Dependencies And Relationships
 
-The application depends on the Supabase project configuration, all three migrations under `supabase/migrations/` applied in order, authenticated accounts, the username-login Edge Function, and owner-scoped RLS policies. Runtime activation instructions are in [`supabase/README.md`](../../supabase/README.md) and [`supabase/USER-SETUP.md`](../../supabase/USER-SETUP.md).
+The application depends on the Supabase project configuration, all migrations under `supabase/migrations/` applied in filename order, authenticated accounts, the username-login Edge Function, and owner-scoped RLS policies. Runtime activation instructions are in [`supabase/README.md`](../../supabase/README.md) and [`supabase/USER-SETUP.md`](../../supabase/USER-SETUP.md).
 
 ## Procedures
 
 ### Activate the Supabase-backed deployment
 
-1. Apply all three SQL migrations in `supabase/migrations/` in filename order in the intended Supabase project.
+1. Apply all SQL migrations in `supabase/migrations/` in filename order in the intended Supabase project, including `20261122000000_create_salon_services.sql`.
 2. Set the project's publishable key in `public/supabase-config.json`; do not expose a secret or service-role key.
 3. Configure the allowed Auth redirect URLs and, for production password recovery, a verified SMTP sender.
 4. Create the operator account through Supabase Auth and test login, row access, and recovery email delivery.
 5. Verify that one account cannot read or change another account's rows before adding real customer data.
+
+For the example salon service list, run [`supabase/seed-salon-services.sql`](../../supabase/seed-salon-services.sql) after replacing its Auth user UUID placeholder.
 
 The local build does not perform these provider-side steps. See the [operator setup guide](../../supabase/USER-SETUP.md) for the full workflow.

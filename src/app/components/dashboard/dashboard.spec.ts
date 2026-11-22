@@ -35,6 +35,7 @@ describe('Dashboard', () => {
           saveAppointment: async (appointment: Appointment) => { savedAppointment = appointment; },
           saveEmployee: async () => undefined, deleteEmployee: async () => undefined,
           loadSettings: async () => ({ salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false }),
+          listServices: async () => [], saveServices: async () => undefined,
           hasStorageWarning: () => false,
         },
       }, {
@@ -75,11 +76,14 @@ describe('Dashboard', () => {
     };
     instance.appointments.set([appointment]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.agenda-stats')?.textContent).not.toMatch(/confermat/i);
-    expect(fixture.nativeElement.querySelectorAll('.agenda-stats article')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.agenda-stats')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.reminder-card')).toBeNull();
     expect(fixture.nativeElement.querySelector('.appointment .status')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.appointment-body p')?.textContent).not.toContain('+39');
     expect(fixture.nativeElement.textContent).not.toMatch(/confermat/i);
     expect(fixture.nativeElement.querySelector('.whatsapp img')?.getAttribute('src')).toBe('/assets/whatsapp.svg');
+    expect(fixture.nativeElement.querySelector('.whatsapp')?.textContent.trim()).toBe('');
+    expect(fixture.nativeElement.querySelector('.whatsapp')?.getAttribute('aria-label')).toContain('WhatsApp');
     expect(fixture.nativeElement.querySelector('.appointment-status-action')).toBeNull();
     const editAction = fixture.nativeElement.querySelector('.edit-appointment') as HTMLButtonElement;
     expect(editAction.previousElementSibling).toBe(fixture.nativeElement.querySelector('.whatsapp'));
@@ -91,6 +95,63 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.appointment .status')?.textContent?.trim()).toBe('Annullato');
     expect(fixture.nativeElement.querySelector('.appointment-status-action')).toBeNull();
+  });
+
+  it('collapses only the chosen appointment, preserving its time and name', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      appointments: { set(value: Appointment[]): void };
+    };
+    const appointment: Appointment = {
+      id: 'first', clientId: '', clientName: 'Ada Lovelace', phone: sampleClient.phone,
+      date: instance.selectedDate(), time: '09:00', service: 'Taglio', notes: 'Nota riservata',
+      status: 'confirmed', reminderConsent: true, createdAt: '2026-01-01T00:00:00.000Z',
+      employeeId: null, employeeName: 'Admin',
+    };
+    instance.appointments.set([appointment, { ...appointment, id: 'second', clientName: 'Grace Hopper', time: '10:00' }]);
+    fixture.detectChanges();
+    const cards = fixture.nativeElement.querySelectorAll('.appointment') as NodeListOf<HTMLElement>;
+    const toggle = cards[0].querySelector('.appointment-toggle') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-controls')).toBe('appointment-details-first');
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(cards[0].textContent).toContain('09:00');
+    expect(cards[0].textContent).toContain('Ada Lovelace');
+    expect((cards[0].querySelector('.appointment-details') as HTMLElement).hidden).toBe(true);
+    expect((cards[1].querySelector('.appointment-details') as HTMLElement).hidden).toBe(false);
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect((cards[0].querySelector('.appointment-details') as HTMLElement).hidden).toBe(false);
+    expect(cards[0].querySelector('.appointment-details')?.textContent).toContain('Nota riservata');
+    expect(cards[0].querySelector('.edit-appointment')).not.toBeNull();
+  });
+
+  it('does not open WhatsApp for a saved contact with a wrong country prefix', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    try {
+      const instance = fixture.componentInstance as unknown as {
+        openWhatsApp(item: Appointment, kind: 'reminder'): void;
+        notice(): string;
+      };
+      instance.openWhatsApp({
+        id: 'legacy-appointment', clientId: '', clientName: 'Cliente Demo', phone: '+303331234567',
+        date: '2026-11-23', time: '10:00', service: '', notes: '', status: 'confirmed',
+        reminderConsent: true, createdAt: '2026-11-22T10:00:00.000Z',
+      }, 'reminder');
+      expect(open).not.toHaveBeenCalled();
+      expect(instance.notice()).toContain('Numero non italiano');
+    } finally {
+      open.mockRestore();
+    }
   });
 
   it('shows a separate agenda column for Sissy and each registered employee', async () => {
@@ -270,7 +331,7 @@ describe('Dashboard', () => {
     expect(instance.draft.clientName).toBe('Ada Lovelace');
     expect(instance.draft.firstName).toBe('Ada');
     expect(instance.draft.lastName).toBe('Lovelace');
-    expect(instance.draft.phone).toBe(sampleClient.phone);
+    expect(instance.draft.phone).toBe('3****4567');
 
     instance.openForm();
     fixture.detectChanges();
@@ -288,6 +349,7 @@ describe('Dashboard', () => {
     await fixture.whenStable();
     (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('clients');
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.client-info span')?.textContent).toBe('3****4567');
     expect(fixture.nativeElement.textContent).toContain('Aggiungi cliente');
     expect(fixture.nativeElement.querySelector('.page-heading h1')?.textContent?.trim()).toBe('Clienti');
     expect(fixture.nativeElement.querySelector('.agenda-card h2')?.textContent?.trim()).toBe('I tuoi clienti');
@@ -410,5 +472,24 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Modifica cliente');
     expect((fixture.componentInstance as unknown as { clientDraft: { firstName: string } }).clientDraft.firstName).toBe('Ada');
+    expect((fixture.nativeElement.querySelector('input[name="clientPhone"]') as HTMLInputElement).value).toBe('3****4567');
+    expect(fixture.nativeElement.querySelector('input[name="clientPhone"]')?.getAttribute('placeholder')).toBe('333 1234567');
+  });
+
+  it('saves an edited national number with the Italian prefix without displaying it', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as { editClient(client: Client): void; saveClient(): Promise<void> };
+    component.editClient({ ...sampleClient, phone: '+393331234567' });
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('input[name="clientPhone"]') as HTMLInputElement;
+    expect(input.value).toBe('3331234567');
+    input.value = '+39 333 1234567';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(input.value).toBe('333 1234567');
+    await component.saveClient();
+    expect(savedClient?.phone).toBe('+393331234567');
   });
 });

@@ -77,6 +77,15 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
     await this.write(SETTINGS_KEY, settings);
   }
 
+  async listServices(): Promise<string[]> {
+    return (await this.loadSettings()).services;
+  }
+
+  async saveServices(services: string[]): Promise<void> {
+    const settings = await this.loadSettings();
+    await this.saveSettings({ ...settings, services });
+  }
+
 
   async importBackup(text: string): Promise<boolean> {
     if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) return false;
