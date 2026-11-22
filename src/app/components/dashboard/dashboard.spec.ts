@@ -232,9 +232,14 @@ describe('Dashboard', () => {
     const button = fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement;
     expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(true);
     expect(button.textContent).toContain('Modalità chiara');
+    (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('clients');
+    fixture.detectChanges();
+    const clientAddIcon = fixture.nativeElement.querySelector('.client-actions .primary img') as HTMLImageElement;
+    expect(clientAddIcon.classList.contains('inverted')).toBe(false);
     button.click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(false);
+    expect(clientAddIcon.classList.contains('inverted')).toBe(true);
     expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.classList.contains('inverted')).toBe(false);
     expect(button.textContent).toContain('Modalità scura');
     expect(localStorage.getItem('sissy-agenda-theme')).toBe('light');
@@ -352,6 +357,7 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('.client-info span')?.textContent).toBe('3****4567');
     expect(fixture.nativeElement.textContent).toContain('Aggiungi cliente');
     expect(fixture.nativeElement.querySelector('.page-heading h1')?.textContent?.trim()).toBe('Clienti');
+    expect(fixture.nativeElement.textContent).not.toContain('APPUNTAMENTI TOTALI');
     expect(fixture.nativeElement.querySelector('.agenda-card h2')?.textContent?.trim()).toBe('I tuoi clienti');
     expect(fixture.nativeElement.querySelector('.page-heading')?.textContent).not.toContain('Rubrica del salone sincronizzata');
     expect(fixture.nativeElement.querySelector('.page-heading')?.textContent).not.toContain('Contatti salvati in modo protetto');

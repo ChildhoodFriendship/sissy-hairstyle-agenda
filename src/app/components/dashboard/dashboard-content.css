@@ -51,7 +51,8 @@
 .client-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
 .client-actions .search { width: 100%; min-width: 0; }
 .client-actions .primary { min-width: 0; max-width: 100%; }
-.client-actions .primary img { width: 16px; height: 16px; filter: invert(1); }
+.client-actions .primary img { width: 16px; height: 16px; }
+.client-actions .primary img.inverted { filter: invert(1); }
 .employee-row { display:grid; grid-template-columns:36px minmax(0,1fr) auto auto; align-items:center; gap:11px; min-height:66px; padding:8px 0; border-bottom:1px solid var(--line); }
 .employee-row:last-child { border-bottom:0; }
 .client-list { padding:0 18px; }
