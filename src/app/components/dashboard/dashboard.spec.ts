@@ -113,6 +113,8 @@ describe('Dashboard', () => {
     };
     instance.appointments.set([appointment, { ...appointment, id: 'second', clientName: 'Grace Hopper', time: '10:00' }]);
     fixture.detectChanges();
+    const dayCount = fixture.nativeElement.querySelector('.date-chip .mobile-agenda-count') as HTMLElement;
+    expect(dayCount.textContent).toContain('2 appuntamenti');
     const cards = fixture.nativeElement.querySelectorAll('.appointment') as NodeListOf<HTMLElement>;
     const toggle = cards[0].querySelector('.appointment-toggle') as HTMLButtonElement;
     expect(toggle.querySelector('svg[data-icon="arrow-upward"]')).not.toBeNull();
@@ -123,6 +125,7 @@ describe('Dashboard', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(cards[0].textContent).toContain('09:00');
     expect(cards[0].textContent).toContain('Ada Lovelace');
+    expect(cards[0].querySelector('.appointment-preview')?.textContent).toContain('Taglio');
     expect((cards[0].querySelector('.appointment-details') as HTMLElement).hidden).toBe(true);
     expect((cards[1].querySelector('.appointment-details') as HTMLElement).hidden).toBe(false);
     toggle.click();
@@ -198,6 +201,18 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('.appointment-list')?.style.getPropertyValue('--agenda-column-count')).toBe('1');
 
     toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.employee-agenda-column')).toHaveLength(3);
+
+    const mobileView = fixture.nativeElement.querySelector('.agenda-mobile-view select') as HTMLSelectElement;
+    expect(mobileView.value).toBe('all');
+    mobileView.value = 'employee-1';
+    mobileView.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.employee-agenda-column')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelector('.employee-agenda-heading h3')?.textContent?.trim()).toBe('Lara Rossi');
+    mobileView.value = 'all';
+    mobileView.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.employee-agenda-column')).toHaveLength(3);
   });

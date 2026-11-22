@@ -38,13 +38,14 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
         @if (notice()) { <div class="toast" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()">×</button></div> }
         @if (view()==='agenda') {
           <section class="page-heading" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><h1>{{ copy.agenda.title }}</h1></div><button class="primary new-button" (click)="openForm()">＋ <span>{{ copy.common.newAppointment }}</span></button></section>
-          <section class="datebar" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><button class="icon-button previous-day" (click)="shiftDate(-1)" aria-label="Giorno precedente"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_right.svg" alt="" aria-hidden="true" /></button><label class="date-chip"><span>GIORNO SELEZIONATO</span><input type="date" [ngModel]="selectedDate()" (ngModelChange)="selectDay($event)" /></label><button class="icon-button next-day" (click)="shiftDate(1)" aria-label="Giorno successivo"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_left.svg" alt="" aria-hidden="true" /></button><button class="today-button" (click)="selectDay(today)">Oggi</button></section>
-          <section class="agenda-card" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div class="card-title"><div><p class="eyebrow">{{ selectedDate() === today ? 'OGGI' : 'AGENDA DEL GIORNO' }}</p><h2>{{ displayDate(selectedDate()) }}</h2></div><span class="count-pill">{{ todayAppointments().length }} {{ copy.ui.appointmentCount }}</span></div>
+          <section class="datebar" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><button class="icon-button previous-day" (click)="shiftDate(-1)" aria-label="Giorno precedente"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_right.svg" alt="" aria-hidden="true" /></button><label class="date-chip"><span>GIORNO SELEZIONATO</span><input type="date" [ngModel]="selectedDate()" (ngModelChange)="selectDay($event)" /><span class="count-pill mobile-agenda-count">{{ todayAppointments().length }} {{ copy.ui.appointmentCount }}</span></label><button class="icon-button next-day" (click)="shiftDate(1)" aria-label="Giorno successivo"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_left.svg" alt="" aria-hidden="true" /></button><button class="today-button" (click)="selectDay(today)">Oggi</button></section>
+          <section class="agenda-card" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div class="card-title"><div><p class="eyebrow">{{ selectedDate() === today ? 'OGGI' : 'AGENDA DEL GIORNO' }}</p><h2>{{ displayDate(selectedDate()) }}</h2></div><span class="count-pill desktop-agenda-count">{{ todayAppointments().length }} {{ copy.ui.appointmentCount }}</span></div>
             <div class="agenda-view-controls">
               <button type="button" class="secondary agenda-view-toggle" [attr.aria-pressed]="singleAgendaView()" (click)="toggleSingleAgendaView()">{{ copy.agenda.singleView }}</button>
               @if (singleAgendaView()) {
-                <label class="agenda-single-selector"><span>{{ copy.agenda.personFilter }}</span><select [ngModel]="selectedAgendaColumn()?.id ?? ''" (ngModelChange)="selectAgendaColumn($event)">@for (column of agendaColumns(); track column.id) { <option [value]="column.id">{{ column.name }}</option> }</select></label>
+                <label class="agenda-single-selector"><span>{{ copy.agenda.personFilter }}</span><select [ngModel]="selectedAgendaColumn().id" (ngModelChange)="selectAgendaColumn($event)">@for (column of agendaColumns(); track column.id) { <option [value]="column.id">{{ column.name }}</option> }</select></label>
               }
+              <label class="agenda-mobile-view"><span>{{ copy.agenda.mobileView }}</span><select name="mobileAgendaView" [ngModel]="singleAgendaView() ? selectedAgendaColumn().id : 'all'" (ngModelChange)="selectMobileAgendaView($event)"><option value="all">{{ copy.agenda.allPeople }}</option>@for (column of agendaColumns(); track column.id) { <option [value]="column.id">{{ column.name }}</option> }</select></label>
               @if (agendaColumns().length > 2 && !singleAgendaView()) { <span class="agenda-scroll-hint" aria-hidden="true">{{ copy.agenda.scrollHint }}</span> }
             </div>
             @if (shiftState() === 'missing') {
@@ -52,21 +53,22 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
             } @else if (shiftState() === 'error') {
               <p role="alert">Disponibilità non caricata. <button class="text-button" (click)="refreshHours()">Riprova</button></p>
             } @else if (shiftState() === 'loading') { <p class="muted" role="status">Caricamento dei turni…</p> }
-            <div class="appointment-list" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="region" tabindex="0" [attr.aria-label]="singleAgendaView() ? copy.agenda.singleAgendaLabel + ' ' + (selectedAgendaColumn()?.name ?? copy.agenda.personFilter) : copy.agenda.allAgendasLabel" [class.single-employee-view]="singleAgendaView() || visibleAgendaColumns().length === 1" [style.--agenda-column-count]="visibleAgendaColumns().length">
+            <div class="appointment-list" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="region" tabindex="0" [attr.aria-label]="singleAgendaView() ? copy.agenda.singleAgendaLabel + ' ' + selectedAgendaColumn().name : copy.agenda.allAgendasLabel" [class.single-employee-view]="singleAgendaView() || visibleAgendaColumns().length === 1" [style.--agenda-column-count]="visibleAgendaColumns().length">
               @for (column of visibleAgendaColumns(); track column.id) {
                 <section class="employee-agenda-column" role="group" [attr.aria-label]="'Agenda di '+column.name">
                   <header class="employee-agenda-heading"><h3>{{ column.name }}</h3><span class="employee-agenda-count">{{ column.appointments.length }} {{ column.appointments.length === 1 ? 'appuntamento' : 'appuntamenti' }}</span></header>
                   @if (column.appointments.length) {
                     <div class="employee-appointments">
                       @for (item of column.appointments; track item.id) {
-                        <article class="appointment" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.cancelled]="item.status==='cancelled'">
+                        <article class="appointment" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.cancelled]="item.status==='cancelled'" [class.collapsed]="collapsedAppointments().has(item.id)">
                           <div class="appointment-summary">
                             <div class="appointment-time">{{ item.time }}</div>
                             <div class="appointment-top"><h4>{{ item.clientName }}</h4>@if(item.status!=='confirmed'){<span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span>}</div>
+                            @if(collapsedAppointments().has(item.id)){<p class="appointment-preview">{{ item.service || 'Servizio non indicato' }}</p>}
                             <button type="button" class="appointment-toggle" [attr.aria-expanded]="!collapsedAppointments().has(item.id)" [attr.aria-controls]="'appointment-details-'+item.id" [attr.aria-label]="(collapsedAppointments().has(item.id) ? 'Mostra dettagli' : 'Riduci') + ' appuntamento di ' + item.clientName + ' alle ' + item.time" (click)="toggleAppointment(item.id)"><svg class="material-icon appointment-chevron" data-icon="arrow-upward" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg></button>
                           </div>
                           <div class="appointment-details" [id]="'appointment-details-'+item.id" [hidden]="collapsedAppointments().has(item.id)">
-                            <div class="appointment-body"><p>{{ item.service || 'Servizio non indicato' }} <span>·</span> {{ phoneForDisplay(item.phone) }}</p>@if(item.notes){<small>{{ item.notes }}</small>}</div>
+                            <div class="appointment-body"><div class="appointment-description"><p class="appointment-service">{{ item.service || 'Servizio non indicato' }}</p><p class="appointment-phone">{{ phoneForDisplay(item.phone) }}</p></div>@if(item.notes){<small>{{ item.notes }}</small>}</div>
                             <div class="appointment-actions"><button class="whatsapp" [disabled]="!item.reminderConsent" (click)="openWhatsApp(item,'reminder')" [attr.aria-label]="item.reminderConsent ? 'Prepara promemoria WhatsApp per '+item.clientName : 'Consenso WhatsApp non registrato'"><img src="/assets/whatsapp.svg" alt="" aria-hidden="true" /></button><button class="edit-appointment" (click)="edit(item)" aria-label="Modifica appuntamento"><img src="/assets/green_edit.svg" alt="" aria-hidden="true" /></button><button class="delete-appointment" (click)="removeAppointment(item)" aria-label="Elimina appuntamento"><img src="/assets/red_delete.svg" alt="" aria-hidden="true" /></button></div>
                           </div>
                         </article>
@@ -387,6 +389,7 @@ export class Dashboard {
   protected showPicker(input: HTMLInputElement): void { try { input.showPicker(); } catch { input.click(); } }
   protected toggleTheme(): void { this.darkMode.update((dark) => !dark); saveThemePreference(this.darkMode()); }
   protected toggleSingleAgendaView(): void { this.singleAgendaView.update((single) => !single); }
+  protected selectMobileAgendaView(value: string): void { if (value === 'all') { this.singleAgendaView.set(false); return; } this.selectedAgendaColumnId.set(value); this.singleAgendaView.set(true); }
   protected toggleAppointment(id: string): void { this.collapsedAppointments.update((collapsed) => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
   protected selectAgendaColumn(id: string): void { this.selectedAgendaColumnId.set(id); }
   protected closeForm(): void { this.formOpen.set(false); this.formError.set(''); void this.fetchHours(this.selectedDate()); }

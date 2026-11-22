@@ -22,9 +22,12 @@
 .appointment-body { min-width: 0; }
 .appointment-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .appointment-top h4 { margin: 0; font-size: 13px; font-weight: 620; }
-.appointment-body p { margin: 3px 0 0; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
-.appointment-body p span { padding: 0 2px; }
-.appointment-body small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+.appointment-body p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.appointment-description { display: grid; gap: 3px; min-width: 0; }
+.appointment-body .appointment-service { color: var(--ink); font-weight: 550; }
+.appointment-body .appointment-phone { color: var(--muted); }
+.appointment-body small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.appointment-preview { display: none; }
 .status { display: inline-flex; align-items: center; min-height: 20px; padding: 0 7px; border-radius: 99px; background: #E9F4ED; color: #34734D; font-size: 9px; font-weight: 600; }
 .status.cancelled { background: #F7EDEE; color: #8A4650; }
 .status.completed { background: #EEF0F2; color: #5F6268; }
