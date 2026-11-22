@@ -5,6 +5,6 @@
 .free-slot { min-height: 44px; padding: .35rem .65rem; border-radius: 8px; border: 1px solid var(--line); background: var(--accent-soft); color: var(--accent); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
 .free-slot:focus-visible, .shift-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 900px) {
-  .free-slot-list { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; min-width: 0; }
+  .free-slot-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; min-width: 0; }
   .free-slot { width: 100%; min-width: 0; }
 }
