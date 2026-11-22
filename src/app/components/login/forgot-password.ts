@@ -25,9 +25,9 @@ import { initialDarkMode, syncThemeColor } from '../../library/theme';
   `,
   styles: `
     :host { --page:var(--sissy-light-page); --surface:var(--sissy-light-surface); --ink:var(--sissy-light-text); --muted:var(--sissy-light-muted); --line:var(--sissy-light-line); --accent:var(--sissy-light-accent); --accent-hover:var(--sissy-light-accent-hover); --accent-soft:var(--sissy-light-accent-soft); --accent-ink:var(--sissy-light-accent-ink); --secondary:var(--sissy-light-secondary); --secondary-hover:var(--sissy-light-secondary-hover); --secondary-soft:var(--sissy-light-secondary-soft); --danger:var(--sissy-light-danger); display:block; min-height:100dvh; }
-    .recovery-page { display:grid; min-height:100dvh; place-items:center; padding:24px; background:var(--page); color:var(--ink); color-scheme:light; font-family:var(--sissy-font-ui); }
+    .recovery-page { display:grid; min-height:100dvh; place-items:center; padding:24px; background:var(--page); color:var(--ink); color-scheme:light; font-family:var(--sissy-font-ui); transition:background-color var(--sissy-motion-standard) var(--sissy-ease),color var(--sissy-motion-standard) var(--sissy-ease); }
     .recovery-page.dark { --page:var(--sissy-dark-page); --surface:var(--sissy-dark-surface); --ink:var(--sissy-dark-text); --muted:var(--sissy-dark-muted); --line:var(--sissy-dark-line); --accent:var(--sissy-dark-accent); --accent-hover:var(--sissy-dark-accent-hover); --accent-soft:var(--sissy-dark-accent-soft); --accent-ink:var(--sissy-dark-accent-ink); --secondary:var(--sissy-dark-secondary); --secondary-hover:var(--sissy-dark-secondary-hover); --secondary-soft:var(--sissy-dark-secondary-soft); --danger:var(--sissy-dark-danger); color-scheme:dark; }
-    .recovery-card { width:min(100%,440px); padding:clamp(26px,5vw,44px); border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+    .recovery-card { width:min(100%,440px); padding:clamp(26px,5vw,44px); border:1px solid var(--line); border-radius:8px; background:var(--surface); transition:background-color var(--sissy-motion-standard) var(--sissy-ease),color var(--sissy-motion-standard) var(--sissy-ease),border-color var(--sissy-motion-standard) var(--sissy-ease); }
     .back { display:inline-block; min-height:44px; margin-bottom:30px; color:var(--muted); font-size:12px; line-height:44px; text-decoration:none; }
     .back:hover { color:var(--secondary-hover); }
     .brand-mark { display:grid; width:40px; height:40px; place-items:center; border:1px solid var(--accent); border-radius:50%; background:transparent; color:var(--accent); font:italic 22px/1 var(--sissy-font-editorial); }
@@ -39,7 +39,7 @@ import { initialDarkMode, syncThemeColor } from '../../library/theme';
     input { min-height:48px; padding:0 12px; border:1px solid var(--line); border-radius:5px; background:var(--page); color:var(--ink); font:inherit; }
     input:focus { border-color:var(--accent); outline:0; box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent); }
     button { min-height:48px; margin-top:8px; border:1px solid var(--accent); border-radius:5px; background:var(--accent); color:var(--accent-ink); font:inherit; font-size:12px; font-weight:650; cursor:pointer; }
-    button:hover { border-color:var(--accent-hover); background:var(--accent-hover); transform:translateY(-1px); }
+    button:hover { border-color:var(--accent-hover); background:var(--accent-hover); }
     .error { color:var(--danger); font-size:12px; }
     .status { color:var(--muted); font-size:12px; line-height:1.5; }
     :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }

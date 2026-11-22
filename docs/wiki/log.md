@@ -46,3 +46,9 @@ This page records documentation changes; entries are historical and do not repre
 - Limited the mobile agenda viewport to two employee columns, with horizontal scrolling for larger teams and a single-person view control.
 - Kept employee names horizontal and updated the agenda wiki, project overview, and TODO status.
 - Automated tests, build, and browser rendering were not run because repository instructions prohibit them in this VM.
+
+### 2026-11-22 — motion and tablet refinement
+
+- Added restrained page/list entrance motion, staggered appointment/client/employee rows, animated appointment disclosure and modal surfaces, smooth theme-surface transitions, and tactile button feedback. Hover lift is limited to fine pointers; reduced-motion mode suppresses transforms, delays, and agenda snapping.
+- Aligned client-list actions below customer details at 901–1050 px and raised login theme/recovery/registration targets to 44 px on coarse-pointer tablets.
+- Verification: production build and wiki validation passed; focused appointment-disclosure and login tests passed. The full suite reports 58 passed and 8 existing failures in phone, form, style, and archive assertions. Browser checks covered login/recovery at 390, 834, and 1024 px with no horizontal overflow or console errors; authenticated dashboard visual review was unavailable because no saved login was present.

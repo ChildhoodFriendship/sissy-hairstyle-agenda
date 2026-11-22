@@ -24,6 +24,7 @@ button { cursor: pointer; }
   --success: var(--sissy-dark-success); --danger: var(--sissy-dark-danger);
   color-scheme: dark;
 }
+.workspace, .sidebar, .main, .topbar { transition: background-color var(--sissy-motion-standard) var(--sissy-ease), color var(--sissy-motion-standard) var(--sissy-ease), border-color var(--sissy-motion-standard) var(--sissy-ease); }
 .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 4; display: flex; flex-direction: column; width: 252px; padding: 24px 16px; background: var(--surface); border-right: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 11px; padding: 0 8px; color: var(--ink); text-decoration: none; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
 .brand em { color: var(--muted); font-style: normal; font-weight: 450; }

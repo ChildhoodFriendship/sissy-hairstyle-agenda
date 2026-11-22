@@ -74,6 +74,7 @@ import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../libr
     :host { --page: var(--sissy-light-page); --surface: var(--sissy-light-surface); --surface-muted: var(--sissy-light-raised); --ink: var(--sissy-light-text); --muted: var(--sissy-light-muted); --line: var(--sissy-light-line); --accent: var(--sissy-light-accent); --accent-hover: var(--sissy-light-accent-hover); --accent-soft: var(--sissy-light-accent-soft); --accent-ink: var(--sissy-light-accent-ink); --secondary: var(--sissy-light-secondary); --secondary-hover: var(--sissy-light-secondary-hover); --secondary-soft: var(--sissy-light-secondary-soft); --danger: var(--sissy-light-danger); display: block; min-height: 100dvh; font-family: var(--sissy-font-ui); }
     .login-layout { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(390px, .9fr); background: var(--page); color: var(--ink); color-scheme: light; }
     .login-layout.dark { --page: var(--sissy-dark-page); --surface: var(--sissy-dark-surface); --surface-muted: var(--sissy-dark-raised); --ink: var(--sissy-dark-text); --muted: var(--sissy-dark-muted); --line: var(--sissy-dark-line); --accent: var(--sissy-dark-accent); --accent-hover: var(--sissy-dark-accent-hover); --accent-soft: var(--sissy-dark-accent-soft); --accent-ink: var(--sissy-dark-accent-ink); --secondary: var(--sissy-dark-secondary); --secondary-hover: var(--sissy-dark-secondary-hover); --secondary-soft: var(--sissy-dark-secondary-soft); --danger: var(--sissy-dark-danger); color-scheme: dark; }
+    .login-layout, .login-story, .login-panel, .panel-card { transition: background-color var(--sissy-motion-standard) var(--sissy-ease), color var(--sissy-motion-standard) var(--sissy-ease), border-color var(--sissy-motion-standard) var(--sissy-ease); }
     .login-layout :focus-visible { outline-color: var(--accent); }
     .login-story { display: flex; min-height: 100dvh; flex-direction: column; justify-content: space-between; padding: clamp(28px, 5vw, 72px); border-right: 1px solid var(--line); background: var(--surface-muted); }
     .login-story::after { display: none; }
@@ -145,7 +146,7 @@ import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../libr
     .panel-card input { height: 48px; padding-inline: 13px; border-color: var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); font-size: 13px; }
     .panel-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
     .button-primary { min-height: 48px; margin-top: 14px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 650; }
-    .button-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); transform: translateY(-1px); }
+    .button-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
     .demo-hint { color: var(--accent); font-size: 11px; }
     .demo-hint:hover { text-decoration: underline; text-underline-offset: 3px; }
     .panel-card .demo-hint + .demo-hint { color: var(--muted); }
@@ -174,6 +175,10 @@ import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../libr
       .story-description { max-width: 310px; }
       .login-panel { padding-inline: 20px; }
       .panel-card h2 { font-size: 29px; }
+    }
+    @media (pointer: coarse) {
+      .theme-toggle { min-height: 44px; }
+      .demo-hint:not(p) { display: grid; min-height: 44px; place-items: center; padding: 8px 12px; }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
