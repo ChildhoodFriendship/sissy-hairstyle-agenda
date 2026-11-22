@@ -25,10 +25,10 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
         <a class="brand" href="/agenda" (click)="$event.preventDefault(); view.set('agenda')"><span class="brand-mark">S</span><span>Agenda <em>Sissy</em></span></a>
         <p class="side-label">IL TUO SALONE</p>
         <nav aria-label="Navigazione principale">
-          <button [class.active]="view()==='agenda'" (click)="view.set('agenda')"><img src="/assets/agenda.svg" alt="" />Agenda</button>
-          <button [class.active]="view()==='clients'" (click)="view.set('clients')"><img src="/assets/clients.svg" alt="" />Clienti</button>
-          <button [class.active]="view()==='employees'" (click)="view.set('employees')"><img src="/assets/clients.svg" alt="" />Dipendenti</button>
-          <button [class.active]="view()==='settings'" (click)="view.set('settings')"><img src="/assets/settings.svg" alt="" />Impostazioni</button>
+          <button [class.active]="view()==='agenda'" (click)="view.set('agenda')"><img [class.inverted]="darkMode()" src="/assets/agenda.svg" alt="" />Agenda</button>
+          <button [class.active]="view()==='clients'" (click)="view.set('clients')"><img [class.inverted]="darkMode()" src="/assets/clients.svg" alt="" />Clienti</button>
+          <button [class.active]="view()==='employees'" (click)="view.set('employees')"><img [class.inverted]="darkMode()" src="/assets/clients.svg" alt="" />Dipendenti</button>
+          <button [class.active]="view()==='settings'" (click)="view.set('settings')"><img [class.inverted]="darkMode()" src="/assets/settings.svg" alt="" />Impostazioni</button>
         </nav>
         <div class="sidebar-bottom"><button class="logout" (click)="logout()"><span>Esci</span><img [class.inverted]="darkMode()" src="/assets/logout.svg" alt="" aria-hidden="true" /></button></div>
       </aside>

@@ -246,7 +246,9 @@ describe('Dashboard', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement;
+    const sidebarIcon = fixture.nativeElement.querySelector('.sidebar nav button img') as HTMLImageElement;
     expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(true);
+    expect(sidebarIcon.classList.contains('inverted')).toBe(true);
     expect(button.textContent).toContain('Modalità chiara');
     (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('clients');
     fixture.detectChanges();
@@ -255,6 +257,7 @@ describe('Dashboard', () => {
     button.click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark')).toBe(false);
+    expect(sidebarIcon.classList.contains('inverted')).toBe(false);
     expect(clientAddIcon.classList.contains('inverted')).toBe(true);
     expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.classList.contains('inverted')).toBe(false);
     expect(button.textContent).toContain('Modalità scura');

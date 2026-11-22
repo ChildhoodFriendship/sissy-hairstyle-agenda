@@ -32,7 +32,8 @@ button { cursor: pointer; }
 .side-label { margin: 42px 0 12px; padding: 0 12px; }
 .sidebar nav { display: grid; gap: 5px; }
 .sidebar nav button { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; font-size: 13px; font-weight: 500; }
-.sidebar nav button img { width: 18px; height: 18px; opacity: .72; }
+.sidebar nav button img { width: 18px; height: 18px; filter: brightness(0); opacity: 1; }
+.workspace.dark .sidebar nav button img.inverted { filter: brightness(0) invert(1); }
 .sidebar nav button:hover { background: var(--surface-muted); color: var(--ink); }
 .sidebar nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
 .sidebar nav button.active img { opacity: 1; }

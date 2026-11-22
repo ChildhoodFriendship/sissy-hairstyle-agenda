@@ -8,7 +8,7 @@
 .side-label { margin: 48px 0 13px; color: var(--muted); font-size: 9px; letter-spacing: .16em; }
 .sidebar nav { gap: 3px; }
 .sidebar nav button { min-height: 42px; padding: 0 12px; border-radius: 5px; font-size: 12px; letter-spacing: .01em; }
-.sidebar nav button img { width: 17px; height: 17px; opacity: .66; }
+.sidebar nav button img { width: 17px; height: 17px; opacity: 1; }
 .sidebar nav button.active { background: var(--accent-soft); color: var(--accent); }
 .sidebar-bottom { border-top: 1px solid var(--line); }
 .logout { padding-top: 17px; }
