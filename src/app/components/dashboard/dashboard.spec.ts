@@ -115,6 +115,7 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     const cards = fixture.nativeElement.querySelectorAll('.appointment') as NodeListOf<HTMLElement>;
     const toggle = cards[0].querySelector('.appointment-toggle') as HTMLButtonElement;
+    expect(toggle.querySelector('svg[data-icon="arrow-upward"]')).not.toBeNull();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-controls')).toBe('appointment-details-first');
     toggle.click();

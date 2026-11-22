@@ -11,10 +11,11 @@
 .appointment-summary { display: flex; align-items: center; min-width: 0; gap: 9px; }
 .appointment-summary .appointment-top { flex: 1; min-width: 0; }
 .appointment-summary h4 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.appointment-toggle { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--muted); cursor: pointer; }
-.appointment-toggle:hover { background: var(--surface-muted); color: var(--ink); }
-.appointment-chevron { display: inline-block; font-size: 19px; line-height: 1; transition: transform 180ms ease; }
-.appointment-toggle[aria-expanded="true"] .appointment-chevron { transform: rotate(180deg); }
+.appointment-toggle { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--accent); cursor: pointer; transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+.appointment-toggle:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.appointment-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.appointment-chevron { display: block; width: 18px; height: 18px; fill: currentColor; transition: transform 180ms ease; }
+.appointment-toggle[aria-expanded="false"] .appointment-chevron { transform: rotate(180deg); }
 .appointment-details { display: grid; gap: 9px; min-width: 0; }
 .appointment-details[hidden] { display: none; }
 .appointment-time { padding-top: 0; color: var(--accent); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
