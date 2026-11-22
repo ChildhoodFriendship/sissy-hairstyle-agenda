@@ -10,6 +10,10 @@ This page records documentation changes; entries are historical and do not repre
 
 ## Documentation log
 
+### 2026-11-22 — one employee per mobile agenda view
+
+- Mobile agenda columns now snap horizontally one employee at a time and prevent a swipe from skipping columns; the scroll cue appears in the all-agendas view when two or more columns are available. The reduced-motion preference continues to disable snapping.
+
 ### Collapsible appointments and reminder cue
 
 - Added per-appointment disclosure controls in the agenda without changing stored records. Removed the summary reminder count and next-day reminder card: neither could represent actual message preparation or delivery. The manually opened WhatsApp action remains on expanded cards. Tests and build were not run on this VM under repository restrictions.

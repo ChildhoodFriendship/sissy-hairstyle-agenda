@@ -226,6 +226,18 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelectorAll('.employee-agenda-column')).toHaveLength(3);
   });
 
+  it('shows the horizontal-scroll hint when two agenda columns are available', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as { employees: { set(value: Employee[]): void } };
+    instance.employees.set([{ id: 'employee-1', firstName: 'Lara', lastName: 'Rossi', createdAt: '2026-01-01T00:00:00.000Z' }]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('.employee-agenda-column')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.agenda-scroll-hint')?.textContent?.trim()).toBe('Scorri per le altre persone →');
+  });
+
   it('books a free employee half hour without offering the same occupied time for Sissy', async () => {
     readShifts = async date => [null, 'employee-1'].map(employeeId => ({ date, employeeId, slots: [20] }));
     const fixture = TestBed.createComponent(Dashboard);

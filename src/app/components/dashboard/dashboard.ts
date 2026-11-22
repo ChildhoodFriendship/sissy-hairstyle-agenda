@@ -46,7 +46,7 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
                 <label class="agenda-single-selector"><span>{{ copy.agenda.personFilter }}</span><select [ngModel]="selectedAgendaColumn().id" (ngModelChange)="selectAgendaColumn($event)">@for (column of agendaColumns(); track column.id) { <option [value]="column.id">{{ column.name }}</option> }</select></label>
               }
               <label class="agenda-mobile-view"><span>{{ copy.agenda.mobileView }}</span><select name="mobileAgendaView" [ngModel]="singleAgendaView() ? selectedAgendaColumn().id : 'all'" (ngModelChange)="selectMobileAgendaView($event)"><option value="all">{{ copy.agenda.allPeople }}</option>@for (column of agendaColumns(); track column.id) { <option [value]="column.id">{{ column.name }}</option> }</select></label>
-              @if (agendaColumns().length > 2 && !singleAgendaView()) { <span class="agenda-scroll-hint" aria-hidden="true">{{ copy.agenda.scrollHint }}</span> }
+              @if (agendaColumns().length > 1 && !singleAgendaView()) { <span class="agenda-scroll-hint" aria-hidden="true">{{ copy.agenda.scrollHint }}</span> }
             </div>
             @if (shiftState() === 'missing') {
               <p class="muted" role="status">I turni per persona non sono ancora attivi. Puoi continuare a prenotare dall’agenda.</p>
