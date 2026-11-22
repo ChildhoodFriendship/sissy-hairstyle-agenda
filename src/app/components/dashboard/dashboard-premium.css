@@ -54,21 +54,16 @@
 .appointment-body small { margin-top: 6px; font-size: 10px; }
 .status { min-height: 21px; padding: 0 7px; border: 1px solid var(--line); border-radius: 3px; background: transparent; color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .status::before { width: 5px; height: 5px; margin-right: 6px; border-radius: 50%; background: currentColor; content: ""; }
-.status.confirmed { border-color: color-mix(in srgb, var(--success) 34%, var(--line)); color: var(--success); }
 .status.cancelled { border-color: color-mix(in srgb, var(--danger) 34%, var(--line)); background: transparent; color: var(--danger); }
 .status.completed { background: transparent; color: var(--muted); }
 .workspace.dark .status { border-color: var(--line); background: transparent; color: var(--muted); }
-.workspace.dark .status.confirmed { border-color: color-mix(in srgb, var(--success) 34%, var(--line)); color: var(--success); }
 .workspace.dark .status.cancelled { border-color: color-mix(in srgb, var(--danger) 34%, var(--line)); background: transparent; color: var(--danger); }
 .workspace.dark .status.completed { background: transparent; color: var(--muted); }
 .appointment.cancelled .appointment-body { opacity: .7; }
 .appointment-actions { gap: 5px; }
 .appointment-actions button, .text-button { min-height: 36px; border-radius: 4px; font-size: 11px; }
 .appointment-actions .whatsapp { color: var(--success); }
-.appointment-actions .appointment-status-action.confirm, .appointment-actions .appointment-status-action.cancel,
 .appointment-actions .delete, .text-button.danger { color: var(--danger); }
-.appointment-actions .appointment-status-action.confirm { color: var(--success); }
-.appointment-actions .appointment-status-action .material-icon { width: 17px; height: 17px; }
 .empty { padding: 48px 20px 52px; }
 .empty-art { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: transparent; font-family: var(--sissy-font-editorial); }
 .empty h3 { font-family: var(--sissy-font-editorial); font-size: 20px; font-weight: 400; }

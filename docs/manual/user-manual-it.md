@@ -124,7 +124,7 @@ Le immagini delle schermate sono lasciate come attività editoriale: non sono st
 <a id="agenda"></a>
 ### 5.1 Agenda
 
-**Descrizione breve:** mostra gli appuntamenti della data selezionata e consente di crearli, modificarli, annullarli o eliminarli.
+**Descrizione breve:** mostra gli appuntamenti della data selezionata e consente di crearli, modificarli o eliminarli.
 
 **Immagine:** da acquisire e verificare prima della pubblicazione; aggiungere testo alternativo.
 
@@ -146,7 +146,7 @@ Le immagini delle schermate sono lasciate come attività editoriale: non sono st
 2. Imposta le fasce di lavoro di quella persona per quella data. Per una pausa, usa due fasce separate; per un giorno di riposo, non inserire fasce. Salva il turno: gli altri giorni e le altre persone non cambiano.
 3. In **Orari liberi** scegli una mezz’ora. Il modulo si apre con data, ora e persona già impostate: inserisci il cliente e salva. Se non ci sono fasce libere, gli appuntamenti già registrati restano consultabili.
 
-Esempio: se Sissy ha un appuntamento confermato alle 10:00, non puoi prenotare un altro cliente per lei alle 10:00. Se una dipendente è in turno e libera, lo stesso orario rimane disponibile nella sua colonna, entro la capienza del salone.
+Esempio: se Sissy ha un appuntamento alle 10:00, non puoi prenotare un altro cliente per lei alle 10:00. Se una dipendente è in turno e libera, lo stesso orario rimane disponibile nella sua colonna, entro la capienza del salone.
 
 **Creare un appuntamento**
 
@@ -156,13 +156,13 @@ Esempio: se Sissy ha un appuntamento confermato alle 10:00, non puoi prenotare u
 4. Scegli data, ora e persona assegnata; aggiungi, se necessario, servizio, note e consenso.
 5. Scegli **Salva appuntamento**. Durante la modifica il pulsante è **Salva modifiche**.
 
-Il controllo non ammette più di tre appuntamenti confermati nella stessa data e ora, né due appuntamenti confermati assegnati alla stessa persona nello stesso slot. Gli errori di validazione e i conflitti sono mostrati nel modulo; gli esiti del salvataggio sono mostrati con un avviso temporaneo.
+I nuovi appuntamenti occupano l’orario scelto senza richiedere una conferma separata e senza mostrare un’etichetta di stato. Il controllo non ammette più di tre appuntamenti attivi nella stessa data e ora, né due appuntamenti attivi assegnati alla stessa persona nello stesso slot; gli appuntamenti annullati non occupano la fascia. Gli errori di validazione e i conflitti sono mostrati nel modulo; gli esiti del salvataggio sono mostrati con un avviso temporaneo.
 
 **Consultare e gestire gli appuntamenti**
 
 - Usa il selettore **Giorno selezionato**, i pulsanti **Giorno precedente** e **Giorno successivo**, oppure **Oggi**.
 - Nella scheda di un appuntamento scegli **Modifica appuntamento** per aggiornare i dati.
-- Scegli **Annulla** per annullare un appuntamento; l’azione disponibile diventa **Ripristina**.
+- Non è presente un’azione di annullamento o riattivazione; gli appuntamenti annullati o completati già registrati mantengono la loro etichetta di stato.
 - Scegli **Elimina appuntamento** e conferma la richiesta del browser per cancellare la scheda.
 - La cancellazione di un cliente non elimina gli appuntamenti già registrati.
 
@@ -238,7 +238,7 @@ Le preferenze del salone sono conservate nel browser. Non presumere che siano si
 2. Nella scheda dell’appuntamento scegli **Messaggio**. Se il consenso non è registrato, l’azione è disabilitata.
 3. Si apre WhatsApp con un testo precompilato. Rileggilo e invialo manualmente solo se corretto e autorizzato.
 
-L’app non invia messaggi, non verifica la consegna e non programma invii automatici. Il conteggio **Promemoria da preparare** segnala appuntamenti confermati e consenzienti del giorno successivo alla data selezionata: non è una coda d’invio.
+L’app non invia messaggi, non verifica la consegna e non programma invii automatici. Il conteggio **Promemoria da preparare** segnala appuntamenti attivi e consenzienti del giorno successivo alla data selezionata: non è una coda d’invio.
 
 **Modificare il testo del promemoria**
 
@@ -266,7 +266,7 @@ Verifica username e password. Se hai appena creato l’account, completa prima l
 
 ### Il salvataggio dell’appuntamento non riesce
 
-Controlla i campi obbligatori e che la data e l’ora siano corrette. Per un appuntamento confermato, verifica anche il limite di tre appuntamenti nello stesso slot e che la stessa persona non sia già assegnata. Se compare un errore di salvataggio, annota il messaggio visualizzato e contatta il gestore.
+Controlla i campi obbligatori e che la data e l’ora siano corrette. Per un appuntamento attivo, verifica anche il limite di tre appuntamenti nello stesso slot e che la stessa persona non sia già assegnata. Se compare un errore di salvataggio, annota il messaggio visualizzato e contatta il gestore.
 
 ### Il pulsante WhatsApp non è disponibile
 

@@ -75,21 +75,22 @@ describe('Dashboard', () => {
     };
     instance.appointments.set([appointment]);
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.agenda-stats')?.textContent).not.toMatch(/confermat/i);
+    expect(fixture.nativeElement.querySelectorAll('.agenda-stats article')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.appointment .status')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toMatch(/confermat/i);
     expect(fixture.nativeElement.querySelector('.whatsapp img')?.getAttribute('src')).toBe('/assets/whatsapp.svg');
-    const statusAction = fixture.nativeElement.querySelector('.appointment-status-action') as HTMLButtonElement;
+    expect(fixture.nativeElement.querySelector('.appointment-status-action')).toBeNull();
     const editAction = fixture.nativeElement.querySelector('.edit-appointment') as HTMLButtonElement;
-    expect(statusAction.getAttribute('aria-label')).toBe('Annulla appuntamento');
-    expect(statusAction.querySelector('svg[data-icon="close"]')).toBeTruthy();
-    expect(statusAction.nextElementSibling).toBe(editAction);
+    expect(editAction.previousElementSibling).toBe(fixture.nativeElement.querySelector('.whatsapp'));
     expect(editAction.querySelector('img')?.getAttribute('src')).toBe('/assets/green_edit.svg');
     expect(fixture.nativeElement.querySelector('.delete-appointment img')?.getAttribute('src')).toBe('/assets/red_delete.svg');
     expect(editAction.getAttribute('aria-label')).toBe('Modifica appuntamento');
     expect(fixture.nativeElement.querySelector('.delete-appointment')?.getAttribute('aria-label')).toBe('Elimina appuntamento');
     instance.appointments.set([{ ...appointment, status: 'cancelled' }]);
     fixture.detectChanges();
-    const confirmAction = fixture.nativeElement.querySelector('.appointment-status-action') as HTMLButtonElement;
-    expect(confirmAction.getAttribute('aria-label')).toBe('Conferma appuntamento');
-    expect(confirmAction.querySelector('svg[data-icon="check"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.appointment .status')?.textContent?.trim()).toBe('Annullato');
+    expect(fixture.nativeElement.querySelector('.appointment-status-action')).toBeNull();
   });
 
   it('shows a separate agenda column for Sissy and each registered employee', async () => {
@@ -234,6 +235,7 @@ describe('Dashboard', () => {
     await instance.saveAppointment();
     expect(saveClientCalls).toBe(0);
     expect(savedAppointment?.clientId).toBe('');
+    expect(savedAppointment?.status).toBe('confirmed');
   });
 
   it('saves a new client before its appointment when the directory opt-in is checked', async () => {

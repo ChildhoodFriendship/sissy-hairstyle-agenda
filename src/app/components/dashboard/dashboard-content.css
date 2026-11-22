@@ -25,13 +25,9 @@
 .appointment-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px; }
 .appointment-actions button, .text-button { min-height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 10px; font-weight: 550; }
 .appointment-actions button:hover:not(:disabled), .text-button:hover { background: var(--surface-muted); color: var(--ink); }
-.appointment-actions .edit-appointment, .appointment-actions .delete-appointment, .appointment-actions .appointment-status-action { display: grid; width: 32px; height: 30px; place-items: center; padding: 0; }
+.appointment-actions .edit-appointment, .appointment-actions .delete-appointment { display: grid; width: 32px; height: 30px; place-items: center; padding: 0; }
 .appointment-actions .edit-appointment img, .appointment-actions .delete-appointment img { width: 17px; height: 17px; }
-.appointment-actions .appointment-status-action.confirm { color: #278651; }
-.appointment-actions .appointment-status-action.cancel { color: #A64A55; }
-.appointment-actions .appointment-status-action.confirm:hover:not(:disabled) { color: #278651; }
-.appointment-actions .appointment-status-action.cancel:hover:not(:disabled) { color: #A64A55; }
-.appointment-actions .appointment-status-action .material-icon, .dialog .close .material-icon { display: block; width: 18px; height: 18px; fill: currentColor; }
+.dialog .close .material-icon { display: block; width: 18px; height: 18px; fill: currentColor; }
 .appointment-actions .whatsapp { color: #347A57; }
 .appointment-actions .whatsapp:disabled { opacity: .45; cursor: not-allowed; }
 .appointment-actions .whatsapp img { width: 16px; height: 16px; margin-right: 3px; vertical-align: -3px; }

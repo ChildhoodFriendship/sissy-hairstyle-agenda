@@ -10,6 +10,11 @@ This page records documentation changes; entries are historical and do not repre
 
 ## Documentation log
 
+### Appointment status display
+
+- Removed the confirmed count and label from the agenda UI while retaining `confirmed` as the stored default for new appointments. Removed the cancel/reactivate card action; historical cancelled and completed badges remain visible.
+- Updated the appointment wiki and Italian manual. Automated tests and builds were not run on this VM under repository restrictions.
+
 ### 2026-11-20 — project documentation standardization
 
 - Moved the canonical documentation schema to the repository root and retained `docs/wiki/SCHEMA.md` as a compatibility pointer.

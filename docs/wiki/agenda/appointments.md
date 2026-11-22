@@ -33,7 +33,7 @@ source:
 
 ## Short Description
 
-This section describes creating, editing, assigning, changing the status of, and removing salon appointments, including confirmed-slot conflict rules.
+This section describes creating, editing, assigning, and removing salon appointments, including confirmed-slot conflict rules.
 
 ## Description
 
@@ -41,7 +41,7 @@ This section describes appointment records shown for a selected date in the dash
 
 ## Functional Characteristics
 
-- Shows only **Agenda** as the agenda screen heading, without the promotional eyebrow or subtitle.
+- Shows only **Agenda** as the agenda screen heading, without the promotional eyebrow or subtitle. The daily summary shows appointment and reminder counts, not a separate confirmed count. New appointments are stored as `confirmed` without displaying that state; only cancelled or completed appointments show a status badge.
 - Shows appointments for the selected date in time order, grouped into one column for Sissy and one for each registered employee. Columns show appointment counts and remain visible when empty; historical assignments without a current employee record remain visible in a separate historical column. On mobile, at most two columns are visible at once and additional columns can be reached by horizontal scrolling. The **Vista singola** control and person selector show one selected person's agenda. Employee names remain horizontal. Directional image buttons move to the previous or next calendar day, and the **Oggi** control returns to today.
 - Manages appointments through a form with required client first name, last name, phone, date, and time. Service, notes, client link, reminder consent, and assignee are also available.
 - Centers the close icon in the appointment form dialog.
@@ -51,11 +51,11 @@ This section describes appointment records shown for a selected date in the dash
 - Activation requires the daily work schedules migration. When the default schedule is used for a new confirmed appointment, the dashboard saves that person's default slots for the date before saving the appointment, satisfying the database work-slot trigger. If the relation is missing, existing appointments and the previous native time picker remain available. Other failures to read shifts show an error and a retry action, not an all-day availability assumption.
 - Adds a new client record when saving an appointment only when **Aggiungi anche alla Rubrica Clienti** is checked. If the checkbox is cleared, the appointment is saved without a client row and its nullable `client_id` remains empty.
 - Shows appointment save success or repository failure in a dismissible toast that closes after about three seconds; validation and conflict errors remain inline.
-- Shows icon-only status, edit, and delete actions on appointment cards after the WhatsApp action: the status control precedes edit, showing a green check to confirm a cancelled appointment and an X to cancel. All icon-only actions retain accessible labels.
+- Shows icon-only edit and delete actions on appointment cards after the WhatsApp action. There is no cancel or reactivate action; the icon-only actions retain accessible labels.
 - Prefills contact fields and consent state when the operator selects a saved client. A matching phone number can also link a new appointment to an existing client.
 - Assigns an appointment to Sissy or an active employee. Existing appointments assigned to archived employees or legacy deleted employees retain a non-active historical assignment while edited.
 - Validates phone numbers using `+39` as the default country code; the appointment phone field shows an Italian national-number example without the `+39` prefix. Checks confirmed appointments for a time slot: no more than three confirmed appointments and no duplicate assignee. Cancelled or completed appointments are excluded from this client-side conflict check.
-- Manages status changes between confirmed and cancelled from the appointment card; the interface also displays completed status when present in data.
+- Shows cancelled and completed status labels for historical records when present in data; the appointment card does not change status. Editing retains the stored status.
 - Deletes an appointment only after browser confirmation. Deleting a client does not delete appointments.
 - The database migration adds a unique confirmed-assignee constraint and a database capacity trigger. This database enforcement applies only when the migration has been deployed; a local build does not prove deployment.
 
