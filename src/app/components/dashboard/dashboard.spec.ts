@@ -113,8 +113,11 @@ describe('Dashboard', () => {
     };
     instance.appointments.set([appointment, { ...appointment, id: 'second', clientName: 'Grace Hopper', time: '10:00' }]);
     fixture.detectChanges();
-    const dayCount = fixture.nativeElement.querySelector('.date-chip .mobile-agenda-count') as HTMLElement;
+    const daySummary = fixture.nativeElement.querySelector('.mobile-date-summary') as HTMLElement;
+    const dayCount = daySummary.querySelector('.mobile-agenda-count') as HTMLElement;
+    expect(daySummary.querySelector('.mobile-date-caption')?.textContent).toContain('GIORNO SELEZIONATO');
     expect(dayCount.textContent).toContain('2 appuntamenti');
+    expect(fixture.nativeElement.querySelector('.date-chip .mobile-agenda-count')).toBeNull();
     const cards = fixture.nativeElement.querySelectorAll('.appointment') as NodeListOf<HTMLElement>;
     const toggle = cards[0].querySelector('.appointment-toggle') as HTMLButtonElement;
     expect(cards[0].style.getPropertyValue('--ui-enter-delay')).toBe('0ms');
