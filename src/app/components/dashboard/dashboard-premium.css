@@ -30,7 +30,6 @@
 .icon-button { width: 38px; min-width: 38px; min-height: 38px; border-color: var(--line); background: transparent; }
 .icon-button:hover { border-color: var(--accent); background: var(--accent-soft); }
 .date-chip { min-width: 196px; padding: 5px 9px; border: 0; border-radius: 0; background: transparent; }
-.date-chip span { font-size: 9px; letter-spacing: .12em; }
 .date-chip input { font-family: var(--sissy-font-editorial); font-size: 17px; font-weight: 400; }
 .stats { gap: 0; margin: 0 0 28px; }
 .stats article { gap: 5px; min-height: 76px; padding: 1px 20px 3px 0; border: 0; border-right: 1px solid var(--line); border-radius: 0; background: transparent; }
@@ -42,6 +41,7 @@
 .agenda-card { border-color: var(--line); border-radius: 8px; background: var(--surface); }
 .card-title { padding: 21px 23px; }
 .card-title h2 { font-family: var(--sissy-font-editorial); font-size: 22px; font-weight: 400; letter-spacing: -.025em; }
+.agenda-total { margin: 7px 0 0; color: var(--muted); font-size: 12px; font-weight: 550; }
 .count-pill, .consent-pill { min-height: 24px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font-size: 9px; letter-spacing: .02em; }
 .appointment-list { gap: 0; padding: 5px 0 9px; }
 .employee-agenda-column { padding: 16px 14px; }
@@ -158,17 +158,11 @@
 .agenda-view-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding: 12px 16px 0; }
 .agenda-view-toggle[aria-pressed="true"] { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: var(--accent-soft); color: var(--accent); }
 .agenda-mobile-view { display: none; }
-.mobile-date-summary { display: none; }
 .agenda-single-selector { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
 .agenda-single-selector select { min-width: 150px; max-width: 240px; min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); }
 .agenda-scroll-hint { display: none; margin-left: auto; color: var(--muted); font-size: 10px; }
 
 @media (max-width: 900px) {
-  .desktop-agenda-count { display: none; }
-  .mobile-date-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 6px; color: var(--muted); }
-  .mobile-date-caption { font-size: 9px; font-weight: 650; letter-spacing: .12em; }
-  .date-chip .desktop-date-caption { display: none; }
-  .mobile-date-summary .mobile-agenda-count { display: inline-flex; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-size: 10px; font-weight: 550; letter-spacing: 0; }
   .datebar > .icon-button, .datebar > .today-button { align-self: center; }
   .agenda-view-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 14px 0; }
   .agenda-view-toggle, .agenda-single-selector { display: none; }

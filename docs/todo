@@ -27,7 +27,7 @@
 - [x] **Vista agenda mobile e tablet:** nella vista “Tutte”, le colonne scorrono orizzontalmente con una persona centrata a ogni scatto e scorci delle colonne vicine; la vista singola centra la stessa colonna. Per roster ampi su desktop resta la voce sotto.
 - [ ] **Roster ampi su desktop:** adattare la griglia quando il numero di colonne non rientra nella larghezza disponibile; la gestione mobile è completata sopra.
 - [x] **Separatori agenda contestuali:** mostrare le linee tra intestazione, appuntamenti e orari liberi solo quando entrambi i contenuti ai lati della linea sono presenti; nasconderle se l’elenco appuntamenti o quello degli orari liberi è vuoto.
-- [x] **Selettore data mobile:** lasciare nel controllo nativo solo la data. Mostrare “GIORNO SELEZIONATO” e il conteggio appuntamenti in una riga separata sopra i controlli di data; mantenere il nome accessibile del campo separato dal testo visualizzato.
+- [x] **Riepilogo agenda:** rimuovere “GIORNO SELEZIONATO” e mostrare “Appuntamenti totali: N” sotto la data nella testata dell’agenda; il controllo nativo contiene solo la data.
 - [x] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
 
 ## Popup e icone
