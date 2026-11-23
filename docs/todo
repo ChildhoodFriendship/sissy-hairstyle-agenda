@@ -26,6 +26,7 @@
   - [ ] Configurare il primo turno e verificare salvataggio/prenotazione nonché lettura da un secondo dispositivo con lo stesso account.
 - [x] **Vista agenda mobile e tablet:** nella vista “Tutte”, le colonne scorrono orizzontalmente con una persona centrata a ogni scatto e scorci delle colonne vicine; la vista singola centra la stessa colonna. Per roster ampi su desktop resta la voce sotto.
 - [ ] **Roster ampi su desktop:** adattare la griglia quando il numero di colonne non rientra nella larghezza disponibile; la gestione mobile è completata sopra.
+- [x] **Separatori agenda contestuali:** mostrare le linee tra intestazione, appuntamenti e orari liberi solo quando entrambi i contenuti ai lati della linea sono presenti; nasconderle se l’elenco appuntamenti o quello degli orari liberi è vuoto.
 - [x] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
 
 ## Popup e icone

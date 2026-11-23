@@ -56,7 +56,7 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
             <div class="appointment-list" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="region" tabindex="0" [attr.aria-label]="singleAgendaView() ? copy.agenda.singleAgendaLabel + ' ' + selectedAgendaColumn().name : copy.agenda.allAgendasLabel" [class.single-employee-view]="singleAgendaView() || visibleAgendaColumns().length === 1" [style.--agenda-column-count]="visibleAgendaColumns().length">
               @for (column of visibleAgendaColumns(); track column.id) {
                 <section class="employee-agenda-column" role="group" [attr.aria-label]="'Agenda di '+column.name">
-                  <header class="employee-agenda-heading"><h3>{{ column.name }}</h3><span class="employee-agenda-count">{{ column.appointments.length }} {{ column.appointments.length === 1 ? 'appuntamento' : 'appuntamenti' }}</span></header>
+                  <header class="employee-agenda-heading" [class.has-appointments]="column.appointments.length > 0"><h3>{{ column.name }}</h3><span class="employee-agenda-count">{{ column.appointments.length }} {{ column.appointments.length === 1 ? 'appuntamento' : 'appuntamenti' }}</span></header>
                   @if (column.appointments.length) {
                     <div class="employee-appointments">
                       @for (item of column.appointments; track item.id; let index = $index) {
@@ -76,7 +76,7 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
                     </div>
                   } @else if (todayAppointments().length) {<p class="employee-agenda-empty">Nessun appuntamento</p>}
                 @if (column.bookable && shiftState() === 'ready' && loadedShiftDate() === selectedDate()) {
-                  <div class="column-availability">
+                  <div class="column-availability" [class.has-appointments]="column.appointments.length > 0" [class.has-free-times]="column.freeTimes.length > 0">
                     <button type="button" class="shift-action text-button" [attr.aria-label]="'Modifica turno di ' + column.name" (click)="editHours(column)">Modifica turno</button>
                     <h4>Orari liberi</h4>
                     @if (column.freeTimes.length) {

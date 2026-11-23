@@ -1,4 +1,5 @@
-.column-availability { display: grid; gap: .5rem; margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--line); }
+.column-availability { display: grid; gap: .5rem; margin-top: 1rem; padding-top: .75rem; }
+.column-availability.has-appointments.has-free-times { border-top: 1px solid var(--line); }
 .column-availability h4, .column-availability p { margin: 0; font-size: .8rem; }
 .shift-action { justify-self: start; padding-inline: 0; }
 .free-slot-list { display: flex; flex-wrap: wrap; gap: .4rem; }
