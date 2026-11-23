@@ -10,6 +10,10 @@ This page records documentation changes; entries are historical and do not repre
 
 ## Documentation log
 
+### 2026-11-23 — static bug audit
+
+- Added source-backed bug candidates and verification follow-ups to the project TODO. The audit did not run tests, build, browser checks, or live Supabase/Vercel verification; the previously logged eight test failures remain unverified on current `main`.
+
 ### 2026-11-22 — one employee per mobile agenda view
 
 - Mobile agenda columns now snap horizontally one employee at a time and prevent a swipe from skipping columns; the scroll cue appears in the all-agendas view when two or more columns are available. The reduced-motion preference continues to disable snapping.
