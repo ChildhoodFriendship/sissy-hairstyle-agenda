@@ -24,7 +24,7 @@
 - [x] **Migrazione turni condivisi applicata:** l’utente ha confermato l’esecuzione riuscita di `supabase/migrations/20261121000000_daily_work_schedules.sql` nel SQL Editor. Read-back read-only sul progetto `sissy hairstyle agenda` (`jawxcjkheoarslyvupir`) conferma `public.daily_work_schedules`, colonne `owner_id`, `work_date`, `employee_id`, `slots`, vincoli FK verso utenti e dipendenti, e RLS abilitato; la tabella è vuota (nessun backfill). La cronologia migrazioni Supabase restituisce vuota, coerentemente con esecuzione manuale dal SQL Editor.
   - [ ] Verificare read-only trigger `appointments_confirmed_work_slot`, funzione `check_confirmed_work_slot`, vincolo unique `NULLS NOT DISTINCT` e policy owner-scoped; il read-back tabellare disponibile non espone questi dettagli.
   - [ ] Configurare il primo turno e verificare salvataggio/prenotazione nonché lettura da un secondo dispositivo con lo stesso account.
-- [x] **Vista agenda su mobile:** la griglia mostra al massimo due colonne alla volta e scorre orizzontalmente per raggiungere le altre; il pulsante **Vista singola** permette di selezionare e visualizzare una sola persona.
+- [x] **Vista agenda mobile e tablet:** nella vista “Tutte”, le colonne scorrono orizzontalmente con una persona centrata a ogni scatto e scorci delle colonne vicine; la vista singola centra la stessa colonna. Per roster ampi su desktop resta la voce sotto.
 - [ ] **Roster ampi su desktop:** adattare la griglia quando il numero di colonne non rientra nella larghezza disponibile; la gestione mobile è completata sopra.
 - [x] **Azioni modifica/elimina:** togliere le etichette testuali dai pulsanti dell’appuntamento e mostrare solo le icone di modifica ed eliminazione già presenti nel progetto.
 
