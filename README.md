@@ -9,7 +9,7 @@ The app's authentication and data layer use Supabase when the project has been c
 - [Repository instructions](AGENTS.md)
 - [Documentation schema](SCHEMA.md)
 - [Wiki index](docs/wiki/index.md) and [application overview](docs/wiki/overview.md)
-- [Italian user manual](docs/manual/user-manual-it.md)
+- [Italian user manual](docs/manual/user-manual-it.md) and [generation guide](docs/manual/README.md)
 - [Supabase setup](supabase/README.md) and [operator setup guide](supabase/USER-SETUP.md)
 
 ## Local development
@@ -32,3 +32,17 @@ npm run build
 ```
 
 `validate-wiki` checks wiki frontmatter, local links and declared source paths. Tests/builds do not verify remote Supabase configuration, row-level security, SMTP, Auth recovery or WhatsApp delivery. Read `AGENTS.md` before running commands; do not install, build or test on this VM without task-specific authorization.
+
+## Italian user manual
+
+The manual Markdown is generated from marked Italian source blocks in `docs/wiki/`; do not edit `docs/manual/user-manual-it.md` directly. With the pinned dependencies in an active Python virtual environment, create the replaceable Word template and generate the Markdown, DOCX and PDF:
+
+```bash
+python -m pip install -r docs/manual/requirements.txt
+python scripts/generate_user_manual.py --create-template
+python scripts/generate_user_manual.py
+python scripts/generate_user_manual.py --check
+python scripts/test_generate_user_manual.py
+```
+
+See the [manual generation guide](docs/manual/README.md) for source, template replacement and output details.

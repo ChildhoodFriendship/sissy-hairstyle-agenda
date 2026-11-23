@@ -39,9 +39,12 @@ interface EmployeeRow {
   is_active: boolean;
 }
 
+const SETTINGS_COLUMNS = 'salon_name,default_country_code,business_hours,message_templates,demo_data_enabled';
+
 @Injectable({ providedIn: 'root' })
 export class SupabaseAgendaRepository extends LocalStorageRepository implements AppointmentRepository, ClientRepository, EmployeeRepository, SettingsRepository {
   private readonly supabase = inject(SUPABASE_CLIENT);
+  private settingsUnavailable = false;
 
   override async listAppointments(): Promise<Appointment[]> {
     const client = this.requireClient();
@@ -176,8 +179,48 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
     return (data as { name: string }[]).map((row) => row.name);
   }
 
+  override async loadSettings(): Promise<SalonSettings> {
+    let fallback: SalonSettings | undefined;
+    try {
+      const remoteSettings = await this.readSettings();
+      if (remoteSettings) {
+        this.settingsUnavailable = false;
+        this.removeStoredSettings();
+        return remoteSettings;
+      }
+
+      fallback = await super.loadSettings();
+      if (!this.hasStoredSettings()) {
+        this.settingsUnavailable = false;
+        return { ...fallback, services: [] };
+      }
+
+      await this.upsertSettings(fallback, true);
+      const migratedSettings = await this.readSettings();
+      if (!migratedSettings) throw new Error('Salon settings migration did not produce a row.');
+      this.removeStoredSettings();
+      this.settingsUnavailable = false;
+      return migratedSettings;
+    } catch {
+      this.settingsUnavailable = true;
+      fallback ??= await super.loadSettings();
+      return { ...fallback, services: [] };
+    }
+  }
+
+  hasSettingsWarning(): boolean {
+    return this.settingsUnavailable;
+  }
+
   override async saveSettings(settings: SalonSettings): Promise<void> {
-    await super.saveSettings({ ...settings, services: [] });
+    try {
+      await this.upsertSettings(settings);
+      this.settingsUnavailable = false;
+      this.removeStoredSettings();
+    } catch (error) {
+      this.settingsUnavailable = true;
+      throw error;
+    }
   }
 
   override async saveServices(services: string[]): Promise<void> {
@@ -222,4 +265,63 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
     if (!this.supabase) throw new Error('Configurazione Supabase mancante.');
     return this.supabase;
   }
+
+  private async readSettings(): Promise<SalonSettings | null> {
+    const { data, error } = await this.requireClient().from('salon_settings')
+      .select(SETTINGS_COLUMNS).maybeSingle();
+    if (error) throw error;
+    return data ? salonSettingsFromRow(data) : null;
+  }
+
+  private async upsertSettings(settings: SalonSettings, ignoreDuplicates = false): Promise<void> {
+    const { error } = await this.requireClient().from('salon_settings').upsert({
+      salon_name: settings.salonName,
+      default_country_code: settings.defaultCountryCode,
+      business_hours: settings.businessHours,
+      message_templates: settings.messageTemplates,
+      demo_data_enabled: settings.demoDataEnabled,
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'owner_id',
+      ...(ignoreDuplicates ? { ignoreDuplicates: true } : {}),
+    });
+    if (error) throw error;
+  }
+}
+
+function salonSettingsFromRow(value: unknown): SalonSettings {
+  if (!isRecord(value) || typeof value['salon_name'] !== 'string' ||
+      typeof value['default_country_code'] !== 'string' || typeof value['demo_data_enabled'] !== 'boolean') {
+    throw new Error('Invalid salon settings row.');
+  }
+
+  const hours = value['business_hours'];
+  const templates = value['message_templates'];
+  if (!isRecord(hours) || typeof hours['open'] !== 'string' || typeof hours['close'] !== 'string' ||
+      !Array.isArray(hours['closedDays']) || !hours['closedDays'].every((day) =>
+        typeof day === 'number' && Number.isInteger(day) && day >= 0 && day <= 6) ||
+      !isRecord(templates) || typeof templates['confirmation'] !== 'string' ||
+      typeof templates['reminder'] !== 'string') {
+    throw new Error('Invalid salon settings JSON.');
+  }
+
+  return {
+    salonName: value['salon_name'],
+    defaultCountryCode: value['default_country_code'],
+    services: [],
+    businessHours: {
+      open: hours['open'],
+      close: hours['close'],
+      closedDays: [...hours['closedDays']] as number[],
+    },
+    messageTemplates: {
+      confirmation: templates['confirmation'],
+      reminder: templates['reminder'],
+    },
+    demoDataEnabled: value['demo_data_enabled'],
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

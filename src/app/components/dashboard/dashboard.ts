@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { WorkHoursEditor } from '../work-hours-editor/work-hours-editor';
+import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
 import { DEFAULT_WORK_SLOTS, freeTimesForPerson, type DailyWorkSchedule } from '../../library/work-schedule';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
@@ -14,11 +15,12 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
  type View = 'agenda' | 'clients' | 'employees' | 'settings';
 type AgendaColumn = { id: string; name: string; appointments: Appointment[]; bookable: boolean; freeTimes: string[] };
 type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
+type PendingConfirmation = { title: string; message: string; confirmLabel: string; action: () => Promise<void> };
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, WorkHoursEditor],
+  imports: [FormsModule, WorkHoursEditor, ConfirmationDialog],
   template: `
     <div class="workspace" [class.dark]="darkMode()">
       <aside class="sidebar">
@@ -35,7 +37,12 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
       <main class="main">
         <header class="topbar"><div class="mobile-brand"><span class="brand-mark">S</span> Agenda Sissy</div><button class="theme-toggle" type="button" (click)="toggleTheme()">{{ darkMode() ? '☀ Modalità chiara' : '☾ Modalità scura' }}</button><button class="mobile-logout" (click)="logout()">Esci</button></header>
         @if (storageWarning()) { <div class="notice warning" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ copy.common.localStorageError }} Puoi continuare a usare questa schermata, ma i dati potrebbero non essere salvati.</div> }
-        @if (notice()) { <div class="toast" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()">×</button></div> }
+        @if (notice()) { <div class="toast" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button></div> }
+        @if (pendingConfirmation(); as confirmation) {
+          <app-confirmation-dialog animate.leave="confirmation-leave" [title]="confirmation.title" [message]="confirmation.message"
+            [confirmLabel]="confirmation.confirmLabel" [dark]="darkMode()"
+            (confirmed)="acceptConfirmation()" (dismissed)="dismissConfirmation()" />
+        }
         @if (view()==='agenda') {
           <section class="page-heading" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><h1>{{ copy.agenda.title }}</h1></div><button class="primary new-button" (click)="openForm()">＋ <span>{{ copy.common.newAppointment }}</span></button></section>
           <section class="datebar" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><button class="icon-button previous-day" (click)="shiftDate(-1)" aria-label="Giorno precedente"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_right.svg" alt="" aria-hidden="true" /></button><div class="date-chip"><input type="date" aria-label="Data agenda" [ngModel]="selectedDate()" (ngModelChange)="selectDay($event)" /></div><button class="icon-button next-day" (click)="shiftDate(1)" aria-label="Giorno successivo"><img class="date-arrow" [class.inverted]="darkMode()" src="/assets/arrow_left.svg" alt="" aria-hidden="true" /></button><button class="today-button" (click)="selectDay(today)">Oggi</button></section>
@@ -108,7 +115,7 @@ type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
 
         @if (view()==='settings') {
           <section class="page-heading" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><p class="eyebrow">IL TUO SPAZIO</p><h1>Impostazioni</h1><p class="subtitle">Preferenze del salone.</p></div></section>
-          <section class="settings-grid" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label><label>Servizi</label>@if(servicesUnavailable()){<p class="muted" role="alert">Non riesco a caricare o salvare i servizi nel database. Applica prima la query SQL di configurazione.</p>}<div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div><div class="service-add"><input name="newService" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><div class="reminder-template-setting"><label>Testo del promemoria</label><p>Componi il messaggio con parole semplici e aggiungi i dati dell’appuntamento con un tocco.</p><button type="button" class="secondary edit-reminder-template" (click)="reminderEditorOpen.set(true)">Crea o modifica il promemoria</button><small class="muted">{{ settingsDraft.messageTemplates.reminder || 'Non hai ancora scritto un promemoria.' }}</small></div><button class="primary" type="submit">Salva impostazioni</button></form></article></section>
+          <section class="settings-grid" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label>@if(settingsUnavailable()){<p class="muted" role="alert">Impostazioni del salone non raggiungibili su Supabase. Verifica la connessione e che la migrazione SQL sia applicata prima di salvare.</p>}<label>Servizi</label>@if(servicesUnavailable()){<p class="muted" role="alert">Non riesco a caricare o salvare i servizi nel database. Applica prima la query SQL di configurazione.</p>}<div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div><div class="service-add"><input name="newService" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><div class="reminder-template-setting"><label>Testo del promemoria</label><p>Componi il messaggio con parole semplici e aggiungi i dati dell’appuntamento con un tocco.</p><button type="button" class="secondary edit-reminder-template" (click)="reminderEditorOpen.set(true)">Crea o modifica il promemoria</button><small class="muted">{{ settingsDraft.messageTemplates.reminder || 'Non hai ancora scritto un promemoria.' }}</small></div><button class="primary" type="submit">Salva impostazioni</button></form></article></section>
         }
       </main>
     </div>
@@ -171,7 +178,9 @@ export class Dashboard {
   protected readonly editingClient = signal<Client | null>(null);
   protected readonly formError = signal('');
   protected readonly notice = signal('');
+  protected readonly pendingConfirmation = signal<PendingConfirmation | null>(null);
   protected readonly servicesUnavailable = signal(false);
+  protected readonly settingsUnavailable = signal(false);
   private noticeTimeout: ReturnType<typeof setTimeout> | undefined;
   protected readonly storageWarning = signal(false);
   protected readonly editingId = signal('');
@@ -316,14 +325,17 @@ export class Dashboard {
 
   private async load(): Promise<void> {
     try {
-      const [appointments, clients, employees, settings, serviceResult] = await Promise.all([
-        this.repo.listAppointments(), this.repo.listClients(), this.repo.listEmployees(), this.repo.loadSettings(),
+      const [appointments, clients, employees, settingsResult, serviceResult] = await Promise.all([
+        this.repo.listAppointments(), this.repo.listClients(), this.repo.listEmployees(),
+        this.repo.loadSettings().then((settings) => ({ settings, unavailable: false as const }))
+          .catch(() => ({ settings: null, unavailable: true as const })),
         this.repo.listServices().then((services) => ({ services, unavailable: false as const }))
           .catch(() => ({ services: [] as string[], unavailable: true as const })),
       ]);
       this.appointments.set(appointments); this.clients.set(clients); this.employees.set(employees);
       this.servicesUnavailable.set(serviceResult.unavailable);
-      const persistedSettings = { ...settings, services: serviceResult.services };
+      this.settingsUnavailable.set(settingsResult.unavailable || this.repo.hasSettingsWarning());
+      const persistedSettings = { ...(settingsResult.settings ?? this.settings()), services: serviceResult.services };
       this.settings.set(persistedSettings); this.settingsDraft = structuredClone(persistedSettings);
     } catch { this.showNotice(this.copy.ui.genericError); }
     this.storageWarning.set(this.repo.hasStorageWarning());
@@ -359,10 +371,22 @@ export class Dashboard {
       this.closeEmployeeForm();
     } catch { this.employeeFormError.set(this.copy.ui.genericError); }
   }
-  protected async removeEmployee(employee: Employee): Promise<void> {
-    if (!globalThis.confirm(`Eliminare ${employee.firstName} ${employee.lastName}? Gli appuntamenti storici resteranno.`)) return;
-    try { await this.repo.deleteEmployee(employee.id); await this.load(); this.showNotice('Dipendente eliminato.'); }
-    catch { this.showNotice(this.copy.ui.genericError); }
+  protected dismissConfirmation(): void { this.pendingConfirmation.set(null); }
+  protected async acceptConfirmation(): Promise<void> {
+    const confirmation = this.pendingConfirmation();
+    this.pendingConfirmation.set(null);
+    if (confirmation) await confirmation.action();
+  }
+  protected removeEmployee(employee: Employee): void {
+    this.pendingConfirmation.set({
+      title: 'Conferma eliminazione',
+      message: `Eliminare ${employee.firstName} ${employee.lastName}? Gli appuntamenti storici resteranno.`,
+      confirmLabel: 'Elimina dipendente',
+      action: async () => {
+        try { await this.repo.deleteEmployee(employee.id); await this.load(); this.showNotice('Dipendente eliminato.'); }
+        catch { this.showNotice(this.copy.ui.genericError); }
+      },
+    });
   }
   protected archivedEmployee(): Employee | null {
     const employeeId = this.draft.employeeId;
@@ -484,8 +508,27 @@ export class Dashboard {
       } else { this.showNotice(this.copy.ui.genericError); }
     }
   }
-  protected async removeAppointment(item: Appointment): Promise<void> { if (!globalThis.confirm(this.copy.common.confirmDelete)) return; try { await this.repo.deleteAppointment(item.id); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
-  protected async removeClient(client: Client): Promise<void> { if (!globalThis.confirm(`Eliminare ${client.name} dalla rubrica? Gli appuntamenti restano nell’agenda.`)) return; try { await this.repo.deleteClient(client.id); await this.load(); } catch { this.showNotice(this.copy.ui.genericError); } }
+  protected removeAppointment(item: Appointment): void {
+    this.pendingConfirmation.set({
+      title: 'Conferma eliminazione', message: this.copy.common.confirmDelete,
+      confirmLabel: 'Elimina appuntamento',
+      action: async () => {
+        try { await this.repo.deleteAppointment(item.id); await this.load(); }
+        catch { this.showNotice(this.copy.ui.genericError); }
+      },
+    });
+  }
+  protected removeClient(client: Client): void {
+    this.pendingConfirmation.set({
+      title: 'Conferma eliminazione',
+      message: `Eliminare ${client.name} dalla rubrica? Gli appuntamenti restano nell’agenda.`,
+      confirmLabel: 'Elimina cliente',
+      action: async () => {
+        try { await this.repo.deleteClient(client.id); await this.load(); }
+        catch { this.showNotice(this.copy.ui.genericError); }
+      },
+    });
+  }
   protected setServices(value: string): void { this.settingsDraft.services = value.split('\\n').map((item) => item.trim()).filter(Boolean); }
   protected addService(): void { const value = this.newService.trim(); if (value && !this.settingsDraft.services.some((item) => item.toLocaleLowerCase('it') === value.toLocaleLowerCase('it'))) this.settingsDraft.services = [...this.settingsDraft.services, value]; this.newService = ''; }
   protected removeService(index: number): void { this.settingsDraft.services = this.settingsDraft.services.filter((_item, itemIndex) => itemIndex !== index); }
@@ -505,7 +548,7 @@ export class Dashboard {
     });
   }
 
-  protected async saveSettings(): Promise<void> { try { this.settingsDraft.defaultCountryCode = '+39'; await this.repo.saveSettings(this.settingsDraft); await this.repo.saveServices(this.settingsDraft.services); this.servicesUnavailable.set(false); this.settings.set(structuredClone(this.settingsDraft)); this.showNotice(this.copy.settings.saveSuccess); } catch { this.servicesUnavailable.set(true); this.showNotice(this.copy.ui.genericError); } }
+  protected async saveSettings(): Promise<void> { try { this.settingsDraft.defaultCountryCode = '+39'; await this.repo.saveSettings(this.settingsDraft); await this.repo.saveServices(this.settingsDraft.services); this.settingsUnavailable.set(false); this.servicesUnavailable.set(false); this.settings.set(structuredClone(this.settingsDraft)); this.showNotice(this.copy.settings.saveSuccess); } catch { this.settingsUnavailable.set(this.repo.hasSettingsWarning()); if (!this.settingsUnavailable()) this.servicesUnavailable.set(true); this.showNotice(this.copy.ui.genericError); } }
   protected async seedDemo(): Promise<void> { const ok=await this.repo.seedDemoData(); if(!ok){this.showNotice('Per caricare i dati demo, prima esporta o rimuovi gli appuntamenti e clienti già presenti.');return;} this.settingsDraft.demoDataEnabled=true; await this.repo.saveSettings(this.settingsDraft); await this.load(); this.showNotice(this.copy.ui.demoLoaded); }
   protected async removeDemo(): Promise<void> { await this.repo.removeDemoData(); await this.load(); this.showNotice(this.copy.ui.demoRemoved); }
 

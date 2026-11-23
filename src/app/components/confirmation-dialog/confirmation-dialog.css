@@ -1,0 +1,184 @@
+:host {
+  display: block;
+  color-scheme: light;
+  --surface: var(--sissy-light-surface);
+  --raised: var(--sissy-light-raised);
+  --ink: var(--sissy-light-text);
+  --muted: var(--sissy-light-muted);
+  --line: var(--sissy-light-line);
+  --accent: var(--sissy-light-accent);
+  --accent-hover: var(--sissy-light-accent-hover);
+  --accent-ink: var(--sissy-light-accent-ink);
+}
+
+dialog.dark {
+  color-scheme: dark;
+  --surface: var(--sissy-dark-surface);
+  --raised: var(--sissy-dark-raised);
+  --ink: var(--sissy-dark-text);
+  --muted: var(--sissy-dark-muted);
+  --line: var(--sissy-dark-line);
+  --accent: var(--sissy-dark-accent);
+  --accent-hover: var(--sissy-dark-accent-hover);
+  --accent-ink: var(--sissy-dark-accent-ink);
+}
+
+dialog {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  width: min(440px, calc(100vw - 28px));
+  max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 16px);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 22px 64px rgb(0 0 0 / 28%);
+  transform: translateX(-50%);
+}
+
+dialog::backdrop {
+  background: rgb(14 14 13 / 54%);
+  backdrop-filter: blur(3px);
+}
+
+dialog[open] {
+  animation: confirmation-enter 260ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+:host(.confirmation-leave) dialog[open] {
+  animation: confirmation-leave 150ms ease-in both;
+}
+
+dialog[open]::backdrop {
+  animation: confirmation-backdrop 200ms ease-out both;
+}
+
+:host(.confirmation-leave) dialog[open]::backdrop {
+  animation: confirmation-backdrop-leave 150ms ease-in both;
+}
+
+.panel {
+  position: relative;
+  display: grid;
+  gap: 11px;
+  padding: 25px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+h2 {
+  margin: 0;
+  padding-right: 48px;
+  font: 400 26px/1.2 var(--sissy-font-editorial, Georgia, serif);
+  letter-spacing: -.025em;
+}
+
+#confirmation-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.close {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--raised);
+  color: var(--muted);
+  line-height: 0;
+}
+
+.close svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+.close:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 8px;
+}
+
+footer button {
+  min-width: 100px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+footer .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+footer .primary:hover {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+}
+
+@keyframes confirmation-enter {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(.985); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@keyframes confirmation-leave {
+  from { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(.99); }
+}
+
+@keyframes confirmation-backdrop {
+  from { background: rgb(14 14 13 / 0%); }
+  to { background: rgb(14 14 13 / 54%); }
+}
+
+@keyframes confirmation-backdrop-leave {
+  from { background: rgb(14 14 13 / 54%); }
+  to { background: rgb(14 14 13 / 0%); }
+}
+
+@media (max-width: 480px) {
+  .panel { padding: 22px 18px; }
+  h2 { font-size: 23px; }
+  footer { display: grid; grid-template-columns: 1fr 1fr; }
+  footer button { min-width: 0; }
+}

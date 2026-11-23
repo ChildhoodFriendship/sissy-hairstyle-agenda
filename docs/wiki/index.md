@@ -4,6 +4,7 @@
 - [Application Overview](overview.md)
 - [Documentation Schema](../../SCHEMA.md)
 - [User Manual (Italian)](../manual/user-manual-it.md)
+- [User Manual Generation Guide](../manual/README.md)
 - [Project TODO](../todo)
 - [Documentation log](log.md)
 

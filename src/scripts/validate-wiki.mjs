@@ -45,6 +45,23 @@ try {
       if (!/^## Description\s*$/m.test(text)) report(file, 'missing required ## Description chapter');
     }
 
+    let openManualBlock = null;
+    const seenManualBlockIds = new Set();
+    for (const match of text.matchAll(/<!--\s*user-manual-it:(start|end):([a-z0-9-]+)\s*-->/g)) {
+      const [, edge, id] = match;
+      if (edge === 'start') {
+        if (openManualBlock) report(file, `nested Italian manual source block: ${id}`);
+        if (seenManualBlockIds.has(id)) report(file, `duplicate Italian manual source block: ${id}`);
+        seenManualBlockIds.add(id);
+        openManualBlock = id;
+      } else if (openManualBlock !== id) {
+        report(file, `unmatched Italian manual source block end: ${id}`);
+      } else {
+        openManualBlock = null;
+      }
+    }
+    if (openManualBlock) report(file, `unclosed Italian manual source block: ${openManualBlock}`);
+
     for (const match of text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
       const destination = match[1].trim().split(/[?#]/, 1)[0];
       if (!destination || /^[a-z][a-z\d+.-]*:/i.test(destination) || destination.startsWith('//')) continue;

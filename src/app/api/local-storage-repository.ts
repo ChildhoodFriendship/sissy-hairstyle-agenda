@@ -77,6 +77,27 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
     await this.write(SETTINGS_KEY, settings);
   }
 
+  protected hasStoredSettings(): boolean {
+    try {
+      if (typeof globalThis.localStorage === 'undefined') {
+        this.storageUnavailable = true;
+        return false;
+      }
+      return globalThis.localStorage.getItem(SETTINGS_KEY) !== null;
+    } catch {
+      this.storageUnavailable = true;
+      return false;
+    }
+  }
+
+  protected removeStoredSettings(): void {
+    try {
+      globalThis.localStorage?.removeItem(SETTINGS_KEY);
+    } catch {
+      this.storageUnavailable = true;
+    }
+  }
+
   async listServices(): Promise<string[]> {
     return (await this.loadSettings()).services;
   }

@@ -44,6 +44,7 @@ describe('Dashboard archived employee assignments', () => {
         messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false,
       }),
       hasStorageWarning: vi.fn().mockReturnValue(false),
+      hasSettingsWarning: vi.fn().mockReturnValue(false),
       saveClient: vi.fn().mockResolvedValue(undefined),
       saveAppointment: vi.fn().mockResolvedValue(undefined),
     };
@@ -102,6 +103,7 @@ describe('Dashboard archived employee assignments', () => {
         messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false,
       }),
       hasStorageWarning: vi.fn().mockReturnValue(false),
+      hasSettingsWarning: vi.fn().mockReturnValue(false),
       saveClient: vi.fn().mockResolvedValue(undefined),
       saveAppointment: vi.fn().mockResolvedValue(undefined),
     };

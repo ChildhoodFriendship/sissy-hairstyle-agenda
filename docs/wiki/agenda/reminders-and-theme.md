@@ -64,3 +64,19 @@ The operator opens a reminder from an appointment card. The browser opens `https
 ## Dependencies And Relationships
 
 Reminder preparation depends on the appointment's consent and saved phone number; it does not track delivery. Message rendering depends on the template in [Salon Settings](salon-settings.md). Appointment consent and client fields are described in [Appointment Management](appointments.md) and [Client Management](clients.md).
+
+<!-- user-manual-it:start:reminders -->
+### 5.5 Promemoria WhatsApp e tema
+
+#### Preparare un promemoria
+
+1. Verifica che il consenso WhatsApp sia registrato per l’appuntamento.
+2. Nella scheda aperta dell’appuntamento scegli l’icona di WhatsApp. Se manca il consenso o il numero non è valido per la destinazione italiana, l’azione non apre il collegamento.
+3. WhatsApp si apre con il testo precompilato. Rileggi il messaggio e invialo manualmente solo se corretto e autorizzato.
+
+L’applicazione non invia messaggi, non verifica la consegna e non programma invii automatici. L’anteprima del testo nelle impostazioni è un esempio, non un invio.
+
+#### Cambiare tema
+
+Usa il controllo del tema per passare tra chiaro e scuro. La preferenza è conservata nel browser e non viene sincronizzata tra dispositivi; cancellando i dati locali del browser può andare persa.
+<!-- user-manual-it:end:reminders -->

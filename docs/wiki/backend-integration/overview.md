@@ -21,6 +21,9 @@ source:
     - part: other
       path: supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql
       description: Employee archival and collision-safe username profile repair.
+    - part: other
+      path: supabase/migrations/20261123000000_create_salon_settings.sql
+      description: Owner-scoped salon preferences with row-level security.
 ---
 
 ## Short Description
@@ -33,7 +36,7 @@ This area groups the application's backend integration documentation. It disting
 
 ## Functional Characteristics
 
-The application registers account owners with a username, email, and password; username/password login uses a server-side Edge Function. It reads and writes client, employee, and appointment rows through the Supabase client, and requests password recovery on a dedicated email form. These capabilities require the database migrations, runtime publishable-key configuration, an Edge Function secret, allowed Auth redirects, and usable email delivery.
+The application registers account owners with a username, email, and password; username/password login uses a server-side Edge Function. It reads and writes client, employee, appointment, salon service, and salon preference rows through the Supabase client, and requests password recovery on a dedicated email form. These capabilities require the database migrations, runtime publishable-key configuration, an Edge Function secret, allowed Auth redirects, and usable email delivery.
 
 ## Interfaces And Protocols
 
@@ -41,7 +44,7 @@ The browser communicates with Supabase Auth and the Supabase Data API over the S
 
 ## Dependencies And Relationships
 
-This area depends on the Supabase project, `public/supabase-config.json`, all three ordered SQL migrations, the Supabase Auth user account, and the `clients`, `employees`, and `appointments` tables. See the [operator setup guide](../../../supabase/USER-SETUP.md).
+This area depends on the Supabase project, `public/supabase-config.json`, the ordered SQL migrations, the Supabase Auth user account, and the owner-scoped `clients`, `employees`, `appointments`, `salon_services`, and `salon_settings` tables. See the [operator setup guide](../../../supabase/USER-SETUP.md).
 
 ## Procedures
 

@@ -46,6 +46,9 @@ describe('WorkHoursEditor', () => {
     const initial = [28, 18, 19, 29];
     const ui = await openEditor(initial);
     expect(ui.dialog.open).toBe(true);
+    const dialogStyles = window.getComputedStyle(ui.dialog);
+    expect(dialogStyles.position).toBe('fixed');
+    expect(dialogStyles.top).not.toBe('50%');
     expect(ui.dialog.textContent).toContain('Giulia Neri');
     expect(ui.dialog.querySelector('time')?.dateTime).toBe('2026-11-20');
     expect(ui.selects().map(item => item.selectedOptions[0].textContent?.trim()))

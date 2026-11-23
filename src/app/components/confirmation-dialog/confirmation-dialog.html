@@ -1,0 +1,18 @@
+<dialog #dialog class="confirmation-dialog" [class.dark]="dark()" role="alertdialog"
+  aria-labelledby="confirmation-title" aria-describedby="confirmation-message"
+  (cancel)="requestDismiss($event)" (click)="dismissOnBackdrop($event, dialog)">
+  <section class="panel" (click)="$event.stopPropagation()">
+    <button type="button" class="close" aria-label="Chiudi conferma" (click)="dismissed.emit()">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+    <p class="eyebrow">Conferma</p>
+    <h2 id="confirmation-title">{{ title() }}</h2>
+    <p id="confirmation-message">{{ message() }}</p>
+    <footer>
+      <button type="button" class="secondary" autofocus (click)="dismissed.emit()">Annulla</button>
+      <button type="button" class="primary" (click)="confirmed.emit()">{{ confirmLabel() }}</button>
+    </footer>
+  </section>
+</dialog>

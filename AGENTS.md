@@ -29,7 +29,7 @@ These instructions apply to the single Sissy Hairstyle Agenda application. Read 
 
 - Root `SCHEMA.md` is the normative wiki schema. `docs/wiki/SCHEMA.md` is a compatibility pointer only.
 - `docs/wiki/index.md` is navigation; `docs/wiki/overview.md` is the application overview; `agenda/` and `backend-integration/` are areas.
-- The Italian manual draft is separate and must use verified interface behavior, placeholders for unknown contacts/version, and no unsupported compliance claims.
+- The Italian manual is generated at `docs/manual/user-manual-it.md` from marked source blocks in the Wiki. Edit those Wiki blocks, not the generated Markdown; the DOCX/PDF generator and replaceable `.dotx` template are documented in `docs/manual/README.md`.
 - After documentation or code changes, update the relevant wiki section and index/links. Update the central project wiki when project state or structure changes.
 
 ## Verification and handoff

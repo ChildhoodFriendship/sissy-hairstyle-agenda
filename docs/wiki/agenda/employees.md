@@ -52,3 +52,18 @@ The operator adds, edits, or archives an employee through the dashboard. The rep
 ## Dependencies And Relationships
 
 Employees can be assigned to appointments. Their historical relation and archival behavior are described in [Appointment Management](appointments.md). The live access boundary is described in [Supabase Authentication and Storage](../backend-integration/supabase-authentication-and-storage.md).
+
+<!-- user-manual-it:start:employees -->
+### 5.3 Dipendenti
+
+La schermata **Dipendenti** gestisce le persone del team che possono essere assegnate agli appuntamenti.
+
+#### Gestire il team
+
+1. Apri **Dipendenti** e scegli **Aggiungi dipendente**.
+2. Inserisci nome e cognome, quindi scegli **Salva dipendente**.
+3. Usa **Modifica** per aggiornare i dati.
+4. Per rimuovere una persona dal team, scegli **Elimina** e conferma nella finestra dell’app che appare in alto.
+
+La rimozione archivia il dipendente: non viene proposto per nuovi appuntamenti, ma gli appuntamenti storici conservano la sua assegnazione.
+<!-- user-manual-it:end:employees -->

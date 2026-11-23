@@ -8,6 +8,8 @@ describe('Dashboard', () => {
   let savedClient: Client | undefined;
   let saveClientCalls = 0;
   let savedAppointment: Appointment | undefined;
+  let failSettingsLoad = false;
+  let settingsWarning = false;
 
   const sampleClient: Client = {
     id: 'client-1', name: 'Ada Lovelace', firstName: 'Ada', lastName: 'Lovelace',
@@ -24,6 +26,8 @@ describe('Dashboard', () => {
     savedClient = undefined;
     saveClientCalls = 0;
     savedAppointment = undefined;
+    failSettingsLoad = false;
+    settingsWarning = false;
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [{
@@ -34,9 +38,13 @@ describe('Dashboard', () => {
           saveClient: async (client: Client) => { saveClientCalls += 1; savedClient = client; },
           saveAppointment: async (appointment: Appointment) => { savedAppointment = appointment; },
           saveEmployee: async () => undefined, deleteEmployee: async () => undefined,
-          loadSettings: async () => ({ salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false }),
+          loadSettings: async () => {
+            if (failSettingsLoad) throw new Error('Settings table unavailable');
+            return { salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false };
+          },
           listServices: async () => [], saveServices: async () => undefined,
           hasStorageWarning: () => false,
+          hasSettingsWarning: () => settingsWarning,
         },
       }, {
         provide: SUPABASE_CLIENT,
@@ -59,6 +67,22 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('.demo-label')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .profile')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.getAttribute('src')).toBe('/assets/logout.svg');
+  });
+
+  it('keeps the dashboard available and warns when remote salon settings cannot load', async () => {
+    failSettingsLoad = true;
+    settingsWarning = true;
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    const instance = fixture.componentInstance as unknown as { load(): Promise<void> };
+    await instance.load();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('h1')?.textContent?.trim()).toBe('Agenda');
+    expect((fixture.componentInstance as unknown as { settingsUnavailable: () => boolean }).settingsUnavailable()).toBe(true);
+    (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('settings');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Impostazioni del salone non raggiungibili su Supabase');
   });
 
   it('uses edit and delete icons for appointment actions', async () => {
@@ -464,23 +488,25 @@ describe('Dashboard', () => {
     await fixture.whenStable();
     (fixture.componentInstance as unknown as { showNotice(message: string): void }).showNotice('Appuntamento salvato.');
     fixture.detectChanges();
-    const toast = fixture.nativeElement.querySelector('[role="status"]') as HTMLElement;
+    const toast = fixture.nativeElement.querySelector('.toast[role="status"]') as HTMLElement;
     expect(toast.textContent).toContain('Appuntamento salvato.');
     const toastStyles = window.getComputedStyle(toast);
     expect(toastStyles.position).toBe('fixed');
-    expect(toastStyles.top).toBe('50%');
+    expect(toastStyles.top).not.toBe('50%');
     expect(toastStyles.left).toBe('50%');
     expect(toastStyles.transform).not.toBe('none');
     const close = toast.querySelector('button[aria-label="Chiudi notifica"]') as HTMLButtonElement;
     expect(close).toBeTruthy();
     const closeStyles = window.getComputedStyle(close);
+    expect(closeStyles.width).toBe('44px');
+    expect(closeStyles.height).toBe('44px');
     expect(closeStyles.alignItems).toBe('center');
     expect(closeStyles.justifyItems).toBe('center');
     expect(closeStyles.paddingLeft).toBe('0px');
     expect(closeStyles.paddingRight).toBe('0px');
     close.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[role="status"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.toast[role="status"]')).toBeNull();
   });
 
   it('centers icon-bearing client actions and popup close controls', async () => {
@@ -504,7 +530,11 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     const close = fixture.nativeElement.querySelector('.dialog .close') as HTMLButtonElement;
     expect(close.querySelector('svg[data-icon="close"]')).toBeTruthy();
+    const scrim = close.closest('.scrim') as HTMLElement;
+    expect(window.getComputedStyle(scrim).alignContent).toBe('start');
     const closeStyles = window.getComputedStyle(close);
+    expect(closeStyles.width).toBe('44px');
+    expect(closeStyles.height).toBe('44px');
     expect(closeStyles.alignItems).toBe('center');
     expect(closeStyles.justifyItems).toBe('center');
     expect(closeStyles.paddingLeft).toBe('0px');
@@ -539,5 +569,33 @@ describe('Dashboard', () => {
     expect(input.value).toBe('333 1234567');
     await component.saveClient();
     expect(savedClient?.phone).toBe('+393331234567');
+  });
+
+  it('shows a dismissible in-app confirmation before removing a client', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      removeClient(client: Client): void;
+      pendingConfirmation(): unknown;
+    };
+    component.removeClient(sampleClient);
+    fixture.detectChanges();
+
+    const dialog = fixture.nativeElement.querySelector('app-confirmation-dialog dialog') as HTMLDialogElement;
+    expect(dialog?.open).toBe(true);
+    expect(dialog.getAttribute('aria-labelledby')).toBe('confirmation-title');
+    const dialogStyles = window.getComputedStyle(dialog);
+    expect(dialogStyles.position).toBe('fixed');
+    expect(dialogStyles.top).not.toBe('50%');
+    const close = dialog.querySelector('button[aria-label="Chiudi conferma"]') as HTMLButtonElement;
+    const closeStyles = window.getComputedStyle(close);
+    expect(closeStyles.width).toBe('44px');
+    expect(closeStyles.height).toBe('44px');
+    expect(closeStyles.alignItems).toBe('center');
+    expect(closeStyles.justifyItems).toBe('center');
+    (fixture.nativeElement.querySelector('app-confirmation-dialog button[autofocus]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.pendingConfirmation()).toBeNull();
   });
 });

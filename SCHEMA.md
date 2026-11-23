@@ -13,7 +13,7 @@ This schema defines the documentation structure and validation rules for the Ang
 
 ## Language
 
-English is the official language of the wiki. Use English for headings, prose, procedures, variable documentation, and validation messages. Preserve source identifiers, file paths, configuration keys, and user-visible Italian labels exactly as they appear in the application.
+English is the official language of the wiki. Use English for headings, prose, procedures, variable documentation, and validation messages. Preserve source identifiers, file paths, configuration keys, and user-visible Italian labels exactly as they appear in the application. The only Italian prose exception is the explicitly marked, hidden source block for the generated Italian user manual, defined below; that block is source data, not wiki prose.
 
 ## Document authority
 
@@ -106,6 +106,18 @@ Use these verbs only for verified capabilities. Do not label capabilities with g
 `Procedures` documents ordered operational workflows. Each procedure states purpose, prerequisites, actions, expected result, verification, and warnings or recovery information when known.
 
 `Variables` documents applicable data fields, values, and constraints. Omit chapters that do not apply; `Description` remains mandatory.
+
+### Generated Italian user-manual source
+
+An active wiki page may include hidden Italian manual content in an HTML comment block with a unique stable ID:
+
+```markdown
+<!-- user-manual-it:start:appointments -->
+Italian source text for the manual.
+<!-- user-manual-it:end:appointments -->
+```
+
+The matching start/end IDs must be identical and non-nested. These blocks are the authoritative Italian wording for `docs/manual/user-manual-it.md`; the generator reads only the ordered page/ID pairs declared in `scripts/generate_user_manual.py`, so text outside a source block is never copied. Edit the wiki blocks, then run the generator; do not edit generated Markdown, DOCX, or PDF outputs manually. The source blocks are hidden from ordinary wiki rendering and do not change the English-language wiki chapters.
 
 ### Document responsibilities
 

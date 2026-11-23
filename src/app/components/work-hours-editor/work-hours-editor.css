@@ -20,10 +20,13 @@
 }
 
 dialog {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
   color-scheme: inherit;
   width: min(32rem, calc(100% - 2rem));
-  max-height: calc(100dvh - 2rem);
-  margin: auto;
+  max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 16px);
+  margin: 0;
   padding: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -31,6 +34,7 @@ dialog {
   border-radius: 8px;
   background: var(--surface, Canvas);
   color: var(--ink, CanvasText);
+  transform: translateX(-50%);
   font: inherit;
   transition: background-color var(--sissy-motion-standard) var(--sissy-ease), color var(--sissy-motion-standard) var(--sissy-ease), border-color var(--sissy-motion-standard) var(--sissy-ease);
 }
@@ -38,7 +42,7 @@ dialog {
 dialog::backdrop { background: rgb(15 15 13 / 60%); }
 dialog[open] { animation: work-hours-dialog-enter var(--sissy-motion-standard) var(--sissy-ease) both; }
 dialog[open]::backdrop { animation: work-hours-backdrop-enter 180ms ease-out both; }
-@keyframes work-hours-dialog-enter { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes work-hours-dialog-enter { from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(.985); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
 @keyframes work-hours-backdrop-enter { from { background: rgb(15 15 13 / 0%); } to { background: rgb(15 15 13 / 60%); } }
 .panel { display: grid; gap: 1rem; min-width: 0; padding: clamp(1rem, 4vw, 1.5rem); }
 p, h2, fieldset { margin: 0; }

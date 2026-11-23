@@ -31,6 +31,8 @@ This section describes the salon preferences form. `SalonSettings` also defines 
 ## Functional Characteristics
 
 - Configures the salon name and the list of service names.
+- Stores salon-wide preferences, including the salon name, phone prefix, business hours, message templates, and demo-data state in the owner-scoped `public.salon_settings` row. The current dashboard exposes only the salon name and reminder template; other model fields do not imply visible controls.
+- On first load with no remote row, migrates the legacy `sissy-agenda-settings-v1` browser record using a conflict-safe insert, then removes it only after the saved row is read back. If Supabase is unavailable, existing browser settings remain a display fallback and a warning is shown; saves do not silently write settings back to browser storage.
 - Adds a non-empty service name unless a case-insensitive duplicate is already present; removes a service from the draft list using its row action.
 - Loads service names from `public.salon_services` and saves additions/removals to Supabase when **Salva impostazioni** is selected. The table is owner-scoped with RLS; if it is unavailable, the settings page shows a database setup warning instead of presenting browser-only services as saved.
 - Uses the full available content width for the settings panel.
@@ -42,12 +44,28 @@ This section describes the salon preferences form. `SalonSettings` also defines 
 
 ## Interfaces And Protocols
 
-The operator edits the settings form and selects **Salva impostazioni**. The salon name and message preferences are stored through `LocalStorageRepository`; services are loaded from and saved to `public.salon_services` through the Supabase repository. A dismissible toast reports success or a generic error and closes automatically after about three seconds. A database warning appears if the services table cannot be reached. A runtime storage warning can indicate that browser storage failed.
+The operator edits the settings form and selects **Salva impostazioni**. Salon preferences are stored in `public.salon_settings`; the service list is stored separately in `public.salon_services`. `SupabaseAgendaRepository` scopes both tables to the authenticated owner. Theme preference and the persistent Supabase Auth session remain browser-side. A dismissible toast reports save success or a generic error, while separate alerts identify unavailable settings or services.
 
 ## Database Setup
 
-Apply [`20261122000000_create_salon_services.sql`](../../../supabase/migrations/20261122000000_create_salon_services.sql) in the configured Supabase project. To add the example salon services, run [`seed-salon-services.sql`](../../../supabase/seed-salon-services.sql) after replacing its placeholder with the signed-in operator's Auth user UUID. The seed is idempotent. These SQL files have not been applied to a live project by the application.
+Apply [`20261123000000_create_salon_settings.sql`](../../../supabase/migrations/20261123000000_create_salon_settings.sql) in the configured Supabase project after checking which migrations are already present. The read-only schema metadata supplied on 2026-11-23 showed `public.salon_services` with RLS and no `salon_settings` entry; this change did not execute the migration. After it is applied, a legacy local settings record is copied once when the owner has no remote row. To add example services, run [`seed-salon-services.sql`](../../../supabase/seed-salon-services.sql) after replacing its placeholder with the signed-in operator's Auth user UUID.
 
 ## Dependencies And Relationships
 
 Service names appear in the appointment form, and the reminder template is used when preparing WhatsApp links. See [Appointment Management](appointments.md) and [WhatsApp Reminders and Themes](reminders-and-theme.md).
+
+<!-- user-manual-it:start:settings -->
+### 5.4 Impostazioni
+
+La schermata **Impostazioni** contiene il nome del salone, l’elenco dei servizi e il testo del promemoria.
+
+#### Modificare e salvare le preferenze
+
+1. Apri **Impostazioni** e modifica il **Nome del salone** se necessario.
+2. Per aggiungere un servizio, inserisci il nome e scegli **Aggiungi**. Usa **Rimuovi** per eliminarlo dall’elenco.
+3. Scegli **Crea o modifica il promemoria** per aprire l’editor. Scrivi il messaggio e usa i pulsanti per inserire nome cliente, data, ora, servizio o nome salone nel punto desiderato.
+4. Controlla l’anteprima, che è solo dimostrativa. Scegli **Fatto** per tornare al modulo.
+5. Scegli **Salva impostazioni** per salvare le preferenze e i servizi.
+
+Le preferenze del salone e i servizi sono salvati su Supabase nell’account del proprietario; non sono semplici preferenze locali del tema. La disponibilità dipende dalla configurazione del database e dalla connessione. Se compare un avviso di indisponibilità, non considerare le modifiche salvate e contatta il gestore. Il tema e la sessione di accesso restano nel browser.
+<!-- user-manual-it:end:settings -->
