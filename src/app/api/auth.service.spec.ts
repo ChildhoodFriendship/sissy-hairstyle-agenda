@@ -7,12 +7,19 @@ describe('AuthService password recovery', () => {
   it('registers with email, password and username metadata', async () => {
     const signUp = vi.fn().mockResolvedValue({ error: null });
     TestBed.configureTestingModule({ providers: [{ provide: SUPABASE_CLIENT, useValue: { auth: { signUp } } }] });
-    await expect(TestBed.inject(AuthService).register('ada', 'ada@example.com', 'Strong-pass-42')).resolves.toBe(true);
+    await expect(TestBed.inject(AuthService).register('ada', 'ada@example.com', 'Strong-pass-42')).resolves.toBe('created');
     expect(signUp).toHaveBeenCalledWith({
       email: 'ada@example.com',
       password: 'Strong-pass-42',
       options: { data: { username: 'ada' } },
     });
+  });
+
+  it('explains a duplicate username constraint as an account-creation error', async () => {
+    const signUp = vi.fn().mockResolvedValue({ error: { code: '23505', constraint: 'user_profiles_username_key' } });
+    TestBed.configureTestingModule({ providers: [{ provide: SUPABASE_CLIENT, useValue: { auth: { signUp } } }] });
+
+    await expect(TestBed.inject(AuthService).register('ada', 'ada@example.com', 'Strong-pass-42')).resolves.toBe('username-taken');
   });
 
   it('requests a reset link with the configured application return URL', async () => {

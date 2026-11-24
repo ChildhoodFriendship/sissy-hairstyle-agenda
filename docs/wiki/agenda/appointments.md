@@ -22,12 +22,18 @@ source:
       path: src/app/library/models.ts
     - part: other
       path: src/app/library/domain-utils.ts
+    - part: other
+      path: src/app/library/database-constraints.ts
     - part: repository
       path: src/app/api/supabase-agenda-repository.ts
     - part: other
       path: supabase/migrations/20261110000000_employees_capacity_and_usernames.sql
     - part: other
+      path: supabase/migrations/20261107000000_create_agenda_core.sql
+    - part: other
       path: supabase/migrations/20261110220224_employee_archive_and_username_backfill.sql
+    - part: other
+      path: supabase/migrations/20261121000000_daily_work_schedules.sql
 
     - part: test
       path: src/app/components/dashboard/dashboard.spec.ts
@@ -52,19 +58,21 @@ This section describes appointment records shown for a selected date in the dash
 - **Modifica turno** edits the selected calendar date for Sissy or one active employee. Split shifts and days off are supported. When no schedule is saved for that person/date, the default is 08:30–20:00, with appointment starts every 30 minutes through 19:30. Saving an explicit schedule, including a day off, overrides that default. Archived and historical columns remain readable and cannot be booked.
 - **Orari liberi** lists available half hours, excluding confirmed bookings for that person and slots at salon capacity. Choosing one prefills date, time and assignee. The appointment form uses the same availability rules; existing appointments remain visible even outside the updated shift. On mobile, available-time buttons use three equally divided columns within each employee column. Horizontal divider lines are shown only between non-empty sections: heading and appointments, or appointments and available times; an empty appointments or free-times list removes its adjacent divider.
 - Activation requires the daily work schedules migration. When the default schedule is used for a new confirmed appointment, the dashboard saves that person's default slots for the date before saving the appointment, satisfying the database work-slot trigger. If the relation is missing, existing appointments and the previous native time picker remain available. Other failures to read shifts show an error and a retry action, not an all-day availability assumption.
-- Adds a new client record when saving an appointment only when **Aggiungi anche alla Rubrica Clienti** is checked. If the checkbox is cleared, the appointment is saved without a client row and its nullable `client_id` remains empty.
-- Shows appointment save success or repository failure in a dismissible toast that closes after about three seconds; validation and conflict errors remain inline.
+- Adds a new client record when saving an appointment only when **Aggiungi anche alla Rubrica Clienti** is checked. If the checkbox is cleared, the appointment is saved without a client row and its nullable `client_id` remains empty. If the client write succeeds but the appointment fails, the form keeps that client linked for retry and states that it was already added, preventing a second client insert. A duplicate-client error is reported as a client error rather than an unavailable time slot.
+- While saving an appointment, the form becomes inert, submit and close controls are disabled, and the submit label changes to **Salvataggio…**; concurrent submissions are ignored. Appointment save success appears in a dismissible toast that closes after about three seconds; validation and conflicts remain inline.
 - Shows icon-only edit and delete actions on appointment cards after the WhatsApp action. There is no cancel or reactivate action; the icon-only actions retain accessible labels.
 - Prefills contact fields and consent state when the operator selects a saved client. A matching phone number can also link a new appointment to an existing client.
 - Assigns an appointment to Sissy or an active employee. Existing appointments assigned to archived employees or legacy deleted employees retain a non-active historical assignment while edited.
 - Validates phone numbers using `+39` as the country code and rejects an explicit different prefix on save; appointment cards and phone fields hide the Italian prefix, including when selecting a saved client or editing an appointment. The stored number retains its international form for matching and WhatsApp. Existing non-Italian phone values are not changed automatically, and WhatsApp preparation refuses a saved number without a valid Italian prefix rather than opening a link to the wrong recipient. Checks confirmed appointments for a time slot: no more than three confirmed appointments and no duplicate assignee. Cancelled or completed appointments are excluded from this client-side conflict check.
+- Mirrors the database input limits in the form: first and last name are each 1–100 trimmed characters, the combined appointment client name is at most 201 characters, and the phone input is at most 24 characters (the database accepts stored phone strings of 7–24 characters). Appointment starts must use a valid half-hour boundary; work schedules allow up to 48 distinct slot indexes from 0 through 47. The schedule editor and appointment form validate before writing.
+- Explains database rejections by cause: an existing client phone, occupied person/time, the three-booking capacity limit, an appointment outside the saved shift, an unavailable linked client/employee, or a missing required field. These checks improve feedback but do not replace the database's owner-scoped unique indexes, foreign keys, check constraints, capacity trigger, or RLS; concurrent changes can still be rejected by PostgreSQL and are mapped to a specific inline message.
 - Shows cancelled and completed status labels for historical records when present in data; the appointment card does not change status. Editing retains the stored status.
 - Deletes an appointment only after the operator confirms in the in-app dialog. Deleting a client does not delete appointments.
 - The database migration adds a unique confirmed-assignee constraint and a database capacity trigger. This database enforcement applies only when the migration has been deployed; a local build does not prove deployment.
 
 ## Interfaces And Protocols
 
-The operator uses the date picker, appointment form, and card actions. The dashboard validates the requested confirmed slot before saving, then optionally saves a new client and always saves the appointment through the repository. Save success and repository failures are shown in a dismissible toast that auto-closes after about three seconds; form validation and slot conflicts remain inline. The Supabase repository sends appointment and client upserts or deletes through the authenticated Data API; live persistence depends on backend configuration and policies.
+The operator uses the date picker, appointment form, and card actions. The dashboard validates the requested confirmed slot before saving, then optionally saves a new client and always saves the appointment through the repository. The form blocks edits and repeat submissions while saving. If the client insert fails, its error is shown inline; if the client is saved but the appointment fails, the form keeps the saved client linked and explains how to retry without duplicating it. Appointment success appears in a dismissible toast; form validation and slot conflicts remain inline. The Supabase repository sends appointment and client upserts or deletes through the authenticated Data API; live persistence depends on backend configuration and policies. Frontend availability checks are a preflight only: the database trigger and indexes are authoritative for races and changes made by other sessions.
 
 ## Dependencies And Relationships
 

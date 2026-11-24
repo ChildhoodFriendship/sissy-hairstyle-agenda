@@ -10,6 +10,13 @@ This page records documentation changes; entries are historical and do not repre
 
 ## Documentation log
 
+### 2026-11-24 — database constraints and Vercel notice
+
+- Compared the local migrations with client, appointment, employee, schedule, service, settings, and registration flows. Added frontend length/format/slot checks, unique-conflict detection, and specific Italian database-error messages; updated the related Wiki pages and TODO. PostgreSQL remains authoritative for concurrent writes and records not loaded in the UI.
+- Recorded the Vercel email analysis: `docs/manual/requirements.txt` is consistent with automatic Python-project detection, while the root `vercel.json` configures the Angular app. No Vercel project, dashboard setting, or deployment was changed or live-verified.
+- Verification: `npm test` passed (91 tests, 12 files); `npm run build` and `npm run validate-wiki` passed; `git diff --check` passed with informational LF→CRLF warnings for the two Auth files. The build reported Node.js v23.11.0 as a non-LTS odd-numbered version.
+- No live Supabase schema was queried, migrations were applied, or Vercel production deployment was inspected.
+
 ### 2026-11-23 — generated Italian user manual
 
 - Added marked Italian source blocks to the relevant wiki pages and a deterministic generator for `docs/manual/user-manual-it.md`, DOCX and PDF. Added a replaceable `.dotx` template, pinned Python dependencies, usage instructions, and source/text-preservation tests.

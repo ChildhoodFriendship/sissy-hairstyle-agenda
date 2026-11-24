@@ -1,5 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { SUPABASE_CLIENT } from './supabase-client';
+import { isUniqueConstraintViolation } from '../library/database-constraints';
+
+export type RegistrationResult = 'created' | 'username-taken' | 'failed';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -22,17 +25,18 @@ export class AuthService {
     }
   }
 
-  async register(username: string, email: string, password: string): Promise<boolean> {
-    if (!this.supabase) return false;
+  async register(username: string, email: string, password: string): Promise<RegistrationResult> {
+    if (!this.supabase) return 'failed';
     try {
       const { error } = await this.supabase.auth.signUp({
         email: email.trim(),
         password,
         options: { data: { username: username.trim().toLowerCase() } },
       });
-      return !error;
+      if (!error) return 'created';
+      return isUniqueConstraintViolation(error, 'user_profiles_username_key') ? 'username-taken' : 'failed';
     } catch {
-      return false;
+      return 'failed';
     }
   }
 

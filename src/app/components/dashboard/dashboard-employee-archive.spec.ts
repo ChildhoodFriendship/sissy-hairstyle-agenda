@@ -121,10 +121,15 @@ describe('Dashboard archived employee assignments', () => {
     const instance = fixture.componentInstance as unknown as {
       load(): Promise<void>;
       edit(item: Appointment): void;
+      legacyEmployeeName(): string | null;
+      formError(): string;
       saveAppointment(): Promise<void>;
     };
     await instance.load();
     instance.edit(legacyAppointment);
+    expect(instance.legacyEmployeeName()).toBe('Giulia Bianchi');
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const legacyOption = [...fixture.nativeElement.querySelectorAll('select[name="employeeId"] option')]

@@ -16,8 +16,14 @@ source:
       path: src/app/components/dashboard/dashboard.ts
     - part: model
       path: src/app/library/models.ts
+    - part: other
+      path: src/app/library/database-constraints.ts
     - part: repository
       path: src/app/api/supabase-agenda-repository.ts
+    - part: other
+      path: supabase/migrations/20261122000000_create_salon_services.sql
+    - part: other
+      path: supabase/migrations/20261123000000_create_salon_settings.sql
 ---
 
 ## Short Description
@@ -33,8 +39,8 @@ This section describes the salon preferences form. `SalonSettings` also defines 
 - Configures the salon name and the list of service names.
 - Stores salon-wide preferences, including the salon name, phone prefix, business hours, message templates, and demo-data state in the owner-scoped `public.salon_settings` row. The current dashboard exposes only the salon name and reminder template; other model fields do not imply visible controls.
 - On first load with no remote row, migrates the legacy `sissy-agenda-settings-v1` browser record using a conflict-safe insert, then removes it only after the saved row is read back. If Supabase is unavailable, existing browser settings remain a display fallback and a warning is shown; saves do not silently write settings back to browser storage.
-- Adds a non-empty service name unless a case-insensitive duplicate is already present; removes a service from the draft list using its row action.
-- Loads service names from `public.salon_services` and saves additions/removals to Supabase when **Salva impostazioni** is selected. The table is owner-scoped with RLS; if it is unavailable, the settings page shows a database setup warning instead of presenting browser-only services as saved.
+- Adds a trimmed service name of 1–100 characters unless a case-insensitive duplicate is already present; removes a service from the draft list using its row action. The list index supplies the non-negative database `position` value.
+- Loads service names from `public.salon_services` and saves additions/removals to Supabase when **Salva impostazioni** is selected. The table is owner-scoped with RLS and enforces unique `(owner_id, name)`; database duplicate errors are reported as an existing service rather than a generic settings failure. If the table is unavailable, the settings page shows a database setup warning instead of presenting browser-only services as saved.
 - Uses the full available content width for the settings panel.
 - Configures the reminder template in a guided dialog rather than asking the operator to memorize placeholder syntax. The operator writes ordinary text, places the cursor, and inserts client name, date, time, service, or salon name using labeled buttons.
 - Shows a live example preview with sample appointment values; it is illustrative and does not send a message.
@@ -44,7 +50,7 @@ This section describes the salon preferences form. `SalonSettings` also defines 
 
 ## Interfaces And Protocols
 
-The operator edits the settings form and selects **Salva impostazioni**. Salon preferences are stored in `public.salon_settings`; the service list is stored separately in `public.salon_services`. `SupabaseAgendaRepository` scopes both tables to the authenticated owner. Theme preference and the persistent Supabase Auth session remain browser-side. A dismissible toast reports save success or a generic error, while separate alerts identify unavailable settings or services.
+The operator edits the settings form and selects **Salva impostazioni**. Salon preferences are stored in `public.salon_settings`; the service list is stored separately in `public.salon_services`. `SupabaseAgendaRepository` scopes both tables to the authenticated owner. Theme preference and the persistent Supabase Auth session remain browser-side. The save action prevents repeat submissions and reports validation or database errors inline. Settings and services are separate writes: if settings persist but service saving fails, the form explicitly reports the partial result; atomic service replacement remains a TODO. A dismissible toast reports complete save success, while separate alerts identify unavailable settings or services.
 
 ## Database Setup
 

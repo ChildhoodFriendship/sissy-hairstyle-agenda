@@ -8,6 +8,7 @@ import { AuthService } from '../../api/auth.service';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
 import type { Appointment, Client, Employee, SalonSettings } from '../../library/models';
 import { findAppointmentConflict, normalizePhoneNumber, phoneForDisplay, renderMessageTemplate } from '../../library/domain-utils';
+import { DATABASE_LIMITS, databaseConstraintMessage, isUniqueConstraintViolation, validateAppointmentTime, validateName, validateServiceName, validateWorkSlots } from '../../library/database-constraints';
 import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../library/theme';
 
 const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
@@ -115,7 +116,7 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
 
         @if (view()==='settings') {
           <section class="page-heading" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><p class="eyebrow">IL TUO SPAZIO</p><h1>Impostazioni</h1><p class="subtitle">Preferenze del salone.</p></div></section>
-          <section class="settings-grid" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label>@if(settingsUnavailable()){<p class="muted" role="alert">Impostazioni del salone non raggiungibili su Supabase. Verifica la connessione e che la migrazione SQL sia applicata prima di salvare.</p>}<label>Servizi</label>@if(servicesUnavailable()){<p class="muted" role="alert">Non riesco a caricare o salvare i servizi nel database. Applica prima la query SQL di configurazione.</p>}<div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div><div class="service-add"><input name="newService" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><div class="reminder-template-setting"><label>Testo del promemoria</label><p>Componi il messaggio con parole semplici e aggiungi i dati dell’appuntamento con un tocco.</p><button type="button" class="secondary edit-reminder-template" (click)="reminderEditorOpen.set(true)">Crea o modifica il promemoria</button><small class="muted">{{ settingsDraft.messageTemplates.reminder || 'Non hai ancora scritto un promemoria.' }}</small></div><button class="primary" type="submit">Salva impostazioni</button></form></article></section>
+          <section class="settings-grid" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form [attr.aria-busy]="settingsSaving()" [attr.inert]="settingsSaving() ? '' : null" (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label>@if(settingsUnavailable()){<p class="muted" role="alert">Impostazioni del salone non raggiungibili su Supabase. Verifica la connessione e che la migrazione SQL sia applicata prima di salvare.</p>}<label>Servizi</label>@if(servicesUnavailable()){<p class="muted" role="alert">Non riesco a caricare o salvare i servizi nel database. Applica prima la query SQL di configurazione.</p>}<div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div>@if(settingsFormError()){<p class="form-error" role="alert">{{ settingsFormError() }}</p>}<div class="service-add"><input name="newService" maxlength="100" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><div class="reminder-template-setting"><label>Testo del promemoria</label><p>Componi il messaggio con parole semplici e aggiungi i dati dell’appuntamento con un tocco.</p><button type="button" class="secondary edit-reminder-template" (click)="reminderEditorOpen.set(true)">Crea o modifica il promemoria</button><small class="muted">{{ settingsDraft.messageTemplates.reminder || 'Non hai ancora scritto un promemoria.' }}</small></div><button class="primary" type="submit" [disabled]="settingsSaving()">{{ settingsSaving() ? 'Salvataggio…' : 'Salva impostazioni' }}</button></form></article></section>
         }
       </main>
     </div>
@@ -123,7 +124,7 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
       <app-work-hours-editor [class.dark]="darkMode()" [personName]="editor.name" [date]="editor.schedule.date" [slots]="editor.schedule.slots"
         [saving]="shiftSaving()" [error]="shiftError()" (dismiss)="closeShiftEditor()" (saveHours)="saveHours($event)" />
     }
-    @if(formOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label class="check"><input type="checkbox" name="addToContacts" [(ngModel)]="draft.addToContacts" /><span>Aggiungi anche alla Rubrica Clienti</span></label><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" required autocomplete="tel" placeholder="333 1234567" [ngModel]="draft.phone" (ngModelChange)="draft.phone = phoneForDisplay($event)" /></label>
+    @if(formOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" [disabled]="appointmentSaving()" (click)="closeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form [attr.aria-busy]="appointmentSaving()" [attr.inert]="appointmentSaving() ? '' : null" (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label class="check"><input type="checkbox" name="addToContacts" [(ngModel)]="draft.addToContacts" /><span>Aggiungi anche alla Rubrica Clienti</span></label><label>Nome *<input name="firstName" maxlength="100" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" maxlength="100" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" maxlength="24" required autocomplete="tel" placeholder="333 1234567" [ngModel]="draft.phone" (ngModelChange)="draft.phone = phoneForDisplay($event)" /></label>
       <div class="two-fields"><label>Data *<div class="picker-field"><input #datePicker name="date" type="date" required [ngModel]="draft.date" (ngModelChange)="changeDraftDate($event)" /><button type="button" (click)="showPicker(datePicker)" aria-label="Scegli la data">▦</button></div></label>
       <label>Seguito da<select name="employeeId" [ngModel]="draft.employeeId" (ngModelChange)="changeDraftPerson($event)"><option [ngValue]="null">Sissy</option>@if(legacyEmployeeName(); as legacyName){<option [ngValue]="legacyEmployeeAssignmentValue" disabled>{{ legacyName }} (non attivo)</option>}@if(archivedEmployee(); as archived){<option [ngValue]="archived.id" disabled>{{ archivedEmployeeName() }} (non attivo)</option>}@for(employee of activeEmployees();track employee.id){<option [ngValue]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>}</select></label></div>
       @if (shiftState() === 'missing') {
@@ -135,9 +136,9 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
         @else if (shiftState() === 'loading') {<small role="status">Caricamento dei turni…</small>}
         @else if (!choices.length) {<small role="status">Nessuna fascia libera per questa persona. Scegli un’altra data o persona, oppure imposta il turno nell’agenda.</small>}
       }
-      <label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>Il cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeForm()">Annulla</button><button class="primary" type="submit">{{ editingId()?'Salva modifiche':'Salva appuntamento' }}</button></div></form></section></div> }
+      <label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>Il cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" [disabled]="appointmentSaving()" (click)="closeForm()">Annulla</button><button class="primary" type="submit" [disabled]="appointmentSaving()">{{ appointmentSaving() ? 'Salvataggio…' : (editingId() ? 'Salva modifiche' : 'Salva appuntamento') }}</button></div></form></section></div> }
     @if(reminderEditorOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="reminderEditorOpen.set(false)"><section class="dialog reminder-dialog" role="dialog" aria-modal="true" aria-labelledby="reminder-editor-title" (click)="$event.stopPropagation()"><button class="close" type="button" (click)="reminderEditorOpen.set(false)" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PROMEMORIA WHATSAPP</p><h2 id="reminder-editor-title">Crea il tuo messaggio</h2><p class="subtitle">Scrivi come parleresti alla cliente. Per aggiungere un dato, premi uno dei pulsanti qui sotto: verrà inserito nel punto in cui si trova il cursore.</p><label>Il tuo messaggio<textarea #reminderEditor name="reminder" rows="5" [(ngModel)]="settingsDraft.messageTemplates.reminder"></textarea></label><div class="placeholder-tools" aria-label="Dati da inserire nel messaggio"><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{nome}')">Nome cliente</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{data}')">Data appuntamento</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{ora}')">Ora</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{servizio}')">Servizio</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{salone}')">Nome salone</button></div><section class="reminder-preview" aria-live="polite"><h3>Anteprima di esempio</h3><p>{{ reminderPreview() }}</p></section><div class="dialog-actions"><button class="primary" type="button" (click)="reminderEditorOpen.set(false)">Fatto</button></div></section></div> }
-    @if(employeeFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeEmployeeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="employee-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeEmployeeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PERSONALE</p><h2 id="employee-form-title">{{ editingEmployee() ? 'Modifica dipendente' : 'Aggiungi dipendente' }}</h2><form (submit)="$event.preventDefault(); saveEmployee()"><label>Nome *<input name="employeeFirstName" required autocomplete="given-name" [(ngModel)]="employeeDraft.firstName" /></label><label>Cognome *<input name="employeeLastName" required autocomplete="family-name" [(ngModel)]="employeeDraft.lastName" /></label>@if(employeeFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ employeeFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeEmployeeForm()">Annulla</button><button class="primary" type="submit">Salva dipendente</button></div></form></section></div> }\n    @if(clientFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeClientForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="client-form-title" (click)="$event.stopPropagation()"><button class="close" (click)="closeClientForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">RUBRICA CLIENTI</p><h2 id="client-form-title">{{ editingClient() ? 'Modifica cliente' : 'Aggiungi cliente' }}</h2><p class="subtitle">Inserisci i dati della cliente.</p><form (submit)="$event.preventDefault(); saveClient()"><label>Nome *<input name="firstName" required autocomplete="given-name" [(ngModel)]="clientDraft.firstName" /></label><label>Cognome *<input name="lastName" required autocomplete="family-name" [(ngModel)]="clientDraft.lastName" /></label><label>Telefono *<input name="clientPhone" type="tel" required autocomplete="tel" placeholder="333 1234567" [ngModel]="clientDraft.phone" (ngModelChange)="clientDraft.phone = phoneForDisplay($event)" /></label><label>Note<textarea name="clientNotes" rows="2" [(ngModel)]="clientDraft.notes"></textarea></label><label class="check"><input type="checkbox" name="clientConsent" [(ngModel)]="clientDraft.whatsappConsent" /><span>Consenso WhatsApp registrato</span></label>@if(clientFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ clientFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" (click)="closeClientForm()">Annulla</button><button class="primary" type="submit">Salva cliente</button></div></form></section></div> }
+    @if(employeeFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeEmployeeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="employee-form-title" (click)="$event.stopPropagation()"><button class="close" [disabled]="employeeSaving()" (click)="closeEmployeeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PERSONALE</p><h2 id="employee-form-title">{{ editingEmployee() ? 'Modifica dipendente' : 'Aggiungi dipendente' }}</h2><form [attr.aria-busy]="employeeSaving()" [attr.inert]="employeeSaving() ? '' : null" (submit)="$event.preventDefault(); saveEmployee()"><label>Nome *<input name="employeeFirstName" maxlength="100" required autocomplete="given-name" [(ngModel)]="employeeDraft.firstName" /></label><label>Cognome *<input name="employeeLastName" maxlength="100" required autocomplete="family-name" [(ngModel)]="employeeDraft.lastName" /></label>@if(employeeFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ employeeFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" [disabled]="employeeSaving()" (click)="closeEmployeeForm()">Annulla</button><button class="primary" type="submit" [disabled]="employeeSaving()">{{ employeeSaving() ? 'Salvataggio…' : 'Salva dipendente' }}</button></div></form></section></div> }\n    @if(clientFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeClientForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="client-form-title" (click)="$event.stopPropagation()"><button class="close" [disabled]="clientSaving()" (click)="closeClientForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">RUBRICA CLIENTI</p><h2 id="client-form-title">{{ editingClient() ? 'Modifica cliente' : 'Aggiungi cliente' }}</h2><p class="subtitle">Inserisci i dati della cliente.</p><form [attr.aria-busy]="clientSaving()" [attr.inert]="clientSaving() ? '' : null" (submit)="$event.preventDefault(); saveClient()"><label>Nome *<input name="firstName" maxlength="100" required autocomplete="given-name" [(ngModel)]="clientDraft.firstName" /></label><label>Cognome *<input name="lastName" maxlength="100" required autocomplete="family-name" [(ngModel)]="clientDraft.lastName" /></label><label>Telefono *<input name="clientPhone" type="tel" maxlength="24" required autocomplete="tel" placeholder="333 1234567" [ngModel]="clientDraft.phone" (ngModelChange)="clientDraft.phone = phoneForDisplay($event)" /></label><label>Note<textarea name="clientNotes" rows="2" [(ngModel)]="clientDraft.notes"></textarea></label><label class="check"><input type="checkbox" name="clientConsent" [(ngModel)]="clientDraft.whatsappConsent" /><span>Consenso WhatsApp registrato</span></label>@if(clientFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ clientFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" [disabled]="clientSaving()" (click)="closeClientForm()">Annulla</button><button class="primary" type="submit" [disabled]="clientSaving()">{{ clientSaving() ? 'Salvataggio…' : 'Salva cliente' }}</button></div></form></section></div> }
   `,
   styleUrls: [
     './dashboard-shell.css',
@@ -171,12 +172,17 @@ export class Dashboard {
   protected readonly clientFormOpen = signal(false);
   protected readonly employeeFormOpen = signal(false);
   protected readonly employeeFormError = signal('');
+  protected readonly employeeSaving = signal(false);
   protected readonly employeeDraft = { firstName: '', lastName: '' };
   protected readonly editingEmployee = signal<Employee | null>(null);
   protected readonly clientFormError = signal('');
   protected readonly clientDraft = { firstName: '', lastName: '', phone: '', notes: '', whatsappConsent: false };
   protected readonly editingClient = signal<Client | null>(null);
   protected readonly formError = signal('');
+  protected readonly clientSaving = signal(false);
+  protected readonly appointmentSaving = signal(false);
+  protected readonly settingsSaving = signal(false);
+  protected readonly settingsFormError = signal('');
   protected readonly notice = signal('');
   protected readonly pendingConfirmation = signal<PendingConfirmation | null>(null);
   protected readonly servicesUnavailable = signal(false);
@@ -184,6 +190,7 @@ export class Dashboard {
   private noticeTimeout: ReturnType<typeof setTimeout> | undefined;
   protected readonly storageWarning = signal(false);
   protected readonly editingId = signal('');
+  private readonly editingAppointment = signal<Appointment | null>(null);
   protected readonly selectedDate = signal(this.localDate());
   protected readonly today = this.localDate();
   protected readonly clientSearch = signal('');
@@ -273,7 +280,7 @@ export class Dashboard {
     return freeTimesForPerson(this.schedules(), this.appointments(), date, employeeId, excludeId);
   }
   private originalFormTime(): string | undefined {
-    const prior = this.appointments().find(item => item.id === this.editingId());
+    const prior = this.editingAppointment() ?? this.appointments().find(item => item.id === this.editingId());
     if (!prior || prior.date !== this.draft.date) return undefined;
     const assignee = prior.employeeId ?? (prior.employeeName && prior.employeeName !== 'Admin' ? LEGACY_EMPLOYEE_ASSIGNMENT : null);
     return assignee === this.draft.employeeId ? prior.time : undefined;
@@ -312,6 +319,8 @@ export class Dashboard {
   protected async saveHours(slots: number[]): Promise<void> {
     const editor = this.shiftEditor();
     if (!editor || this.shiftSaving()) return;
+    const validationError = validateWorkSlots(slots);
+    if (validationError) { this.shiftError.set(validationError); return; }
     this.shiftSaving.set(true);
     this.shiftError.set('');
     try {
@@ -319,7 +328,7 @@ export class Dashboard {
       this.shiftEditor.set(null);
       await this.fetchHours(this.selectedDate(), true);
       this.showNotice('Turno salvato.');
-    } catch { this.shiftError.set('Turno non salvato. Le modifiche sono ancora qui: riprova.'); }
+    } catch (error) { this.shiftError.set(databaseConstraintMessage(error, 'schedule')); }
     finally { this.shiftSaving.set(false); }
   }
 
@@ -355,21 +364,34 @@ export class Dashboard {
     this.notice.set('');
   }
 
-  protected openForm(): void { this.editingId.set(''); Object.assign(this.draft, this.emptyDraft()); this.draft.date = this.selectedDate(); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
-  protected addEmployee(): void { this.editingEmployee.set(null); this.employeeDraft.firstName = ''; this.employeeDraft.lastName = ''; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
-  protected editEmployee(employee: Employee): void { this.editingEmployee.set(employee); this.employeeDraft.firstName = employee.firstName; this.employeeDraft.lastName = employee.lastName; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
-  protected closeEmployeeForm(): void { this.employeeFormOpen.set(false); this.employeeFormError.set(''); }
+  protected openForm(): void { if (this.appointmentSaving()) return; this.editingId.set(''); this.editingAppointment.set(null); Object.assign(this.draft, this.emptyDraft()); this.draft.date = this.selectedDate(); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
+  protected addEmployee(): void { if (this.employeeSaving()) return; this.editingEmployee.set(null); this.employeeDraft.firstName = ''; this.employeeDraft.lastName = ''; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
+  protected editEmployee(employee: Employee): void { if (this.employeeSaving()) return; this.editingEmployee.set(employee); this.employeeDraft.firstName = employee.firstName; this.employeeDraft.lastName = employee.lastName; this.employeeFormError.set(''); this.employeeFormOpen.set(true); }
+  protected closeEmployeeForm(): void { if (this.employeeSaving()) return; this.employeeFormOpen.set(false); this.employeeFormError.set(''); }
   protected async saveEmployee(): Promise<void> {
+    if (this.employeeSaving()) return;
     const firstName = this.employeeDraft.firstName.trim();
     const lastName = this.employeeDraft.lastName.trim();
-    if (!firstName || !lastName) { this.employeeFormError.set('Inserisci nome e cognome.'); return; }
+    this.employeeFormError.set('');
+    const nameError = validateName(firstName, 'Nome') ?? validateName(lastName, 'Cognome');
+    if (nameError) { this.employeeFormError.set(nameError); return; }
     const original = this.editingEmployee();
+    this.employeeSaving.set(true);
     try {
-      await this.repo.saveEmployee({ ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName });
-      await this.load();
+      const employee: Employee = {
+        ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }),
+        firstName,
+        lastName,
+        isActive: original?.isActive ?? true,
+      };
+      await this.repo.saveEmployee(employee);
+      this.employees.update((rows) => [...rows.filter((item) => item.id !== employee.id), employee]
+        .sort((a, b) => a.lastName.localeCompare(b.lastName, 'it') || a.firstName.localeCompare(b.firstName, 'it')));
       this.showNotice(original ? 'Dati dipendente aggiornati.' : 'Dipendente aggiunto.');
-      this.closeEmployeeForm();
-    } catch { this.employeeFormError.set(this.copy.ui.genericError); }
+      this.employeeFormOpen.set(false);
+      this.employeeFormError.set('');
+    } catch (error) { this.employeeFormError.set(databaseConstraintMessage(error, 'employee')); }
+    finally { this.employeeSaving.set(false); }
   }
   protected dismissConfirmation(): void { this.pendingConfirmation.set(null); }
   protected async acceptConfirmation(): Promise<void> {
@@ -397,18 +419,18 @@ export class Dashboard {
   protected archivedEmployeeName(): string {
     const employee = this.archivedEmployee();
     if (!employee) return '';
-    const prior = this.appointments().find((item) => item.id === this.editingId());
+    const prior = this.editingAppointment();
     return prior?.employeeId === employee.id && prior.employeeName
       ? prior.employeeName
       : `${employee.firstName} ${employee.lastName}`;
   }
   protected legacyEmployeeName(): string | null {
     if (this.draft.employeeId !== LEGACY_EMPLOYEE_ASSIGNMENT) return null;
-    const prior = this.appointments().find((item) => item.id === this.editingId());
+    const prior = this.editingAppointment();
     if (!prior || prior.employeeId != null || !prior.employeeName || prior.employeeName === 'Admin') return null;
     return prior.employeeName;
   }
-  protected addClient(): void { this.editingClient.set(null); Object.assign(this.clientDraft, { firstName: '', lastName: '', phone: '', notes: '', whatsappConsent: false }); this.clientFormError.set(''); this.clientFormOpen.set(true); }
+  protected addClient(): void { if (this.clientSaving()) return; this.editingClient.set(null); Object.assign(this.clientDraft, { firstName: '', lastName: '', phone: '', notes: '', whatsappConsent: false }); this.clientFormError.set(''); this.clientFormOpen.set(true); }
   protected selectAppointmentClient(id: string): void { const client = this.clients().find((item) => item.id === id); this.draft.clientId = client?.id ?? ''; this.draft.addToContacts = Boolean(client); if (client) { const parts = client.name.trim().split(/\s+/); this.draft.firstName = client.firstName || parts.shift() || ''; this.draft.lastName = client.lastName || parts.join(' '); this.draft.clientName = client.name; this.draft.phone = phoneForDisplay(client.phone); this.draft.reminderConsent = client.whatsappConsent; } else { this.draft.firstName = ''; this.draft.lastName = ''; this.draft.clientName = ''; this.draft.phone = ''; this.draft.reminderConsent = false; } }
   protected showPicker(input: HTMLInputElement): void { try { input.showPicker(); } catch { input.click(); } }
   protected toggleTheme(): void { this.darkMode.update((dark) => !dark); saveThemePreference(this.darkMode()); }
@@ -416,10 +438,11 @@ export class Dashboard {
   protected selectMobileAgendaView(value: string): void { if (value === 'all') { this.singleAgendaView.set(false); return; } this.selectedAgendaColumnId.set(value); this.singleAgendaView.set(true); }
   protected toggleAppointment(id: string): void { this.collapsedAppointments.update((collapsed) => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
   protected selectAgendaColumn(id: string): void { this.selectedAgendaColumnId.set(id); }
-  protected closeForm(): void { this.formOpen.set(false); this.formError.set(''); void this.fetchHours(this.selectedDate()); }
-  protected edit(item: Appointment): void { this.editingId.set(item.id); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:phoneForDisplay(item.phone),date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
+  protected closeForm(): void { if (this.appointmentSaving()) return; this.formOpen.set(false); this.editingAppointment.set(null); this.formError.set(''); void this.fetchHours(this.selectedDate()); }
+  protected edit(item: Appointment): void { this.editingId.set(item.id); this.editingAppointment.set(item); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:phoneForDisplay(item.phone),date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
   protected startAppointment(client: Client): void { this.openForm(); this.selectAppointmentClient(client.id); this.view.set('agenda'); }
   protected editClient(client: Client): void {
+    if (this.clientSaving()) return;
     const parts = client.name.trim().split(/\s+/);
     this.editingClient.set(client);
     this.clientDraft.firstName = client.firstName || parts.shift() || '';
@@ -430,38 +453,69 @@ export class Dashboard {
     this.clientFormError.set('');
     this.clientFormOpen.set(true);
   }
-  protected closeClientForm(): void { this.clientFormOpen.set(false); this.clientFormError.set(''); }
+  protected closeClientForm(): void { if (this.clientSaving()) return; this.clientFormOpen.set(false); this.clientFormError.set(''); }
   protected async saveClient(): Promise<void> {
+    if (this.clientSaving()) return;
     const original = this.editingClient();
+    const firstName = this.clientDraft.firstName.trim();
+    const lastName = this.clientDraft.lastName.trim();
     const phone = normalizePhoneNumber(this.clientDraft.phone, '+39');
-    if (!this.clientDraft.firstName.trim() || !this.clientDraft.lastName.trim()) {
-      this.clientFormError.set('Inserisci nome e cognome.');
+    this.clientFormError.set('');
+    const nameError = validateName(firstName, 'Nome') ?? validateName(lastName, 'Cognome');
+    if (nameError) {
+      this.clientFormError.set(nameError);
       return;
     }
     if (!phone.e164) {
       this.clientFormError.set(phone.error ?? this.copy.form.invalidPhone);
       return;
     }
+    if (this.clients().some((client) => client.id !== original?.id &&
+      (client.phone === phone.e164 || normalizePhoneNumber(client.phone, '+39').e164 === phone.e164))) {
+      this.clientFormError.set('Esiste già una cliente con questo numero. Apri il contatto esistente per modificarlo.');
+      return;
+    }
+    this.clientSaving.set(true);
     try {
-      const firstName = this.clientDraft.firstName.trim();
-      const lastName = this.clientDraft.lastName.trim();
       const client: Client = { ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName, name: `${firstName} ${lastName}`, phone: phone.e164, notes: this.clientDraft.notes.trim(), whatsappConsent: this.clientDraft.whatsappConsent };
       await this.repo.saveClient(client);
-      await this.load();
+      this.upsertClientState(client);
       this.showNotice(original ? 'Dati cliente aggiornati.' : 'Cliente aggiunta alla rubrica.');
-      this.closeClientForm();
-    } catch {
-      this.showNotice(this.copy.ui.genericError);
+      this.clientFormOpen.set(false);
+      this.clientFormError.set('');
+    } catch (err) {
+      if (isUniqueConstraintViolation(err, 'clients_owner_id_phone_key')) {
+        try { this.clients.set(await this.repo.listClients()); } catch { /* Keep the current list when refresh is unavailable. */ }
+      }
+      this.clientFormError.set(databaseConstraintMessage(err, 'client'));
+    } finally {
+      this.clientSaving.set(false);
     }
   }
+  private upsertClientState(client: Client): void {
+    this.clients.update((current) => [...current.filter((item) => item.id !== client.id), client].sort((a, b) => a.name.localeCompare(b.name, 'it')));
+  }
   protected async saveAppointment(): Promise<void> {
+    if (this.appointmentSaving()) return;
     this.formError.set('');
     const phone = normalizePhoneNumber(this.draft.phone, '+39');
     if (!phone.e164) { this.formError.set(phone.error ?? this.copy.form.invalidPhone); return; }
-    const clientName = `${this.draft.firstName.trim()} ${this.draft.lastName.trim()}`.trim();
-    if (!this.draft.firstName.trim() || !this.draft.lastName.trim() || !this.draft.date || !this.draft.time) { this.formError.set(this.copy.form.required); return; }
+    const firstName = this.draft.firstName.trim();
+    const lastName = this.draft.lastName.trim();
+    const nameError = validateName(firstName, 'Nome') ?? validateName(lastName, 'Cognome');
+    if (nameError) { this.formError.set(nameError); return; }
+    const clientName = `${firstName} ${lastName}`;
+    if (Array.from(clientName).length > DATABASE_LIMITS.appointmentName) {
+      this.formError.set(`Il nome completo della cliente non può superare ${DATABASE_LIMITS.appointmentName} caratteri.`);
+      return;
+    }
+    if (!this.draft.date || !this.draft.time) { this.formError.set(this.copy.form.required); return; }
+    const timeError = validateAppointmentTime(this.draft.time);
+    if (timeError) { this.formError.set(timeError); return; }
     const existing = this.appointments();
-    const prior = this.editingId() ? existing.find((item)=>item.id===this.editingId()) : undefined;
+    const prior = this.editingId()
+      ? existing.find((item)=>item.id===this.editingId()) ?? this.editingAppointment() ?? undefined
+      : undefined;
     const employee = this.employees().find((item) => item.id === this.draft.employeeId);
     const legacyEmployeeName = this.legacyEmployeeName();
     const requestedEmployeeId = this.draft.employeeId === LEGACY_EMPLOYEE_ASSIGNMENT ? null : this.draft.employeeId ?? null;
@@ -471,7 +525,8 @@ export class Dashboard {
       this.formError.set('Questa fascia non è disponibile per la persona selezionata. Scegli un altro orario.'); return;
     }
     if (!sameBooking && findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
-    const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>item.phone===phone.e164);
+    const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>
+      item.phone === phone.e164 || normalizePhoneNumber(item.phone, '+39').e164 === phone.e164);
     const existingClientId = this.draft.clientId || prior?.clientId || matchedClient?.id || '';
     const isNewClient = !existingClientId && !matchedClient;
     const clientId = existingClientId || (this.draft.addToContacts && isNewClient ? crypto.randomUUID() : '');
@@ -482,9 +537,14 @@ export class Dashboard {
         : `${employee.firstName} ${employee.lastName}`
       : 'Admin');
     const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
+    let clientSaveAttempted = false;
+    let clientSaved = false;
+    let saveStage: 'appointment' | 'client' | 'schedule' = 'appointment';
+    this.appointmentSaving.set(true);
     try {
       if (!sameBooking && appointment.status === 'confirmed' && !legacyEmployeeName && this.shiftState() === 'ready' &&
         !this.schedules().some(row => row.date === appointment.date && row.employeeId === appointment.employeeId)) {
+        saveStage = 'schedule';
         const defaultSchedule: DailyWorkSchedule = {
           date: appointment.date,
           employeeId: appointment.employeeId ?? null,
@@ -493,19 +553,42 @@ export class Dashboard {
         await this.repo.saveWorkSchedule(defaultSchedule);
         this.schedules.update(rows => [...rows, defaultSchedule]);
       }
-      if (isNewClient && this.draft.addToContacts) await this.repo.saveClient(client);
+      if (isNewClient && this.draft.addToContacts) {
+        saveStage = 'client';
+        clientSaveAttempted = true;
+        await this.repo.saveClient(client);
+        clientSaved = true;
+        this.upsertClientState(client);
+        this.draft.clientId = client.id;
+      }
+      saveStage = 'appointment';
       await this.repo.saveAppointment(appointment);
-      await this.load();
+      this.appointments.update((rows) => [...rows.filter((item) => item.id !== appointment.id), appointment]
+        .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)));
       this.selectedDate.set(appointment.date);
       this.showNotice(this.copy.form.saveSuccess);
-      this.closeForm();
+      this.formOpen.set(false);
+      this.editingAppointment.set(null);
+      this.formError.set('');
+      void this.fetchHours(this.selectedDate());
     }
     catch (err) {
-      const code = (err as {code?: string} | null)?.code;
-      if (code === '23514' || code === '23505' || code === '23P01') {
-        await Promise.all([this.fetchHours(this.draft.date, true), this.load()]);
-        this.formError.set('L’orario non è più disponibile. Controlla il turno e scegli un’altra fascia.');
-      } else { this.showNotice(this.copy.ui.genericError); }
+      if (clientSaveAttempted && !clientSaved) {
+        if (isUniqueConstraintViolation(err, 'clients_owner_id_phone_key')) {
+          try { this.clients.set(await this.repo.listClients()); } catch { /* Keep the current list when refresh is unavailable. */ }
+        }
+        this.formError.set(databaseConstraintMessage(err, 'client'));
+      } else if (clientSaved) {
+        if (saveStage === 'appointment') await this.fetchHours(this.draft.date, true);
+        this.formError.set(`La cliente è già in rubrica e non verrà duplicata. ${databaseConstraintMessage(err, saveStage)}`);
+      } else {
+        if (saveStage === 'appointment' && ['23505', '23514', '23P01'].includes((err as { code?: string } | null)?.code ?? '')) {
+          await this.fetchHours(this.draft.date, true);
+        }
+        this.formError.set(databaseConstraintMessage(err, saveStage));
+      }
+    } finally {
+      this.appointmentSaving.set(false);
     }
   }
   protected removeAppointment(item: Appointment): void {
@@ -530,8 +613,19 @@ export class Dashboard {
     });
   }
   protected setServices(value: string): void { this.settingsDraft.services = value.split('\\n').map((item) => item.trim()).filter(Boolean); }
-  protected addService(): void { const value = this.newService.trim(); if (value && !this.settingsDraft.services.some((item) => item.toLocaleLowerCase('it') === value.toLocaleLowerCase('it'))) this.settingsDraft.services = [...this.settingsDraft.services, value]; this.newService = ''; }
-  protected removeService(index: number): void { this.settingsDraft.services = this.settingsDraft.services.filter((_item, itemIndex) => itemIndex !== index); }
+  protected addService(): void {
+    const value = this.newService.trim();
+    this.settingsFormError.set('');
+    const validationError = validateServiceName(value);
+    if (validationError) { this.settingsFormError.set(validationError); return; }
+    if (this.settingsDraft.services.some((item) => item.toLocaleLowerCase('it') === value.toLocaleLowerCase('it'))) {
+      this.settingsFormError.set('Esiste già un servizio con questo nome. Modifica quello presente oppure scegli un nome diverso.');
+      return;
+    }
+    this.settingsDraft.services = [...this.settingsDraft.services, value];
+    this.newService = '';
+  }
+  protected removeService(index: number): void { this.settingsDraft.services = this.settingsDraft.services.filter((_item, itemIndex) => itemIndex !== index); this.settingsFormError.set(''); }
   protected insertReminderToken(input: HTMLTextAreaElement, token: string): void {
     const text = this.settingsDraft.messageTemplates.reminder;
     const start = input.selectionStart ?? text.length;
@@ -548,7 +642,41 @@ export class Dashboard {
     });
   }
 
-  protected async saveSettings(): Promise<void> { try { this.settingsDraft.defaultCountryCode = '+39'; await this.repo.saveSettings(this.settingsDraft); await this.repo.saveServices(this.settingsDraft.services); this.settingsUnavailable.set(false); this.servicesUnavailable.set(false); this.settings.set(structuredClone(this.settingsDraft)); this.showNotice(this.copy.settings.saveSuccess); } catch { this.settingsUnavailable.set(this.repo.hasSettingsWarning()); if (!this.settingsUnavailable()) this.servicesUnavailable.set(true); this.showNotice(this.copy.ui.genericError); } }
+  protected async saveSettings(): Promise<void> {
+    if (this.settingsSaving()) return;
+    this.settingsFormError.set('');
+    const normalizedServices = this.settingsDraft.services.map((service) => service.trim());
+    for (const service of normalizedServices) {
+      const validationError = validateServiceName(service);
+      if (validationError) { this.settingsFormError.set(validationError); return; }
+    }
+    if (new Set(normalizedServices.map((service) => service.toLocaleLowerCase('it'))).size !== normalizedServices.length) {
+      this.settingsFormError.set('Esiste più di un servizio con lo stesso nome. Rimuovi o rinomina i duplicati prima di salvare.');
+      return;
+    }
+    this.settingsSaving.set(true);
+    let settingsSaved = false;
+    try {
+      this.settingsDraft.defaultCountryCode = '+39';
+      await this.repo.saveSettings(this.settingsDraft);
+      settingsSaved = true;
+      await this.repo.saveServices(normalizedServices);
+      this.settingsUnavailable.set(false);
+      this.servicesUnavailable.set(false);
+      this.settings.set(structuredClone({ ...this.settingsDraft, services: normalizedServices }));
+      this.settingsDraft.services = normalizedServices;
+      this.showNotice(this.copy.settings.saveSuccess);
+    } catch (error) {
+      const message = databaseConstraintMessage(error, settingsSaved ? 'service' : 'settings');
+      if (settingsSaved) {
+        this.servicesUnavailable.set(true);
+        this.settingsFormError.set(`Le preferenze sono state salvate, ma i servizi no. ${message}`);
+      } else {
+        this.settingsUnavailable.set(this.repo.hasSettingsWarning());
+        this.settingsFormError.set(message);
+      }
+    } finally { this.settingsSaving.set(false); }
+  }
   protected async seedDemo(): Promise<void> { const ok=await this.repo.seedDemoData(); if(!ok){this.showNotice('Per caricare i dati demo, prima esporta o rimuovi gli appuntamenti e clienti già presenti.');return;} this.settingsDraft.demoDataEnabled=true; await this.repo.saveSettings(this.settingsDraft); await this.load(); this.showNotice(this.copy.ui.demoLoaded); }
   protected async removeDemo(): Promise<void> { await this.repo.removeDemoData(); await this.load(); this.showNotice(this.copy.ui.demoRemoved); }
 

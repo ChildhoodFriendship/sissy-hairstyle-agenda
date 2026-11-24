@@ -20,6 +20,8 @@ source:
       path: src/app/api/supabase-agenda-repository.ts
     - part: component
       path: src/app/components/login/login.ts
+    - part: other
+      path: src/app/library/database-constraints.ts
     - part: configuration
       path: public/supabase-config.json
     - part: other
@@ -57,6 +59,7 @@ The repository contains migration scripts and Edge Function source, but a local 
 ## Functional Characteristics
 
 - Registers an account by providing a username, email, and password; after submission, the UI tells the user to check email to complete registration, while Supabase Auth may require email confirmation.
+- Trims and lowercases registration usernames, requires 3–30 characters from `a-z`, digits, `.`, `_`, and `-`, and rejects invalid values before the request. The `user_profiles.username` database constraint remains unique; a duplicate is reported as **Questo username è già in uso. Scegline un altro.** rather than as a generic account-creation failure.
 - Authenticates with username and password through the `login-with-username` Edge Function, which returns a Supabase session without exposing the email mapping.
 - Checks whether a Supabase session exists before allowing access to the protected agenda route.
 - Requests a password-reset email from the dedicated recovery page, using a generic confirmation that does not reveal whether the email belongs to an account.

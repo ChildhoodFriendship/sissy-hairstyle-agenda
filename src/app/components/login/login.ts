@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { Router } from '@angular/router';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
+import { validateUsername } from '../../library/database-constraints';
 import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../library/theme';
 
 @Component({
@@ -232,17 +233,20 @@ export class Login {
     this.error.set('');
     this.statusMessage.set('');
     const username = this.registerUsername().trim().toLowerCase();
-    if (!/^[a-z0-9_.-]{3,30}$/.test(username)) {
-      this.error.set('Lo username deve contenere 3–30 caratteri: lettere, numeri, punto, trattino o trattino basso.');
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      this.error.set(usernameError);
       return;
     }
-    const registered = await this.auth.register(username, this.registerEmail(), this.registerPassword());
-    if (registered) {
+    const registration = await this.auth.register(username, this.registerEmail(), this.registerPassword());
+    if (registration === 'created') {
       this.statusMessage.set('Controlla la posta elettronica per completare la registrazione.');
       this.registrationMode.set(false);
       return;
     }
-    this.error.set(this.auth.isConfigured() ? 'Impossibile creare l’account. Controlla i dati o riprova più tardi.' : this.copy.login.notConfigured);
+    this.error.set(registration === 'username-taken'
+      ? 'Questo username è già in uso. Scegline un altro.'
+      : this.auth.isConfigured() ? 'Impossibile creare l’account. Controlla i dati o riprova più tardi.' : this.copy.login.notConfigured);
   }
 
   protected async requestPasswordReset(): Promise<void> {

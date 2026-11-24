@@ -18,6 +18,8 @@ source:
       path: src/app/library/models.ts
     - part: other
       path: src/app/library/domain-utils.ts
+    - part: other
+      path: src/app/library/database-constraints.ts
     - part: repository
       path: src/app/api/supabase-agenda-repository.ts
     - part: other
@@ -39,7 +41,8 @@ This section describes saved client contact records used by the dashboard. A cli
 - Shows the directory card heading as **I tuoi clienti**.
 - Shows the WhatsApp reminder consent checkbox with masculine wording: **Il cliente ha acconsentito a ricevere promemoria WhatsApp**.
 - Shows saved clients in name order and filters the list by name or phone. The directory and add/edit phone field hide the Italian `+39` prefix; saved numbers retain their normalized form for matching and WhatsApp. Numbers with a different country code remain visible as stored rather than being mistaken for Italian numbers.
-- Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory. The add/edit dialog opens at the top of the viewport and centers its close icon in a fixed 44 × 44 px button.
+- Manages client records through a form requiring first name, last name, and a valid phone number. Notes and WhatsApp consent are optional form values; adding a client from this screen always includes it in the directory. During a save, the form is made inert, its submit and close controls are disabled, and the submit label changes to **Salvataggio…**; concurrent submissions are ignored. A successful write updates the local directory immediately without relying on a full dashboard reload. Duplicate numbers and unconfirmed saves are reported inline.
+- Trims first name and last name and enforces the database range of 1–100 characters for each. The phone input is capped at 24 characters and passed through the existing phone normalizer; the database also checks that the trimmed stored value has 7–24 characters. An existing phone number is checked before writing. The database enforces `unique (owner_id, phone)` and remains authoritative if another request creates the same number concurrently; the resulting conflict is explained as an existing client, not as an appointment-time problem.
 - Normalizes telephone numbers using `+39` as the country prefix. Explicit non-Italian prefixes (including `+30` and `0030`) are rejected when saving instead of being mistaken for Italian numbers; invalid numbers prevent saving. Pasted Italian prefixes are removed from the form field but restored on save. Existing records are not rewritten automatically.
 - Shows whether WhatsApp consent is recorded and counts appointments linked to each client.
 - Opens a new appointment form from a client row through an agenda-icon-only button with a client-specific accessible label, and pre-fills the selected client details.
@@ -48,7 +51,7 @@ This section describes saved client contact records used by the dashboard. A cli
 
 ## Interfaces And Protocols
 
-The operator searches, adds, edits, or removes client records in the dashboard. A new client created here is included in the directory. The repository maps client fields to the Supabase `clients` table. Successful saves and repository failures appear in a dismissible toast that auto-closes after about three seconds; form validation remains inline. Appointment creation inserts a related client only when the directory checkbox is selected; otherwise it saves the appointment without a client link.
+The operator searches, adds, edits, or removes client records in the dashboard. A new client created here is included in the directory. The repository maps client fields to the Supabase `clients` table. Successful saves appear in a dismissible toast; duplicate-number and unconfirmed-save errors remain inline so the operator can check the directory before retrying. Appointment creation inserts a related client only when the directory checkbox is selected; otherwise it saves the appointment without a client link. The client-side duplicate check covers the currently loaded directory; the owner-scoped database unique constraint catches conflicts outside that loaded set and concurrent writes.
 
 ## Dependencies And Relationships
 

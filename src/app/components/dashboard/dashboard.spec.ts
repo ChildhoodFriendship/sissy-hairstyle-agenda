@@ -8,6 +8,12 @@ describe('Dashboard', () => {
   let savedClient: Client | undefined;
   let saveClientCalls = 0;
   let savedAppointment: Appointment | undefined;
+  let failClientList = false;
+  let failNextAppointmentSave = false;
+  let nextClientSaveError: { code?: string; constraint?: string } | null = null;
+  let clientSaveGate: Promise<void> | null = null;
+  let employeeSaveCalls = 0;
+  let workScheduleSaveCalls = 0;
   let failSettingsLoad = false;
   let settingsWarning = false;
 
@@ -26,6 +32,12 @@ describe('Dashboard', () => {
     savedClient = undefined;
     saveClientCalls = 0;
     savedAppointment = undefined;
+    failClientList = false;
+    failNextAppointmentSave = false;
+    nextClientSaveError = null;
+    clientSaveGate = null;
+    employeeSaveCalls = 0;
+    workScheduleSaveCalls = 0;
     failSettingsLoad = false;
     settingsWarning = false;
     await TestBed.configureTestingModule({
@@ -34,10 +46,29 @@ describe('Dashboard', () => {
         provide: SupabaseAgendaRepository,
         useValue: {
           listWorkSchedules: (date: string) => readShifts(date),
-          listAppointments: async () => [], listClients: async () => [sampleClient], listEmployees: async () => [],
-          saveClient: async (client: Client) => { saveClientCalls += 1; savedClient = client; },
-          saveAppointment: async (appointment: Appointment) => { savedAppointment = appointment; },
-          saveEmployee: async () => undefined, deleteEmployee: async () => undefined,
+          listAppointments: async () => [], listClients: async () => {
+            if (failClientList) throw new Error('Clients unavailable');
+            return [sampleClient];
+          }, listEmployees: async () => [],
+          saveClient: async (client: Client) => {
+            saveClientCalls += 1;
+            if (nextClientSaveError) {
+              const error = nextClientSaveError;
+              nextClientSaveError = null;
+              throw error;
+            }
+            savedClient = client;
+            if (clientSaveGate) await clientSaveGate;
+          },
+          saveAppointment: async (appointment: Appointment) => {
+            if (failNextAppointmentSave) {
+              failNextAppointmentSave = false;
+              throw { code: '23505' };
+            }
+            savedAppointment = appointment;
+          },
+          saveEmployee: async () => { employeeSaveCalls += 1; }, deleteEmployee: async () => undefined,
+          saveWorkSchedule: async () => { workScheduleSaveCalls += 1; },
           loadSettings: async () => {
             if (failSettingsLoad) throw new Error('Settings table unavailable');
             return { salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false };
@@ -207,8 +238,8 @@ describe('Dashboard', () => {
       { id: 'employee-2', firstName: 'Mia', lastName: 'Bianchi', createdAt: '2026-01-01T00:00:00.000Z' },
     ];
     const appointments: Appointment[] = [
-      { id: 'admin-appointment', clientId: '', clientName: 'Ada Lovelace', phone: '+393****4567', date: instance.selectedDate(), time: '09:00', service: 'Taglio', notes: '', status: 'confirmed', reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: null, employeeName: 'Admin' },
-      { id: 'employee-appointment', clientId: '', clientName: 'Grace Hopper', phone: '+393****4568', date: instance.selectedDate(), time: '10:00', service: 'Piega', notes: '', status: 'confirmed', reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: 'employee-1', employeeName: 'Lara Rossi' },
+      { id: 'admin-appointment', clientId: '', clientName: 'Ada Lovelace', phone: '+393331234567', date: instance.selectedDate(), time: '09:00', service: 'Taglio', notes: '', status: 'confirmed', reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: null, employeeName: 'Admin' },
+      { id: 'employee-appointment', clientId: '', clientName: 'Grace Hopper', phone: '+393331234568', date: instance.selectedDate(), time: '10:00', service: 'Piega', notes: '', status: 'confirmed', reminderConsent: false, createdAt: '2026-01-01T00:00:00.000Z', employeeId: 'employee-1', employeeName: 'Lara Rossi' },
     ];
     instance.employees.set(employees);
     instance.appointments.set(appointments);
@@ -335,7 +366,8 @@ describe('Dashboard', () => {
     expect((dialog.querySelector('input[name="addToContacts"]') as HTMLInputElement).checked).toBe(false);
     (fixture.nativeElement.querySelector('.theme-toggle') as HTMLButtonElement).click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.scrim')?.classList.contains('dark')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.scrim')?.classList.contains('dark'))
+      .toBe(fixture.nativeElement.querySelector('.workspace')?.classList.contains('dark'));
   });
 
   it('keeps checked WhatsApp consent enabled for an existing client when saving an appointment', async () => {
@@ -386,6 +418,121 @@ describe('Dashboard', () => {
     expect(savedAppointment?.clientId).toBe(savedClient?.id);
   });
 
+  it('prevents concurrent direct client submissions', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      addClient(): void;
+      clientDraft: { firstName: string; lastName: string; phone: string; notes: string; whatsappConsent: boolean };
+      saveClient(): Promise<void>;
+    };
+    instance.addClient();
+    Object.assign(instance.clientDraft, { firstName: 'Grace', lastName: 'Hopper', phone: '3331234567', notes: '', whatsappConsent: false });
+    let releaseSave!: () => void;
+    clientSaveGate = new Promise<void>((resolve) => { releaseSave = resolve; });
+
+    const firstSave = instance.saveClient();
+    const duplicateSave = instance.saveClient();
+    fixture.detectChanges();
+    const submit = fixture.nativeElement.querySelector('form button[type="submit"]') as HTMLButtonElement;
+    const submitWasDisabled = submit.disabled;
+    const submitLabel = submit.textContent?.trim() ?? '';
+    releaseSave();
+    await Promise.all([firstSave, duplicateSave]);
+
+    expect(saveClientCalls).toBe(1);
+    expect(submitWasDisabled).toBe(true);
+    expect(submitLabel).toContain('Salvataggio');
+  });
+
+  it('keeps a saved client visible when the dashboard list cannot be reloaded', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      addClient(): void;
+      clientDraft: { firstName: string; lastName: string; phone: string; notes: string; whatsappConsent: boolean };
+      saveClient(): Promise<void>;
+      clients(): Client[];
+    };
+    instance.addClient();
+    Object.assign(instance.clientDraft, { firstName: 'Grace', lastName: 'Hopper', phone: '3331234567', notes: '', whatsappConsent: false });
+    failClientList = true;
+
+    await instance.saveClient();
+
+    expect(instance.clients().some((client) => client.id === savedClient?.id)).toBe(true);
+  });
+
+  it('does not save an appointment opt-in client twice after an appointment conflict', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      load(): Promise<void>;
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      formError(): string;
+      clients(): Client[];
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    await instance.load();
+    failClientList = true;
+    failNextAppointmentSave = true;
+
+    await instance.saveAppointment();
+
+    expect(instance.clients().map((client) => client.id)).toEqual(expect.arrayContaining([savedClient?.id]));
+    expect(instance.formError().toLocaleLowerCase('it')).toContain('cliente');
+    await instance.saveAppointment();
+    expect(saveClientCalls).toBe(1);
+    expect(savedAppointment?.clientId).toBe(savedClient?.id);
+  });
+
+  it('reports a duplicate opt-in client as a client error, not a time conflict', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      formError(): string;
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    nextClientSaveError = { code: '23505', constraint: 'clients_owner_id_phone_key' };
+
+    await instance.saveAppointment();
+
+    expect(instance.formError().toLocaleLowerCase('it')).toContain('cliente');
+    expect(instance.formError().toLocaleLowerCase('it')).not.toContain('orario');
+    expect(savedAppointment).toBeUndefined();
+  });
+
+  it('prevents concurrent appointment submissions from saving the opt-in client twice', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    let releaseSave!: () => void;
+    clientSaveGate = new Promise<void>((resolve) => { releaseSave = resolve; });
+
+    const firstSave = instance.saveAppointment();
+    const duplicateSave = instance.saveAppointment();
+    expect(saveClientCalls).toBe(1);
+    releaseSave();
+    await Promise.all([firstSave, duplicateSave]);
+
+    expect(savedAppointment?.clientId).toBe(savedClient?.id);
+  });
+
   it('prefills appointment details when a saved client is selected', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
@@ -402,7 +549,7 @@ describe('Dashboard', () => {
     expect(instance.draft.clientName).toBe('Ada Lovelace');
     expect(instance.draft.firstName).toBe('Ada');
     expect(instance.draft.lastName).toBe('Lovelace');
-    expect(instance.draft.phone).toBe('3****4567');
+    expect(instance.draft.phone).toBe('3331234567');
 
     instance.openForm();
     fixture.detectChanges();
@@ -418,9 +565,14 @@ describe('Dashboard', () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
     await fixture.whenStable();
-    (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('clients');
+    const instance = fixture.componentInstance as unknown as {
+      load(): Promise<void>;
+      view: { set(value: string): void };
+    };
+    await instance.load();
+    instance.view.set('clients');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.client-info span')?.textContent).toBe('3****4567');
+    expect(fixture.nativeElement.querySelector('.client-info span')?.textContent).toBe('3331234567');
     expect(fixture.nativeElement.textContent).toContain('Aggiungi cliente');
     expect(fixture.nativeElement.querySelector('.page-heading h1')?.textContent?.trim()).toBe('Clienti');
     expect(fixture.nativeElement.textContent).not.toContain('APPUNTAMENTI TOTALI');
@@ -437,8 +589,7 @@ describe('Dashboard', () => {
     expect(appointmentButton.querySelector('img')?.getAttribute('src')).toBe('/assets/agenda.svg');
     const appointmentButtonStyles = window.getComputedStyle(appointmentButton);
     expect(appointmentButtonStyles.display).toBe('grid');
-    expect(appointmentButtonStyles.alignItems).toBe('center');
-    expect(appointmentButtonStyles.justifyItems).toBe('center');
+    expect(appointmentButtonStyles.placeItems).toBe('center');
     (fixture.componentInstance as unknown as { addClient(): void }).addClient();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Aggiungi cliente');
@@ -548,9 +699,11 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     (fixture.componentInstance as unknown as { editClient(client: Client): void }).editClient(sampleClient);
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"] h2')?.textContent).toContain('Modifica cliente');
     expect((fixture.componentInstance as unknown as { clientDraft: { firstName: string } }).clientDraft.firstName).toBe('Ada');
-    expect((fixture.nativeElement.querySelector('input[name="clientPhone"]') as HTMLInputElement).value).toBe('3****4567');
+    expect((fixture.nativeElement.querySelector('input[name="clientPhone"]') as HTMLInputElement).value).toBe('3331234567');
     expect(fixture.nativeElement.querySelector('input[name="clientPhone"]')?.getAttribute('placeholder')).toBe('333 1234567');
   });
 
@@ -561,10 +714,14 @@ describe('Dashboard', () => {
     const component = fixture.componentInstance as unknown as { editClient(client: Client): void; saveClient(): Promise<void> };
     component.editClient({ ...sampleClient, phone: '+393331234567' });
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('input[name="clientPhone"]') as HTMLInputElement;
     expect(input.value).toBe('3331234567');
     input.value = '+39 333 1234567';
-    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(input.value).toBe('333 1234567');
     await component.saveClient();
@@ -597,5 +754,97 @@ describe('Dashboard', () => {
     (fixture.nativeElement.querySelector('app-confirmation-dialog button[autofocus]') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(component.pendingConfirmation()).toBeNull();
+  });
+
+  it('blocks names longer than the database limit before saving a client', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      addClient(): void;
+      clientDraft: { firstName: string; lastName: string; phone: string };
+      saveClient(): Promise<void>;
+      clientFormError(): string;
+    };
+    component.addClient();
+    Object.assign(component.clientDraft, { firstName: 'A'.repeat(101), lastName: 'Rossi', phone: '3331234567' });
+
+    await component.saveClient();
+
+    expect(saveClientCalls).toBe(0);
+    expect(component.clientFormError()).toContain('massimo 100');
+  });
+
+  it('blocks employee names longer than the database limit before saving', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      addEmployee(): void;
+      employeeDraft: { firstName: string; lastName: string };
+      saveEmployee(): Promise<void>;
+      employeeFormError(): string;
+    };
+    component.addEmployee();
+    Object.assign(component.employeeDraft, { firstName: 'A'.repeat(101), lastName: 'Rossi' });
+
+    await component.saveEmployee();
+
+    expect(employeeSaveCalls).toBe(0);
+    expect(component.employeeFormError()).toContain('massimo 100');
+  });
+
+  it('blocks appointment times that violate the database half-hour rule', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      formError(): string;
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(component.draft, { clientId: '', firstName: 'Ada', lastName: 'Rossi', phone: '3331234567', date: component.selectedDate(), time: '10:15', service: '', notes: '', reminderConsent: false, addToContacts: false, employeeId: null });
+
+    await component.saveAppointment();
+
+    expect(savedAppointment).toBeUndefined();
+    expect(component.formError()).toContain('30 minuti');
+  });
+
+  it('explains duplicate service names instead of silently ignoring the second entry', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      settingsDraft: { services: string[] };
+      newService: string;
+      addService(): void;
+      settingsFormError(): string;
+    };
+    component.settingsDraft.services = ['Taglio'];
+    component.newService = 'taglio';
+
+    component.addService();
+
+    expect(component.settingsDraft.services).toEqual(['Taglio']);
+    expect(component.settingsFormError()).toContain('Esiste già un servizio');
+  });
+
+  it('blocks invalid daily schedule slots before calling the database repository', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      shiftEditor: { set(value: unknown): void };
+      saveHours(slots: number[]): Promise<void>;
+      shiftError(): string;
+    };
+    component.shiftEditor.set({ name: 'Sissy', schedule: { date: '2026-11-24', employeeId: null, slots: [] } });
+
+    await component.saveHours([4, 4]);
+
+    expect(workScheduleSaveCalls).toBe(0);
+    expect(component.shiftError()).toContain('fasce duplicate');
   });
 });
