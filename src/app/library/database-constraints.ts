@@ -113,6 +113,12 @@ export function databaseConstraintMessage(error: unknown, operation: DatabaseWri
     if (operation === 'schedule') {
       return 'Il turno contiene fasce non valide. Usa orari distinti compresi tra 00:00 e 23:30.';
     }
+    if (operation === 'settings' && (constraint === 'salon_settings_business_hours_check' || serverMessage.includes('salon_settings_business_hours_check'))) {
+      return 'Gli orari del salone devono avere una struttura valida. Controlla le preferenze e riprova.';
+    }
+    if (operation === 'settings' && (constraint === 'salon_settings_message_templates_check' || serverMessage.includes('salon_settings_message_templates_check'))) {
+      return 'I modelli dei messaggi devono avere una struttura valida. Controlla le preferenze e riprova.';
+    }
     if (operation === 'appointment' && (constraint === 'appointments_status_check' || serverMessage.includes('appointments_status_check'))) {
       return 'Lo stato dell’appuntamento non è valido. Aggiorna la pagina e riprova.';
     }

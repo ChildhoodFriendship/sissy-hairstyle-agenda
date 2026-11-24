@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { SUPABASE_CLIENT } from './supabase-client';
 import { isUniqueConstraintViolation } from '../library/database-constraints';
 
-export type RegistrationResult = 'created' | 'username-taken' | 'failed';
+export type RegistrationResult = 'created' | 'username-taken' | 'profile-save-failed' | 'failed';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -34,7 +34,8 @@ export class AuthService {
         options: { data: { username: username.trim().toLowerCase() } },
       });
       if (!error) return 'created';
-      return isUniqueConstraintViolation(error, 'user_profiles_username_key') ? 'username-taken' : 'failed';
+      if (isUniqueConstraintViolation(error, 'user_profiles_username_key')) return 'username-taken';
+      return isAuthProfileSaveError(error) ? 'profile-save-failed' : 'failed';
     } catch {
       return 'failed';
     }
@@ -81,4 +82,9 @@ export class AuthService {
     const { data, error } = await this.supabase.auth.getSession();
     return !error && !!data.session;
   }
+}
+
+function isAuthProfileSaveError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'message' in error &&
+    typeof error.message === 'string' && error.message.toLowerCase().includes('database error saving new user');
 }

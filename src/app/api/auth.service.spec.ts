@@ -22,6 +22,14 @@ describe('AuthService password recovery', () => {
     await expect(TestBed.inject(AuthService).register('ada', 'ada@example.com', 'Strong-pass-42')).resolves.toBe('username-taken');
   });
 
+  it('distinguishes Supabase Auth trigger failures from ordinary registration errors', async () => {
+    const signUp = vi.fn().mockResolvedValue({ error: { message: 'Database error saving new user' } });
+    TestBed.configureTestingModule({ providers: [{ provide: SUPABASE_CLIENT, useValue: { auth: { signUp } } }] });
+
+    await expect(TestBed.inject(AuthService).register('ada', 'ada@example.com', 'Strong-pass-42'))
+      .resolves.toBe('profile-save-failed');
+  });
+
   it('requests a reset link with the configured application return URL', async () => {
     const resetPasswordForEmail = vi.fn().mockResolvedValue({ error: null });
     TestBed.configureTestingModule({

@@ -8,6 +8,7 @@ export interface AppointmentRepository {
 
 export interface ClientRepository {
   listClients(): Promise<Client[]>;
+  findClientByPhone(phone: string): Promise<Client | null>;
   saveClient(client: Client): Promise<void>;
   deleteClient(id: string): Promise<void>;
 }

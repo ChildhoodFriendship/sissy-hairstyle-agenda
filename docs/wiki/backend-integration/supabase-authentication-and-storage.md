@@ -58,7 +58,7 @@ The repository contains migration scripts and Edge Function source, but a local 
 
 ## Functional Characteristics
 
-- Registers an account by providing a username, email, and password; after submission, the UI tells the user to check email to complete registration, while Supabase Auth may require email confirmation.
+- Registers an account by providing a username, email, and password; after submission, the UI tells the user to check email to complete registration, while Supabase Auth may require email confirmation. The known Auth trigger error `Database error saving new user` receives a distinct profile-save message that points to a possible username conflict without claiming the cause is confirmed.
 - Trims and lowercases registration usernames, requires 3–30 characters from `a-z`, digits, `.`, `_`, and `-`, and rejects invalid values before the request. The `user_profiles.username` database constraint remains unique; a duplicate is reported as **Questo username è già in uso. Scegline un altro.** rather than as a generic account-creation failure.
 - Authenticates with username and password through the `login-with-username` Edge Function, which returns a Supabase session without exposing the email mapping.
 - Checks whether a Supabase session exists before allowing access to the protected agenda route.
@@ -71,7 +71,7 @@ The repository contains migration scripts and Edge Function source, but a local 
 
 ## Interfaces And Protocols
 
-At startup, the application fetches `/supabase-config.json` and initializes `@supabase/supabase-js` with the configured URL and publishable key. Registration calls Supabase Auth with email, password, and username metadata. Username login calls the `login-with-username` Edge Function, which looks up the private email mapping using a server-side service key and returns only session tokens. Recovery calls Supabase Auth's password-reset email endpoint and redirects to `/login?recovery=1`; the configured redirect allow-list must include the app's actual origin and path. Authenticated repositories read and write client, employee, appointment, salon service, and salon setting rows through the Supabase Data API.
+At startup, the application fetches `/supabase-config.json` and initializes `@supabase/supabase-js` with the configured URL and publishable key. Registration calls Supabase Auth with email, password, and username metadata. A matching username-constraint error is distinguished from other registration failures; the known generic Auth trigger error is shown as a profile-save failure with a possible duplicate-username hint. This mapping is covered by local mocked tests, not verified against a live Auth project, and a provider-side error may have another cause. Username login calls the `login-with-username` Edge Function, which looks up the private email mapping using a server-side service key and returns only session tokens. Recovery calls Supabase Auth's password-reset email endpoint and redirects to `/login?recovery=1`; the configured redirect allow-list must include the app's actual origin and path. Authenticated repositories read and write client, employee, appointment, salon service, and salon setting rows through the Supabase Data API.
 
 The client does not contain a `secret` or `service_role` key. RLS scopes the salon settings and service tables to `auth.uid()`. The employee migration grants reads, inserts, and updates only to authenticated owners; physical employee deletion is not granted, and the application archives employee rows instead.
 

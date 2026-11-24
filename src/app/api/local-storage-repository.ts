@@ -22,6 +22,7 @@ const defaultSettings: SalonSettings = {
 @Injectable({ providedIn: 'root' })
 export class LocalStorageRepository implements AppointmentRepository, ClientRepository, SettingsRepository {
   private storageUnavailable = false;
+  private invalidStoredSettings = false;
 
   hasStorageWarning(): boolean {
     return this.storageUnavailable;
@@ -47,6 +48,10 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
     return this.readArray<Client>(CLIENTS_KEY);
   }
 
+  async findClientByPhone(phone: string): Promise<Client | null> {
+    return (await this.listClients()).find((client) => client.phone === phone) ?? null;
+  }
+
   async saveClient(client: Client): Promise<void> {
     const records = await this.listClients();
     const next = records.filter((item) => item.id !== client.id);
@@ -61,13 +66,21 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
 
   async loadSettings(): Promise<SalonSettings> {
     const raw = this.read(SETTINGS_KEY);
-    if (!raw) return structuredClone(defaultSettings);
+    if (raw === null) {
+      this.invalidStoredSettings = false;
+      return structuredClone(defaultSettings);
+    }
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isSettings(parsed)) return { ...structuredClone(defaultSettings), ...parsed };
+      if (isSettings(parsed)) {
+        this.invalidStoredSettings = false;
+        return { ...structuredClone(defaultSettings), ...parsed };
+      }
+      this.invalidStoredSettings = true;
       this.storageUnavailable = true;
       return structuredClone(defaultSettings);
     } catch {
+      this.invalidStoredSettings = true;
       this.storageUnavailable = true;
       return structuredClone(defaultSettings);
     }
@@ -75,6 +88,11 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
 
   async saveSettings(settings: SalonSettings): Promise<void> {
     await this.write(SETTINGS_KEY, settings);
+    this.invalidStoredSettings = false;
+  }
+
+  protected hasInvalidStoredSettings(): boolean {
+    return this.invalidStoredSettings;
   }
 
   protected hasStoredSettings(): boolean {
@@ -92,7 +110,10 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
 
   protected removeStoredSettings(): void {
     try {
-      globalThis.localStorage?.removeItem(SETTINGS_KEY);
+      if (typeof globalThis.localStorage !== 'undefined') {
+        globalThis.localStorage.removeItem(SETTINGS_KEY);
+        this.invalidStoredSettings = false;
+      }
     } catch {
       this.storageUnavailable = true;
     }
@@ -213,11 +234,21 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
 }
 
 function isSettings(value: unknown): value is SalonSettings {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Partial<SalonSettings>;
-  return typeof item.salonName === 'string' && typeof item.defaultCountryCode === 'string' &&
-    Array.isArray(item.services) && !!item.businessHours && !!item.messageTemplates &&
-    typeof item.messageTemplates.confirmation === 'string' && typeof item.messageTemplates.reminder === 'string';
+  if (!isRecord(value)) return false;
+  const hours = value['businessHours'];
+  const templates = value['messageTemplates'];
+  return typeof value['salonName'] === 'string' && typeof value['defaultCountryCode'] === 'string' &&
+    Array.isArray(value['services']) && value['services'].every((service) => typeof service === 'string') &&
+    isRecord(hours) && typeof hours['open'] === 'string' && typeof hours['close'] === 'string' &&
+    Array.isArray(hours['closedDays']) && hours['closedDays'].every((day) =>
+      typeof day === 'number' && Number.isInteger(day) && day >= 0 && day <= 6) &&
+    isRecord(templates) && typeof templates['confirmation'] === 'string' &&
+    typeof templates['reminder'] === 'string' &&
+    (value['demoDataEnabled'] === undefined || typeof value['demoDataEnabled'] === 'boolean');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isBackup(value: unknown): value is AgendaBackup {

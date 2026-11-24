@@ -14,8 +14,12 @@ describe('Dashboard', () => {
   let clientSaveGate: Promise<void> | null = null;
   let employeeSaveCalls = 0;
   let workScheduleSaveCalls = 0;
+  let matchingClientByPhone: Client | null = null;
+  let nextClientDeleteError: unknown = null;
   let failSettingsLoad = false;
   let settingsWarning = false;
+  let settingsSaveCalls = 0;
+  let servicesSaveCalls = 0;
 
   const sampleClient: Client = {
     id: 'client-1', name: 'Ada Lovelace', firstName: 'Ada', lastName: 'Lovelace',
@@ -38,8 +42,12 @@ describe('Dashboard', () => {
     clientSaveGate = null;
     employeeSaveCalls = 0;
     workScheduleSaveCalls = 0;
+    matchingClientByPhone = null;
+    nextClientDeleteError = null;
     failSettingsLoad = false;
     settingsWarning = false;
+    settingsSaveCalls = 0;
+    servicesSaveCalls = 0;
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [{
@@ -50,6 +58,14 @@ describe('Dashboard', () => {
             if (failClientList) throw new Error('Clients unavailable');
             return [sampleClient];
           }, listEmployees: async () => [],
+          findClientByPhone: async () => matchingClientByPhone,
+          deleteClient: async () => {
+            if (nextClientDeleteError) {
+              const error = nextClientDeleteError;
+              nextClientDeleteError = null;
+              throw error;
+            }
+          },
           saveClient: async (client: Client) => {
             saveClientCalls += 1;
             if (nextClientSaveError) {
@@ -73,7 +89,9 @@ describe('Dashboard', () => {
             if (failSettingsLoad) throw new Error('Settings table unavailable');
             return { salonName: 'Salone', defaultCountryCode: '+39', services: [], businessHours: { open: '', close: '', closedDays: [] }, messageTemplates: { confirmation: '', reminder: '' }, demoDataEnabled: false };
           },
-          listServices: async () => [], saveServices: async () => undefined,
+          listServices: async () => [],
+          saveSettings: async () => { settingsSaveCalls += 1; },
+          saveServices: async () => { servicesSaveCalls += 1; },
           hasStorageWarning: () => false,
           hasSettingsWarning: () => settingsWarning,
         },
@@ -114,6 +132,29 @@ describe('Dashboard', () => {
     (fixture.componentInstance as unknown as { view: { set(value: string): void } }).view.set('settings');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Impostazioni del salone non raggiungibili su Supabase');
+  });
+
+  it('blocks settings writes when settings could not load from Supabase', async () => {
+    failSettingsLoad = true;
+    settingsWarning = true;
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    const instance = fixture.componentInstance as unknown as {
+      load(): Promise<void>;
+      view: { set(value: string): void };
+      saveSettings(): Promise<void>;
+      settingsFormError(): string;
+    };
+    await instance.load();
+    instance.view.set('settings');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
+    await instance.saveSettings();
+
+    expect(settingsSaveCalls).toBe(0);
+    expect(servicesSaveCalls).toBe(0);
+    expect(instance.settingsFormError()).toContain('non sono disponibili');
   });
 
   it('uses edit and delete icons for appointment actions', async () => {
@@ -451,17 +492,22 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const instance = fixture.componentInstance as unknown as {
+      load(): Promise<void>;
       addClient(): void;
       clientDraft: { firstName: string; lastName: string; phone: string; notes: string; whatsappConsent: boolean };
       saveClient(): Promise<void>;
       clients(): Client[];
+      clientFormError(): string;
     };
+    await instance.load();
     instance.addClient();
-    Object.assign(instance.clientDraft, { firstName: 'Grace', lastName: 'Hopper', phone: '3331234567', notes: '', whatsappConsent: false });
+    Object.assign(instance.clientDraft, { firstName: 'Grace', lastName: 'Hopper', phone: '3338675309', notes: '', whatsappConsent: false });
     failClientList = true;
 
     await instance.saveClient();
 
+    expect(saveClientCalls).toBe(1);
+    expect(instance.clientFormError()).toBe('');
     expect(instance.clients().some((client) => client.id === savedClient?.id)).toBe(true);
   });
 
@@ -526,6 +572,7 @@ describe('Dashboard', () => {
 
     const firstSave = instance.saveAppointment();
     const duplicateSave = instance.saveAppointment();
+    await Promise.resolve();
     expect(saveClientCalls).toBe(1);
     releaseSave();
     await Promise.all([firstSave, duplicateSave]);
@@ -756,6 +803,23 @@ describe('Dashboard', () => {
     expect(component.pendingConfirmation()).toBeNull();
   });
 
+  it('explains an authorization rejection when deleting a client', async () => {
+    nextClientDeleteError = { code: '42501' };
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      removeClient(client: Client): void;
+      acceptConfirmation(): Promise<void>;
+      notice(): string;
+    };
+    component.removeClient(sampleClient);
+
+    await component.acceptConfirmation();
+
+    expect(component.notice()).toContain('Operazione non autorizzata');
+  });
+
   it('blocks names longer than the database limit before saving a client', async () => {
     const fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
@@ -773,6 +837,50 @@ describe('Dashboard', () => {
 
     expect(saveClientCalls).toBe(0);
     expect(component.clientFormError()).toContain('massimo 100');
+  });
+
+  it('blocks a duplicate client phone found by the repository when it is absent from the loaded list', async () => {
+    matchingClientByPhone = {
+      id: 'client-not-loaded', name: 'Grace Hopper', firstName: 'Grace', lastName: 'Hopper',
+      phone: '+393337654321', whatsappConsent: false, notes: '', createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance as unknown as {
+      addClient(): void;
+      clientDraft: { firstName: string; lastName: string; phone: string };
+      saveClient(): Promise<void>;
+      clientFormError(): string;
+    };
+    component.addClient();
+    Object.assign(component.clientDraft, { firstName: 'Grace', lastName: 'Hopper', phone: '3337654321' });
+
+    await component.saveClient();
+
+    expect(saveClientCalls).toBe(0);
+    expect(component.clientFormError()).toContain('Esiste già una cliente con questo numero');
+  });
+
+  it('links an appointment to a matching client absent from the loaded directory instead of inserting a duplicate', async () => {
+    matchingClientByPhone = {
+      id: 'client-not-loaded', name: 'Grace Hopper', firstName: 'Grace', lastName: 'Hopper',
+      phone: '+393337654321', whatsappConsent: false, notes: '', createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+
+    await instance.saveAppointment();
+
+    expect(saveClientCalls).toBe(0);
+    expect(savedAppointment?.clientId).toBe('client-not-loaded');
   });
 
   it('blocks employee names longer than the database limit before saving', async () => {

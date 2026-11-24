@@ -17,6 +17,31 @@ This page records documentation changes; entries are historical and do not repre
 - Verification: `npm test` passed (91 tests, 12 files); `npm run build` and `npm run validate-wiki` passed; `git diff --check` passed with informational LF→CRLF warnings for the two Auth files. The build reported Node.js v23.11.0 as a non-LTS odd-numbered version.
 - No live Supabase schema was queried, migrations were applied, or Vercel production deployment was inspected.
 
+### 2026-11-24 — frontend guardrail follow-up
+
+- Added an exact repository lookup before client creation, duplicate-phone feedback in the client form, and an appointment preflight that links an existing client instead of inserting a duplicate. Added stable 500-row pagination with exact counts for Supabase collection reads; absent or changed counts and empty pages before the expected count fail closed.
+- Strengthened legacy LocalStorage settings validation, added targeted messages for settings constraint failures and delete authorization errors, and mapped the known generic Supabase Auth profile-trigger error to a user-facing profile-save hint. These lookups/checks are preflights; database constraints remain authoritative for races.
+- Updated the corresponding agenda/authentication Wiki pages and `docs/todo`. Preserved the separate Vercel analysis; no Vercel project/deployment or live Supabase/Auth state was checked or changed.
+- Verification: `npm run test` passed (101 tests, 14 files); `npm run build`, `npm run validate-wiki`, and `git diff --check` passed. The build emitted the existing Node.js v23.11.0 non-LTS warning; Git emitted line-ending conversion warnings for source files.
+- Browser rendering, live Supabase schema/Auth behavior, and Vercel dashboard/deployment were not verified.
+
+### 2026-11-24 — review follow-up
+
+- Kept compatible legacy settings without `demoDataEnabled` loadable with the false default; malformed settings are no longer migrated as defaults or removed from browser storage.
+- Collection reads now reject a changed exact row count between pages rather than returning a potentially shifted list. Separate PostgREST requests still do not provide a transaction snapshot; count-preserving concurrent changes remain a documented limitation.
+- Added regression tests for legacy settings preservation and page-count drift.
+- Verification after the review fixes: `npm run test` passed (105 tests, 14 files); `npm run build`, `npm run validate-wiki`, and `git diff --check` passed. The build reported Node.js v23.11.0 as an odd, non-LTS version.
+
+### 2026-11-24 — settings migration isolation
+
+- Separated invalid-settings state from the repository-wide LocalStorage warning, so malformed unrelated local collections no longer suppress migration of valid legacy salon preferences.
+- Treat only a missing settings key (`null`) as absent; empty or malformed stored values are preserved and never migrated as defaults.
+- Migrate legacy service names additively to the owner-scoped catalog and verify the readback before removing the browser record; the settings form blocks writes when settings or services failed to load.
+- Added regression coverage for unrelated LocalStorage corruption, empty legacy settings, legacy service catalog migration/preservation, settings-save blocking, unavailable exact counts, and empty pages before the reported total.
+- Refreshed actionable TODO source references after the code changes and narrowed the remaining Supabase setup-documentation item to the fresh-install path in `USER-SETUP.md`.
+- Verification after the empty-value fix: `npm run test` passed (109 tests, 14 files); `npm run build` completed with the dashboard as a lazy chunk; `npm run validate-wiki` and `git diff --check` passed. Node.js v23.11.0 reported the odd, non-LTS warning.
+- Final verification after service migration and settings-save guard: `npm run test` passed (112 tests, 14 files); `npm run build` completed with the dashboard as a lazy chunk; `npm run validate-wiki` and `git diff --check` passed. Node.js v23.11.0 reported the odd, non-LTS warning.
+
 ### 2026-11-23 — generated Italian user manual
 
 - Added marked Italian source blocks to the relevant wiki pages and a deterministic generator for `docs/manual/user-manual-it.md`, DOCX and PDF. Added a replaceable `.dotx` template, pinned Python dependencies, usage instructions, and source/text-preservation tests.

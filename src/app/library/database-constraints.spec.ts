@@ -59,4 +59,11 @@ describe('database constraints and user-facing errors', () => {
     expect(databaseConstraintMessage({ code: '23505', constraint: 'daily_work_schedules_owner_id_work_date_employee_id_key' }, 'schedule')).toContain('turno');
     expect(databaseConstraintMessage({ code: 'PGRST205' }, 'schedule')).toContain('migrazione dei turni');
   });
+
+  it('explains invalid JSON settings instead of returning a generic database constraint error', () => {
+    expect(databaseConstraintMessage({ code: '23514', constraint: 'salon_settings_business_hours_check' }, 'settings'))
+      .toContain('orari');
+    expect(databaseConstraintMessage({ code: '23514', constraint: 'salon_settings_message_templates_check' }, 'settings'))
+      .toContain('modelli dei messaggi');
+  });
 });

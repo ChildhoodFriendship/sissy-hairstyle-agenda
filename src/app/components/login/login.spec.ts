@@ -74,4 +74,31 @@ describe('Login password recovery', () => {
     expect(fixture.nativeElement.querySelector('#register-email')?.getAttribute('type')).toBe('email');
     expect(fixture.nativeElement.querySelector('#register-password')?.getAttribute('type')).toBe('password');
   });
+
+  it('explains that the database rejected the registration profile and suggests checking the username', async () => {
+    await TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [provideRouter([]), {
+        provide: AuthService,
+        useValue: { onPasswordRecovery: () => null, isConfigured: () => true, register: vi.fn().mockResolvedValue('profile-save-failed') },
+      }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      registerUsername: { set(value: string): void };
+      registerEmail: { set(value: string): void };
+      registerPassword: { set(value: string): void };
+      register(event: Event): Promise<void>;
+      error(): string;
+    };
+    component.registerUsername.set('ada');
+    component.registerEmail.set('ada@example.com');
+    component.registerPassword.set('Strong-pass-42');
+
+    await component.register(new Event('submit'));
+
+    expect(component.error()).toContain('database non è riuscito a salvare il profilo');
+    expect(component.error()).toContain('username non sia già in uso');
+  });
 });

@@ -14,10 +14,12 @@ function setup(table: object) {
 
 describe('SupabaseAgendaRepository daily work schedules', () => {
   it('reads one calendar date and preserves separate Sissy and employee schedules', async () => {
-    const eq = vi.fn().mockResolvedValue({ data: [
+    const range = vi.fn().mockResolvedValue({ data: [
       { work_date: date, employee_id: null, slots: [0, 47] },
       { work_date: date, employee_id: employeeId, slots: [] },
-    ], error: null });
+    ], error: null, count: 2 });
+    const order = vi.fn().mockReturnValue({ range });
+    const eq = vi.fn().mockReturnValue({ order });
     const select = vi.fn().mockReturnValue({ eq });
     const { repository, from } = setup({ select });
 
@@ -27,10 +29,12 @@ describe('SupabaseAgendaRepository daily work schedules', () => {
     ]);
     expect(from).toHaveBeenCalledWith('daily_work_schedules');
     expect(eq).toHaveBeenCalledWith('work_date', date);
+    expect(range).toHaveBeenCalledWith(0, 499);
   });
 
   it('does not fabricate schedules for an unconfigured date', async () => {
-    const eq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const range = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+    const eq = vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ range }) });
     const { repository } = setup({ select: () => ({ eq }) });
     await expect(repository.listWorkSchedules(date)).resolves.toEqual([]);
   });
@@ -52,7 +56,8 @@ describe('SupabaseAgendaRepository daily work schedules', () => {
 
   it('propagates the original missing-table error rather than treating it as a closed day', async () => {
     const error = { code: 'PGRST205', message: 'Table not found in the schema cache' };
-    const eq = vi.fn().mockResolvedValue({ data: null, error });
+    const range = vi.fn().mockResolvedValue({ data: null, error, count: null });
+    const eq = vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ range }) });
     const { repository } = setup({ select: () => ({ eq }) });
     await expect(repository.listWorkSchedules(date)).rejects.toBe(error);
   });

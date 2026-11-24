@@ -116,7 +116,7 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
 
         @if (view()==='settings') {
           <section class="page-heading" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><div><p class="eyebrow">IL TUO SPAZIO</p><h1>Impostazioni</h1><p class="subtitle">Preferenze del salone.</p></div></section>
-          <section class="settings-grid" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form [attr.aria-busy]="settingsSaving()" [attr.inert]="settingsSaving() ? '' : null" (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label>@if(settingsUnavailable()){<p class="muted" role="alert">Impostazioni del salone non raggiungibili su Supabase. Verifica la connessione e che la migrazione SQL sia applicata prima di salvare.</p>}<label>Servizi</label>@if(servicesUnavailable()){<p class="muted" role="alert">Non riesco a caricare o salvare i servizi nel database. Applica prima la query SQL di configurazione.</p>}<div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div>@if(settingsFormError()){<p class="form-error" role="alert">{{ settingsFormError() }}</p>}<div class="service-add"><input name="newService" maxlength="100" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><div class="reminder-template-setting"><label>Testo del promemoria</label><p>Componi il messaggio con parole semplici e aggiungi i dati dell’appuntamento con un tocco.</p><button type="button" class="secondary edit-reminder-template" (click)="reminderEditorOpen.set(true)">Crea o modifica il promemoria</button><small class="muted">{{ settingsDraft.messageTemplates.reminder || 'Non hai ancora scritto un promemoria.' }}</small></div><button class="primary" type="submit" [disabled]="settingsSaving()">{{ settingsSaving() ? 'Salvataggio…' : 'Salva impostazioni' }}</button></form></article></section>
+          <section class="settings-grid" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><article class="agenda-card settings-card"><div class="card-title"><div><p class="eyebrow">IL SALONE</p><h2>Preferenze</h2></div></div><form [attr.aria-busy]="settingsSaving()" [attr.inert]="settingsSaving() ? '' : null" (submit)="$event.preventDefault(); saveSettings()"><label>Nome del salone<input name="salonName" [(ngModel)]="settingsDraft.salonName" /></label>@if(settingsUnavailable()){<p class="muted" role="alert">Impostazioni del salone non raggiungibili su Supabase. Verifica la connessione e che la migrazione SQL sia applicata prima di salvare.</p>}<label>Servizi</label>@if(servicesUnavailable()){<p class="muted" role="alert">Non riesco a caricare o salvare i servizi nel database. Applica prima la query SQL di configurazione.</p>}<div class="service-editor">@for(service of settingsDraft.services;track service;let i=$index){<div class="service-row" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span>{{ service }}</span><button type="button" class="text-button danger" (click)="removeService(i)" aria-label="Rimuovi servizio">Rimuovi</button></div>}</div>@if(settingsFormError()){<p class="form-error" role="alert">{{ settingsFormError() }}</p>}<div class="service-add"><input name="newService" maxlength="100" [(ngModel)]="newService" placeholder="Aggiungi un servizio" /><button type="button" class="secondary" (click)="addService()">Aggiungi</button></div><div class="reminder-template-setting"><label>Testo del promemoria</label><p>Componi il messaggio con parole semplici e aggiungi i dati dell’appuntamento con un tocco.</p><button type="button" class="secondary edit-reminder-template" (click)="reminderEditorOpen.set(true)">Crea o modifica il promemoria</button><small class="muted">{{ settingsDraft.messageTemplates.reminder || 'Non hai ancora scritto un promemoria.' }}</small></div><button class="primary" type="submit" [disabled]="settingsSaving() || settingsUnavailable() || servicesUnavailable()">{{ settingsSaving()?'Salvataggio…':'Salva impostazioni' }}</button></form></article></section>
         }
       </main>
     </div>
@@ -405,8 +405,10 @@ export class Dashboard {
       message: `Eliminare ${employee.firstName} ${employee.lastName}? Gli appuntamenti storici resteranno.`,
       confirmLabel: 'Elimina dipendente',
       action: async () => {
-        try { await this.repo.deleteEmployee(employee.id); await this.load(); this.showNotice('Dipendente eliminato.'); }
-        catch { this.showNotice(this.copy.ui.genericError); }
+        try { await this.repo.deleteEmployee(employee.id); }
+        catch (error) { this.showNotice(databaseConstraintMessage(error, 'employee')); return; }
+        await this.load();
+        this.showNotice('Dipendente eliminato.');
       },
     });
   }
@@ -477,6 +479,11 @@ export class Dashboard {
     }
     this.clientSaving.set(true);
     try {
+      const clientWithPhone = await this.repo.findClientByPhone(phone.e164);
+      if (clientWithPhone && clientWithPhone.id !== original?.id) {
+        this.clientFormError.set('Esiste già una cliente con questo numero. Apri il contatto esistente per modificarlo.');
+        return;
+      }
       const client: Client = { ...(original ?? { id: crypto.randomUUID(), createdAt: new Date().toISOString() }), firstName, lastName, name: `${firstName} ${lastName}`, phone: phone.e164, notes: this.clientDraft.notes.trim(), whatsappConsent: this.clientDraft.whatsappConsent };
       await this.repo.saveClient(client);
       this.upsertClientState(client);
@@ -525,8 +532,19 @@ export class Dashboard {
       this.formError.set('Questa fascia non è disponibile per la persona selezionata. Scegli un altro orario.'); return;
     }
     if (!sameBooking && findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
-    const matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>
+    let matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>
       item.phone === phone.e164 || normalizePhoneNumber(item.phone, '+39').e164 === phone.e164);
+    if (!matchedClient && !this.draft.clientId && this.draft.addToContacts) {
+      this.appointmentSaving.set(true);
+      try {
+        matchedClient = await this.repo.findClientByPhone(phone.e164) ?? undefined;
+      } catch (error) {
+        this.formError.set(databaseConstraintMessage(error, 'client'));
+        return;
+      } finally {
+        this.appointmentSaving.set(false);
+      }
+    }
     const existingClientId = this.draft.clientId || prior?.clientId || matchedClient?.id || '';
     const isNewClient = !existingClientId && !matchedClient;
     const clientId = existingClientId || (this.draft.addToContacts && isNewClient ? crypto.randomUUID() : '');
@@ -596,8 +614,9 @@ export class Dashboard {
       title: 'Conferma eliminazione', message: this.copy.common.confirmDelete,
       confirmLabel: 'Elimina appuntamento',
       action: async () => {
-        try { await this.repo.deleteAppointment(item.id); await this.load(); }
-        catch { this.showNotice(this.copy.ui.genericError); }
+        try { await this.repo.deleteAppointment(item.id); }
+        catch (error) { this.showNotice(databaseConstraintMessage(error, 'appointment')); return; }
+        await this.load();
       },
     });
   }
@@ -607,8 +626,9 @@ export class Dashboard {
       message: `Eliminare ${client.name} dalla rubrica? Gli appuntamenti restano nell’agenda.`,
       confirmLabel: 'Elimina cliente',
       action: async () => {
-        try { await this.repo.deleteClient(client.id); await this.load(); }
-        catch { this.showNotice(this.copy.ui.genericError); }
+        try { await this.repo.deleteClient(client.id); }
+        catch (error) { this.showNotice(databaseConstraintMessage(error, 'client')); return; }
+        await this.load();
       },
     });
   }
@@ -645,6 +665,10 @@ export class Dashboard {
   protected async saveSettings(): Promise<void> {
     if (this.settingsSaving()) return;
     this.settingsFormError.set('');
+    if (this.settingsUnavailable() || this.servicesUnavailable()) {
+      this.settingsFormError.set('Non posso salvare mentre le impostazioni o i servizi non sono disponibili su Supabase. Verifica la connessione e le migrazioni SQL, poi ricarica la pagina.');
+      return;
+    }
     const normalizedServices = this.settingsDraft.services.map((service) => service.trim());
     for (const service of normalizedServices) {
       const validationError = validateServiceName(service);

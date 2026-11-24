@@ -48,9 +48,9 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
 
   override async listAppointments(): Promise<Appointment[]> {
     const client = this.requireClient();
-    const { data, error } = await client.from('appointments').select('*').order('appointment_date').order('appointment_time');
-    if (error) throw error;
-    return (data as AppointmentRow[]).map((row) => ({
+    const rows = await fetchAllRows<AppointmentRow>((from, to) => client.from('appointments')
+      .select('*', { count: 'exact' }).order('appointment_date').order('appointment_time').order('id').range(from, to));
+    return rows.map((row) => ({
       id: row.id,
       clientId: row.client_id ?? '',
       clientName: row.client_name,
@@ -93,9 +93,10 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
   }
 
   override async listClients(): Promise<Client[]> {
-    const { data, error } = await this.requireClient().from('clients').select('*').order('last_name').order('first_name');
-    if (error) throw error;
-    return (data as ClientRow[]).map((row) => ({
+    const client = this.requireClient();
+    const rows = await fetchAllRows<ClientRow>((from, to) => client.from('clients')
+      .select('*', { count: 'exact' }).order('last_name').order('first_name').order('id').range(from, to));
+    return rows.map((row) => ({
       id: row.id,
       name: [row.first_name, row.last_name].filter(Boolean).join(' '),
       firstName: row.first_name,
@@ -105,6 +106,23 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       notes: row.notes,
       createdAt: row.created_at,
     }));
+  }
+
+  override async findClientByPhone(phone: string): Promise<Client | null> {
+    const { data, error } = await this.requireClient().from('clients').select('*').eq('phone', phone).maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    const row = data as ClientRow;
+    return {
+      id: row.id,
+      name: [row.first_name, row.last_name].filter(Boolean).join(' '),
+      firstName: row.first_name,
+      lastName: row.last_name,
+      phone: row.phone,
+      whatsappConsent: row.whatsapp_consent,
+      notes: row.notes,
+      createdAt: row.created_at,
+    };
   }
 
   override async saveClient(item: Client): Promise<void> {
@@ -129,9 +147,10 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
   }
 
   async listEmployees(): Promise<Employee[]> {
-    const { data, error } = await this.requireClient().from('employees').select('*').order('last_name').order('first_name');
-    if (error) throw error;
-    return (data as EmployeeRow[]).map((row) => ({
+    const client = this.requireClient();
+    const rows = await fetchAllRows<EmployeeRow>((from, to) => client.from('employees')
+      .select('*', { count: 'exact' }).order('last_name').order('first_name').order('id').range(from, to));
+    return rows.map((row) => ({
       id: row.id,
       firstName: row.first_name,
       lastName: row.last_name,
@@ -157,10 +176,11 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
   }
 
   async listWorkSchedules(date: string): Promise<DailyWorkSchedule[]> {
-    const { data, error } = await this.requireClient().from('daily_work_schedules')
-      .select('work_date,employee_id,slots').eq('work_date', date);
-    if (error) throw error;
-    return data.map((row) => ({ date: row.work_date, employeeId: row.employee_id, slots: row.slots }));
+    const client = this.requireClient();
+    const rows = await fetchAllRows<{ work_date: string; employee_id: string | null; slots: number[] }>((from, to) =>
+      client.from('daily_work_schedules').select('work_date,employee_id,slots', { count: 'exact' })
+        .eq('work_date', date).order('employee_id').range(from, to));
+    return rows.map((row) => ({ date: row.work_date, employeeId: row.employee_id, slots: row.slots }));
   }
 
   async saveWorkSchedule(schedule: DailyWorkSchedule): Promise<void> {
@@ -173,10 +193,10 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
   }
 
   override async listServices(): Promise<string[]> {
-    const { data, error } = await this.requireClient().from('salon_services')
-      .select('name').order('position').order('name');
-    if (error) throw error;
-    return (data as { name: string }[]).map((row) => row.name);
+    const client = this.requireClient();
+    const rows = await fetchAllRows<{ name: string }>((from, to) => client.from('salon_services')
+      .select('name', { count: 'exact' }).order('position').order('name').order('id').range(from, to));
+    return rows.map((row) => row.name);
   }
 
   override async loadSettings(): Promise<SalonSettings> {
@@ -195,6 +215,13 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
         return { ...fallback, services: [] };
       }
 
+      if (this.hasInvalidStoredSettings()) {
+        // Preserve malformed legacy data instead of overwriting it with defaults during migration.
+        this.settingsUnavailable = false;
+        return { ...fallback, services: [] };
+      }
+
+      await this.migrateLegacyServices(fallback.services);
       await this.upsertSettings(fallback, true);
       const migratedSettings = await this.readSettings();
       if (!migratedSettings) throw new Error('Salon settings migration did not produce a row.');
@@ -232,8 +259,8 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       if (key && !uniqueNames.has(key)) uniqueNames.set(key, name);
     }
     const names = [...uniqueNames.values()];
-    const { data, error } = await client.from('salon_services').select('id,name');
-    if (error) throw error;
+    const data = await fetchAllRows<{ id: string; name: string }>((from, to) => client.from('salon_services')
+      .select('id,name', { count: 'exact' }).order('id').range(from, to));
 
     const wanted = new Set(names.map((name) => name.toLocaleLowerCase()));
     const removedIds = (data as { id: string; name: string }[])
@@ -287,6 +314,37 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
     });
     if (error) throw error;
   }
+
+  private async migrateLegacyServices(services: string[]): Promise<void> {
+    const uniqueNames = new Map<string, string>();
+    for (const service of services) {
+      const name = service.trim();
+      const key = name.toLocaleLowerCase('it');
+      if (key && !uniqueNames.has(key)) uniqueNames.set(key, name);
+    }
+    const names = [...uniqueNames.values()];
+    if (!names.length) return;
+
+    const client = this.requireClient();
+    const existing = await fetchAllRows<{ name: string; position: number }>((from, to) =>
+      client.from('salon_services').select('name,position', { count: 'exact' })
+        .order('position').order('name').order('id').range(from, to));
+    const existingNames = new Set(existing.map((service) => service.name.toLocaleLowerCase('it')));
+    const additions = names.filter((name) => !existingNames.has(name.toLocaleLowerCase('it')));
+    if (additions.length) {
+      const nextPosition = existing.reduce((max, service) => Math.max(max, service.position), -1) + 1;
+      const { error } = await client.from('salon_services').upsert(
+        additions.map((name, index) => ({ name, position: nextPosition + index })),
+        { onConflict: 'owner_id,name', ignoreDuplicates: true },
+      );
+      if (error) throw error;
+    }
+
+    const persistedNames = new Set((await this.listServices()).map((name) => name.toLocaleLowerCase('it')));
+    if (names.some((name) => !persistedNames.has(name.toLocaleLowerCase('it')))) {
+      throw new Error('Legacy salon services migration did not persist all service names.');
+    }
+  }
 }
 
 function salonSettingsFromRow(value: unknown): SalonSettings {
@@ -324,4 +382,28 @@ function salonSettingsFromRow(value: unknown): SalonSettings {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+const PAGE_SIZE = 500;
+
+async function fetchAllRows<Row>(
+  fetchPage: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown; count: number | null }>,
+): Promise<Row[]> {
+  const rows: Row[] = [];
+  let offset = 0;
+  let expectedCount: number | null = null;
+  for (;;) {
+    const { data, error, count } = await fetchPage(offset, offset + PAGE_SIZE - 1);
+    if (error) throw error;
+    if (count === null) throw new Error('Database result count is unavailable; refusing to use an incomplete list.');
+    if (expectedCount === null) expectedCount = count;
+    else if (count !== expectedCount) {
+      throw new Error('Database result count changed during pagination; refusing to use an inconsistent list.');
+    }
+    const page = data ?? [];
+    rows.push(...page);
+    if (rows.length >= expectedCount) return rows;
+    if (page.length === 0) throw new Error('Database returned an incomplete page.');
+    offset += page.length;
+  }
 }

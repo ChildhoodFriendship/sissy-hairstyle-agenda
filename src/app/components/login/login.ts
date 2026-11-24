@@ -244,6 +244,10 @@ export class Login {
       this.registrationMode.set(false);
       return;
     }
+    if (registration === 'profile-save-failed') {
+      this.error.set('Il database non è riuscito a salvare il profilo. Controlla che lo username non sia già in uso; se l’errore continua, riprova più tardi.');
+      return;
+    }
     this.error.set(registration === 'username-taken'
       ? 'Questo username è già in uso. Scegline un altro.'
       : this.auth.isConfigured() ? 'Impossibile creare l’account. Controlla i dati o riprova più tardi.' : this.copy.login.notConfigured);
