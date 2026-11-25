@@ -71,10 +71,10 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
                       @for (item of column.appointments; track item.id; let index = $index) {
                         <article class="appointment" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [style.--ui-enter-delay]="(index < 5 ? index * 28 : 112) + 'ms'" [class.cancelled]="item.status==='cancelled'" [class.collapsed]="collapsedAppointments().has(item.id)">
                           <div class="appointment-summary">
-                            <div class="appointment-time">{{ formatAppointmentTimeRange(item) }}</div>
+                            <div class="appointment-time">{{ appointmentTimeRange(item) }}</div>
                             <div class="appointment-top"><h4>{{ item.clientName }}</h4>@if(item.status!=='confirmed'){<span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span>}</div>
                             @if(collapsedAppointments().has(item.id)){<p class="appointment-preview">{{ item.service || 'Servizio non indicato' }}</p>}
-                            <button type="button" class="appointment-toggle" [attr.aria-expanded]="!collapsedAppointments().has(item.id)" [attr.aria-controls]="'appointment-details-'+item.id" [attr.aria-label]="(collapsedAppointments().has(item.id) ? 'Mostra dettagli' : 'Riduci') + ' appuntamento di ' + item.clientName + ' ' + formatAppointmentTimeRange(item)" (click)="toggleAppointment(item.id)"><svg class="material-icon appointment-chevron" data-icon="arrow-upward" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg></button>
+                            <button type="button" class="appointment-toggle" [attr.aria-expanded]="!collapsedAppointments().has(item.id)" [attr.aria-controls]="'appointment-details-'+item.id" [attr.aria-label]="(collapsedAppointments().has(item.id) ? 'Mostra dettagli' : 'Riduci') + ' appuntamento di ' + item.clientName + ' ' + appointmentTimeRange(item)" (click)="toggleAppointment(item.id)"><svg class="material-icon appointment-chevron" data-icon="arrow-upward" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg></button>
                           </div>
                           <div class="appointment-details" [id]="'appointment-details-'+item.id" [class.is-collapsed]="collapsedAppointments().has(item.id)" [attr.aria-hidden]="collapsedAppointments().has(item.id) ? 'true' : null" [attr.inert]="collapsedAppointments().has(item.id) ? '' : null">
                             <div class="appointment-body"><div class="appointment-description"><p class="appointment-service">{{ item.service || 'Servizio non indicato' }}</p><p class="appointment-phone">{{ phoneForDisplay(item.phone) }}</p></div>@if(item.notes){<small>{{ item.notes }}</small>}</div>
@@ -157,6 +157,7 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
 export class Dashboard {
   protected readonly copy = it;
   protected readonly phoneForDisplay = phoneForDisplay;
+  protected readonly appointmentTimeRange = formatAppointmentTimeRange;
   private readonly repo = inject(SupabaseAgendaRepository);
   private readonly auth = inject(AuthService);
   protected readonly view = signal<View>('agenda');

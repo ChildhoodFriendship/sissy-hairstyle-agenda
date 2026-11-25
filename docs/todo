@@ -7,6 +7,8 @@
 - [ ] La tabella precedente registrava solo l’ora iniziale: dopo la migration gli appuntamenti esistenti hanno ricevuto 30 minuti. Correggere gli appuntamenti storici più lunghi prima di fare affidamento sugli avvisi di sovrapposizione.
 - Test mirati aggiunti/aggiornati ma non eseguiti; **build e typecheck locali** non eseguiti per il vincolo di sole verifiche statiche e senza aggirare Heavyguard. Revisione statica indipendente finale superata. La migration è stata riportata eseguita; read-back conferma colonne, default, check e RLS. I metadati delle tabelle non espongono l’installazione di trigger, funzioni o indice, quindi questi dettagli restano non verificati.
 
+- Prima build Vercel del commit `7fbf2054a2f675fdfa9e21f437479370ca93e205` terminata con errore Angular `TS2339`: il template chiamava il formatter importato senza esporlo come proprietà di `Dashboard`. Corretto esponendolo come `appointmentTimeRange` e aggiornando i due riferimenti del template; nessun build/test/typecheck locale eseguito.
+
 ## Lavoro completato — 2026-11-24
 
 - [x] **Avviso Vercel su `docs/manual`:** verificati `docs/manual/requirements.txt`, la guida/script del generatore Python e `vercel.json` alla root, che configura la build Angular (`npm run build` → `dist/sissy-agenda/browser`). La mail è compatibile con un suggerimento automatico di creare un progetto separato per la cartella del manuale; non dimostra che progetto o deploy siano stati creati. Nessun progetto, setting o deploy Vercel è stato modificato e lo stato live della dashboard non è stato verificato.
