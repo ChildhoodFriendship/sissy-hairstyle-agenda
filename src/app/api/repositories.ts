@@ -1,8 +1,23 @@
 import type { Appointment, Client, Employee, SalonSettings } from '../library/models';
 
+export interface AppointmentOverlapAcknowledgement {
+  id: string;
+  date: string;
+  time: string;
+  durationMinutes: number;
+  employeeId: string | null;
+  employeeName: string;
+  clientName: string;
+}
+
+export interface AppointmentWriteOptions {
+  /** Exact overlap snapshots shown in the confirmation dialog for this write. */
+  overlapAcknowledgement?: AppointmentOverlapAcknowledgement[];
+}
+
 export interface AppointmentRepository {
   listAppointments(): Promise<Appointment[]>;
-  saveAppointment(appointment: Appointment): Promise<void>;
+  saveAppointment(appointment: Appointment, options?: AppointmentWriteOptions): Promise<void>;
   deleteAppointment(id: string): Promise<void>;
 }
 

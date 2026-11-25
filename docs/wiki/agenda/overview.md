@@ -31,7 +31,7 @@ This area covers the dashboard's agenda and the records that support it. The det
 
 ## Functional Characteristics
 
-The dashboard shows appointments for a selected calendar date and provides separate views for clients, employees, and salon settings. It uses client and employee records to prefill and assign appointments. Reminder links require recorded client WhatsApp consent and are opened for manual review and sending. The desktop sidebar ends with the logout action; it does not show a repeated salon identity or a claim that data is synchronized.
+The dashboard shows appointments for a selected calendar date and provides separate views for clients, employees, and salon settings. It uses client and employee records to prefill and assign appointments. Reminder links require recorded client WhatsApp consent and are opened for manual review and sending. The desktop sidebar ends with the logout action; it does not show a repeated salon identity or a claim that data is synchronized. Confirmed bookings can overlap for one person only after explicit operator confirmation; each appointment records its duration and checks the full interval against the saved shift.
 
 ## Responsive Layout
 

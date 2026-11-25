@@ -62,12 +62,50 @@ describe('SupabaseAgendaRepository daily work schedules', () => {
     await expect(repository.listWorkSchedules(date)).rejects.toBe(error);
   });
 
-  it.each(['23514', '23505'])('preserves booking rejection code %s from an appointment upsert', async (code) => {
-    const error = { code, message: 'Slot no longer available' };
-    const { repository, from } = setup({ upsert: vi.fn().mockResolvedValue({ error }) });
+  it('checks the feature columns and sends duration plus the one-save overlap confirmation', async () => {
+    const limit = vi.fn().mockResolvedValue({ data: [], error: null });
+    const select = vi.fn().mockReturnValue({ limit });
+    const upsert = vi.fn().mockResolvedValue({ error: null });
+    const { repository } = setup({ select, upsert });
+
+    const acknowledgement = [{
+      id: 'a0f1d333-7333-4b16-bf89-990d738a7f3c', date, time: '08:30', durationMinutes: 90,
+      employeeId: null, employeeName: 'Admin', clientName: 'Existing',
+    }];
+    await repository.saveAppointment({
+      id: 'bf594afe-f602-480b-bda2-b2d05aa7d066', clientId: '', clientName: 'Test', phone: '0000000', date, time: '09:00',
+      durationMinutes: 90, status: 'confirmed', employeeId: null, employeeName: 'Admin', service: '', notes: '',
+      reminderConsent: false, createdAt: '2026-12-01T00:00:00Z',
+    }, { overlapAcknowledgement: acknowledgement });
+
+    expect(select).toHaveBeenCalledWith('duration_minutes,overlap_acknowledgement');
+    expect(limit).toHaveBeenCalledWith(0);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ duration_minutes: 90, overlap_acknowledgement: acknowledgement }));
+  });
+
+  it.each(['duration_minutes', 'overlap_acknowledgement'])('fails closed with a clear migration code when %s is absent', async (column) => {
+    const select = vi.fn().mockReturnValue({
+      limit: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST204', message: `Could not find '${column}' column` } }),
+    });
+    const upsert = vi.fn();
+    const { repository } = setup({ select, upsert });
+
     await expect(repository.saveAppointment({
       id: 'bf594afe-f602-480b-bda2-b2d05aa7d066', clientId: '', clientName: 'Test', phone: '0000000', date, time: '09:00',
-      status: 'confirmed', employeeId: null, employeeName: 'Admin', service: '', notes: '',
+      durationMinutes: 90, status: 'confirmed', employeeId: null, employeeName: 'Admin', service: '', notes: '',
+      reminderConsent: false, createdAt: '2026-12-01T00:00:00Z',
+    })).rejects.toMatchObject({ code: 'APPOINTMENT_FEATURE_MIGRATION_REQUIRED' });
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it.each(['23514', '23505'])('preserves booking rejection code %s from an appointment upsert', async (code) => {
+    const error = { code, message: 'Slot no longer available' };
+    const limit = vi.fn().mockResolvedValue({ data: [], error: null });
+    const select = vi.fn().mockReturnValue({ limit });
+    const { repository, from } = setup({ select, upsert: vi.fn().mockResolvedValue({ error }) });
+    await expect(repository.saveAppointment({
+      id: 'bf594afe-f602-480b-bda2-b2d05aa7d066', clientId: '', clientName: 'Test', phone: '0000000', date, time: '09:00',
+      durationMinutes: 30, status: 'confirmed', employeeId: null, employeeName: 'Admin', service: '', notes: '',
       reminderConsent: false, createdAt: '2026-12-01T00:00:00Z',
     })).rejects.toBe(error);
     expect(from).toHaveBeenCalledWith('appointments');

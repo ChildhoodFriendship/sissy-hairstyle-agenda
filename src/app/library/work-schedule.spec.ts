@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Appointment } from './models';
-import { DEFAULT_WORK_SLOTS, freeTimesForPerson, type DailyWorkSchedule } from './work-schedule';
+import { canScheduleAppointment, DEFAULT_WORK_SLOTS, freeTimesForPerson, type DailyWorkSchedule } from './work-schedule';
 
 const date = '2026-11-20';
 const otherDate = '2026-11-21';
@@ -40,12 +40,18 @@ describe('freeTimesForPerson', () => {
     expect(freeTimesForPerson(rows, [], date, null)).toEqual(['00:30']);
   });
 
-  it('blocks a confirmed assignee, not a different person working the same slot', () => {
+  it('keeps a start bookable for the same person while a shared start remains under capacity', () => {
     const rows = [schedule(null, [20]), schedule('ada', [20]), schedule('bea', [20])];
     const bookings = [booking('a', null, { employeeName: 'Admin' }), booking('b', 'ada')];
-    expect(freeTimesForPerson(rows, bookings, date, null)).toEqual([]);
-    expect(freeTimesForPerson(rows, bookings, date, 'ada')).toEqual([]);
+    expect(freeTimesForPerson(rows, bookings, date, null)).toEqual(['10:00']);
+    expect(freeTimesForPerson(rows, bookings, date, 'ada')).toEqual(['10:00']);
     expect(freeTimesForPerson(rows, bookings, date, 'bea')).toEqual(['10:00']);
+  });
+
+  it('removes a start only after three confirmed appointments already begin there', () => {
+    const rows = [schedule('ada', [20])];
+    const bookings = [booking('a', null), booking('b', 'ada'), booking('c', 'bea')];
+    expect(freeTimesForPerson(rows, bookings, date, 'ada')).toEqual([]);
   });
 
   it('ignores cancelled, completed, other-date and other-time appointments', () => {
@@ -63,7 +69,14 @@ describe('freeTimesForPerson', () => {
     expect(freeTimesForPerson(rows, [...bookings, booking('b', 'bea')], date, null)).toEqual(['10:30']);
   });
 
-  it('excludes the edited appointment from both the assignee check and the capacity count', () => {
+  it('allows every half-hour of a longer appointment only when the complete range is in the work schedule', () => {
+    expect(canScheduleAppointment([schedule('ada', [17, 18, 19])], date, 'ada', '08:30', 90)).toBe(true);
+    expect(canScheduleAppointment([schedule('ada', [17, 19])], date, 'ada', '08:30', 90)).toBe(false);
+    expect(canScheduleAppointment([schedule('ada', [47])], date, 'ada', '23:30', 30)).toBe(true);
+    expect(canScheduleAppointment([schedule('ada', [47])], date, 'ada', '23:30', 60)).toBe(false);
+  });
+
+  it('excludes only the edited appointment from the shared-start capacity count', () => {
     const rows = [schedule('ada', [20])];
     const bookings = [booking('editing', 'ada'), booking('b', 'bea'), booking('c', null)];
     expect(freeTimesForPerson(rows, bookings, date, 'ada', 'editing')).toEqual(['10:00']);

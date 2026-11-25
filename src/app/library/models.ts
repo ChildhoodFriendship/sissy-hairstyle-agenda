@@ -7,6 +7,8 @@ export interface Appointment {
   phone: string;
   date: string;
   time: string;
+  /** Appointment length in minutes. Missing legacy values are interpreted as 30. */
+  durationMinutes?: number;
   service: string;
   notes: string;
   status: AppointmentStatus;

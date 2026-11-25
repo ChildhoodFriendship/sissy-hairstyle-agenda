@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { WorkHoursEditor } from '../work-hours-editor/work-hours-editor';
 import { ConfirmationDialog } from '../confirmation-dialog/confirmation-dialog';
-import { DEFAULT_WORK_SLOTS, freeTimesForPerson, type DailyWorkSchedule } from '../../library/work-schedule';
+import { DEFAULT_WORK_SLOTS, canScheduleAppointment, freeTimesForPerson, type DailyWorkSchedule } from '../../library/work-schedule';
 import { it } from '../../../bundle/it';
 import { AuthService } from '../../api/auth.service';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
+import type { AppointmentOverlapAcknowledgement } from '../../api/repositories';
 import type { Appointment, Client, Employee, SalonSettings } from '../../library/models';
-import { findAppointmentConflict, normalizePhoneNumber, phoneForDisplay, renderMessageTemplate } from '../../library/domain-utils';
-import { DATABASE_LIMITS, databaseConstraintMessage, isUniqueConstraintViolation, validateAppointmentTime, validateName, validateServiceName, validateWorkSlots } from '../../library/database-constraints';
+import { DEFAULT_APPOINTMENT_DURATION_MINUTES, MAX_APPOINTMENT_DURATION_MINUTES, addMinutesToTime, appointmentDurationFromTimes, appointmentDurationMinutes, findAppointmentOverlaps, formatAppointmentTimeRange, isAppointmentSlotAtCapacity, normalizePhoneNumber, phoneForDisplay, renderMessageTemplate } from '../../library/domain-utils';
+import { DATABASE_LIMITS, databaseConstraintMessage, isUniqueConstraintViolation, validateAppointmentDuration, validateAppointmentTime, validateName, validateServiceName, validateWorkSlots } from '../../library/database-constraints';
 import { initialDarkMode, saveThemePreference, syncThemeColor } from '../../library/theme';
 
 const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
@@ -16,7 +17,7 @@ const LEGACY_EMPLOYEE_ASSIGNMENT = '__legacy_employee_assignment__';
  type View = 'agenda' | 'clients' | 'employees' | 'settings';
 type AgendaColumn = { id: string; name: string; appointments: Appointment[]; bookable: boolean; freeTimes: string[] };
 type ShiftEditor = { name: string; schedule: DailyWorkSchedule };
-type PendingConfirmation = { title: string; message: string; confirmLabel: string; action: () => Promise<void> };
+type PendingConfirmation = { title: string; message: string; confirmLabel: string; dismissLabel?: string; action: () => Promise<void> };
 
 @Component({
   selector: 'app-dashboard',
@@ -41,7 +42,7 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
         @if (notice()) { <div class="toast" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="status" aria-live="polite"><span>{{ notice() }}</span><button type="button" aria-label="Chiudi notifica" (click)="dismissNotice()"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg></button></div> }
         @if (pendingConfirmation(); as confirmation) {
           <app-confirmation-dialog animate.leave="confirmation-leave" [title]="confirmation.title" [message]="confirmation.message"
-            [confirmLabel]="confirmation.confirmLabel" [dark]="darkMode()"
+            [confirmLabel]="confirmation.confirmLabel" [dismissLabel]="confirmation.dismissLabel || copy.common.cancel" [dark]="darkMode()"
             (confirmed)="acceptConfirmation()" (dismissed)="dismissConfirmation()" />
         }
         @if (view()==='agenda') {
@@ -70,10 +71,10 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
                       @for (item of column.appointments; track item.id; let index = $index) {
                         <article class="appointment" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [style.--ui-enter-delay]="(index < 5 ? index * 28 : 112) + 'ms'" [class.cancelled]="item.status==='cancelled'" [class.collapsed]="collapsedAppointments().has(item.id)">
                           <div class="appointment-summary">
-                            <div class="appointment-time">{{ item.time }}</div>
+                            <div class="appointment-time">{{ formatAppointmentTimeRange(item) }}</div>
                             <div class="appointment-top"><h4>{{ item.clientName }}</h4>@if(item.status!=='confirmed'){<span class="status" [class]="'status '+item.status">{{ statusLabel(item.status) }}</span>}</div>
                             @if(collapsedAppointments().has(item.id)){<p class="appointment-preview">{{ item.service || 'Servizio non indicato' }}</p>}
-                            <button type="button" class="appointment-toggle" [attr.aria-expanded]="!collapsedAppointments().has(item.id)" [attr.aria-controls]="'appointment-details-'+item.id" [attr.aria-label]="(collapsedAppointments().has(item.id) ? 'Mostra dettagli' : 'Riduci') + ' appuntamento di ' + item.clientName + ' alle ' + item.time" (click)="toggleAppointment(item.id)"><svg class="material-icon appointment-chevron" data-icon="arrow-upward" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg></button>
+                            <button type="button" class="appointment-toggle" [attr.aria-expanded]="!collapsedAppointments().has(item.id)" [attr.aria-controls]="'appointment-details-'+item.id" [attr.aria-label]="(collapsedAppointments().has(item.id) ? 'Mostra dettagli' : 'Riduci') + ' appuntamento di ' + item.clientName + ' ' + formatAppointmentTimeRange(item)" (click)="toggleAppointment(item.id)"><svg class="material-icon appointment-chevron" data-icon="arrow-upward" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12l-8-8-8 8z"/></svg></button>
                           </div>
                           <div class="appointment-details" [id]="'appointment-details-'+item.id" [class.is-collapsed]="collapsedAppointments().has(item.id)" [attr.aria-hidden]="collapsedAppointments().has(item.id) ? 'true' : null" [attr.inert]="collapsedAppointments().has(item.id) ? '' : null">
                             <div class="appointment-body"><div class="appointment-description"><p class="appointment-service">{{ item.service || 'Servizio non indicato' }}</p><p class="appointment-phone">{{ phoneForDisplay(item.phone) }}</p></div>@if(item.notes){<small>{{ item.notes }}</small>}</div>
@@ -86,12 +87,12 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
                 @if (column.bookable && shiftState() === 'ready' && loadedShiftDate() === selectedDate()) {
                   <div class="column-availability" [class.has-appointments]="column.appointments.length > 0" [class.has-free-times]="column.freeTimes.length > 0">
                     <button type="button" class="shift-action text-button" [attr.aria-label]="'Modifica turno di ' + column.name" (click)="editHours(column)">Modifica turno</button>
-                    <h4>Orari liberi</h4>
+                    <h4>{{ copy.agenda.bookableTimes }}</h4>
                     @if (column.freeTimes.length) {
                       <div class="free-slot-list">@for (time of column.freeTimes; track time) {
-                        <button type="button" class="free-slot" [attr.aria-label]="'Prenota alle ' + time + ' con ' + column.name" (click)="bookSlot(column, time)">{{ time }}</button>
+                        <button type="button" class="free-slot" [class.has-overlap]="timeHasOverlap(column, time)" [attr.aria-label]="'Prenota alle ' + time + ' con ' + column.name + (timeHasOverlap(column, time) ? ' — si sovrappone a un appuntamento già in agenda' : '')" (click)="bookSlot(column, time)">{{ time }}@if (timeHasOverlap(column, time)) { <span>{{ copy.agenda.overlapHint }}</span> }</button>
                       }</div>
-                    } @else { <p class="muted">Nessuna fascia libera.</p> }
+                    } @else { <p class="muted">{{ copy.agenda.noBookableTimes }}</p> }
                   </div>
                 }
               </section> }</div>@if(!todayAppointments().length && shiftState() !== 'ready'){ <div class="empty" animate.enter="ui-fade-in" animate.leave="ui-fade-out"><span class="empty-art">✳</span><h3>{{ copy.agenda.emptyTitle }}</h3><p>{{ copy.agenda.emptyText }}</p><button class="secondary" (click)="openForm()">＋ Crea appuntamento</button></div> }
@@ -127,15 +128,19 @@ type PendingConfirmation = { title: string; message: string; confirmLabel: strin
     @if(formOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" (click)="$event.stopPropagation()"><button class="close" [disabled]="appointmentSaving()" (click)="closeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">{{ editingId()?'APPUNTAMENTO':'NUOVO · 01 / 01' }}</p><h2 id="form-title">{{ editingId()?'Modifica appuntamento':'Aggiungi all’agenda' }}</h2><p class="subtitle">I campi con * sono obbligatori.</p><form [attr.aria-busy]="appointmentSaving()" [attr.inert]="appointmentSaving() ? '' : null" (submit)="$event.preventDefault(); saveAppointment()"><label>Cliente<select name="clientId" [ngModel]="draft.clientId || ''" (ngModelChange)="selectAppointmentClient($event)"><option value="">Nuova cliente</option>@for(client of clients();track client.id){<option [value]="client.id">{{ client.name }}</option>}</select></label><label class="check"><input type="checkbox" name="addToContacts" [(ngModel)]="draft.addToContacts" /><span>Aggiungi anche alla Rubrica Clienti</span></label><label>Nome *<input name="firstName" maxlength="100" required autocomplete="given-name" [(ngModel)]="draft.firstName" /></label><label>Cognome *<input name="lastName" maxlength="100" required autocomplete="family-name" [(ngModel)]="draft.lastName" /></label><label>Telefono *<input name="phone" type="tel" maxlength="24" required autocomplete="tel" placeholder="333 1234567" [ngModel]="draft.phone" (ngModelChange)="draft.phone = phoneForDisplay($event)" /></label>
       <div class="two-fields"><label>Data *<div class="picker-field"><input #datePicker name="date" type="date" required [ngModel]="draft.date" (ngModelChange)="changeDraftDate($event)" /><button type="button" (click)="showPicker(datePicker)" aria-label="Scegli la data">▦</button></div></label>
       <label>Seguito da<select name="employeeId" [ngModel]="draft.employeeId" (ngModelChange)="changeDraftPerson($event)"><option [ngValue]="null">Sissy</option>@if(legacyEmployeeName(); as legacyName){<option [ngValue]="legacyEmployeeAssignmentValue" disabled>{{ legacyName }} (non attivo)</option>}@if(archivedEmployee(); as archived){<option [ngValue]="archived.id" disabled>{{ archivedEmployeeName() }} (non attivo)</option>}@for(employee of activeEmployees();track employee.id){<option [ngValue]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>}</select></label></div>
+      <div class="two-fields">
       @if (shiftState() === 'missing') {
-        <label>Ora *<div class="picker-field"><input #timePicker name="time" type="time" step="1800" required [(ngModel)]="draft.time" /><button type="button" (click)="showPicker(timePicker)" aria-label="Scegli l’ora">◷</button></div></label>
+        <label>{{ copy.agenda.appointmentStart }} *<div class="picker-field"><input #timePicker name="time" type="time" step="1800" required [ngModel]="draft.time" (ngModelChange)="changeDraftTime($event)" /><button type="button" (click)="showPicker(timePicker)" aria-label="Scegli l’ora di inizio">◷</button></div></label>
       } @else {
         @let choices = formTimes();
-        <label>Ora *<select name="time" required [(ngModel)]="draft.time"><option value="">Scegli un orario</option>@for (time of choices; track time) {<option [value]="time">{{ time }}</option>}</select></label>
+        <label>{{ copy.agenda.appointmentStart }} *<select name="time" required [ngModel]="draft.time" (ngModelChange)="changeDraftTime($event)"><option value="">Scegli un orario</option>@for (time of choices; track time) {<option [value]="time">{{ time }}</option>}</select></label>
         @if (shiftState() === 'error') {<p role="alert">Disponibilità non caricata. <button class="text-button" type="button" (click)="refreshHours()">Riprova</button></p>}
         @else if (shiftState() === 'loading') {<small role="status">Caricamento dei turni…</small>}
-        @else if (!choices.length) {<small role="status">Nessuna fascia libera per questa persona. Scegli un’altra data o persona, oppure imposta il turno nell’agenda.</small>}
+        @else if (!choices.length) {<small role="status">Nessuna fascia disponibile per questa persona. Scegli un’altra data o persona, oppure imposta il turno nell’agenda.</small>}
       }
+      <label>{{ copy.agenda.appointmentEnd }} *<select name="endTime" required [ngModel]="draft.endTime" (ngModelChange)="changeDraftEndTime($event)"><option value="">Scegli l’ora di fine</option>@for (option of formEndTimes(); track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select></label>
+      @if (draft.time && !formEndTimes().length) {<small role="status">{{ copy.agenda.noEndTimes }}</small>}
+      </div>
       <label>Servizio<select name="service" [(ngModel)]="draft.service"><option value="">Nessun servizio indicato</option>@for(service of settingsDraft.services;track service){<option [value]="service">{{ service }}</option>}</select></label><label>Note<textarea name="notes" rows="3" [(ngModel)]="draft.notes"></textarea></label><label class="check"><input type="checkbox" name="reminderConsent" [(ngModel)]="draft.reminderConsent" /><span>Il cliente ha acconsentito a ricevere promemoria WhatsApp</span></label>@if(formError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ formError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" [disabled]="appointmentSaving()" (click)="closeForm()">Annulla</button><button class="primary" type="submit" [disabled]="appointmentSaving()">{{ appointmentSaving() ? 'Salvataggio…' : (editingId() ? 'Salva modifiche' : 'Salva appuntamento') }}</button></div></form></section></div> }
     @if(reminderEditorOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="reminderEditorOpen.set(false)"><section class="dialog reminder-dialog" role="dialog" aria-modal="true" aria-labelledby="reminder-editor-title" (click)="$event.stopPropagation()"><button class="close" type="button" (click)="reminderEditorOpen.set(false)" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PROMEMORIA WHATSAPP</p><h2 id="reminder-editor-title">Crea il tuo messaggio</h2><p class="subtitle">Scrivi come parleresti alla cliente. Per aggiungere un dato, premi uno dei pulsanti qui sotto: verrà inserito nel punto in cui si trova il cursore.</p><label>Il tuo messaggio<textarea #reminderEditor name="reminder" rows="5" [(ngModel)]="settingsDraft.messageTemplates.reminder"></textarea></label><div class="placeholder-tools" aria-label="Dati da inserire nel messaggio"><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{nome}')">Nome cliente</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{data}')">Data appuntamento</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{ora}')">Ora</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{servizio}')">Servizio</button><button type="button" class="secondary" (click)="insertReminderToken(reminderEditor, '{salone}')">Nome salone</button></div><section class="reminder-preview" aria-live="polite"><h3>Anteprima di esempio</h3><p>{{ reminderPreview() }}</p></section><div class="dialog-actions"><button class="primary" type="button" (click)="reminderEditorOpen.set(false)">Fatto</button></div></section></div> }
     @if(employeeFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeEmployeeForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="employee-form-title" (click)="$event.stopPropagation()"><button class="close" [disabled]="employeeSaving()" (click)="closeEmployeeForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">PERSONALE</p><h2 id="employee-form-title">{{ editingEmployee() ? 'Modifica dipendente' : 'Aggiungi dipendente' }}</h2><form [attr.aria-busy]="employeeSaving()" [attr.inert]="employeeSaving() ? '' : null" (submit)="$event.preventDefault(); saveEmployee()"><label>Nome *<input name="employeeFirstName" maxlength="100" required autocomplete="given-name" [(ngModel)]="employeeDraft.firstName" /></label><label>Cognome *<input name="employeeLastName" maxlength="100" required autocomplete="family-name" [(ngModel)]="employeeDraft.lastName" /></label>@if(employeeFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ employeeFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" [disabled]="employeeSaving()" (click)="closeEmployeeForm()">Annulla</button><button class="primary" type="submit" [disabled]="employeeSaving()">{{ employeeSaving() ? 'Salvataggio…' : 'Salva dipendente' }}</button></div></form></section></div> }\n    @if(clientFormOpen()) { <div class="scrim" animate.enter="ui-fade-in" animate.leave="ui-fade-out" [class.dark]="darkMode()" (click)="closeClientForm()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="client-form-title" (click)="$event.stopPropagation()"><button class="close" [disabled]="clientSaving()" (click)="closeClientForm()" aria-label="Chiudi"><svg class="material-icon" data-icon="close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><p class="eyebrow">RUBRICA CLIENTI</p><h2 id="client-form-title">{{ editingClient() ? 'Modifica cliente' : 'Aggiungi cliente' }}</h2><p class="subtitle">Inserisci i dati della cliente.</p><form [attr.aria-busy]="clientSaving()" [attr.inert]="clientSaving() ? '' : null" (submit)="$event.preventDefault(); saveClient()"><label>Nome *<input name="firstName" maxlength="100" required autocomplete="given-name" [(ngModel)]="clientDraft.firstName" /></label><label>Cognome *<input name="lastName" maxlength="100" required autocomplete="family-name" [(ngModel)]="clientDraft.lastName" /></label><label>Telefono *<input name="clientPhone" type="tel" maxlength="24" required autocomplete="tel" placeholder="333 1234567" [ngModel]="clientDraft.phone" (ngModelChange)="clientDraft.phone = phoneForDisplay($event)" /></label><label>Note<textarea name="clientNotes" rows="2" [(ngModel)]="clientDraft.notes"></textarea></label><label class="check"><input type="checkbox" name="clientConsent" [(ngModel)]="clientDraft.whatsappConsent" /><span>Consenso WhatsApp registrato</span></label>@if(clientFormError()){<p class="form-error" animate.enter="ui-fade-in" animate.leave="ui-fade-out" role="alert">{{ clientFormError() }}</p>}<div class="dialog-actions"><button class="secondary" type="button" [disabled]="clientSaving()" (click)="closeClientForm()">Annulla</button><button class="primary" type="submit" [disabled]="clientSaving()">{{ clientSaving() ? 'Salvataggio…' : 'Salva cliente' }}</button></div></form></section></div> }
@@ -283,28 +288,76 @@ export class Dashboard {
     const prior = this.editingAppointment() ?? this.appointments().find(item => item.id === this.editingId());
     if (!prior || prior.date !== this.draft.date) return undefined;
     const assignee = prior.employeeId ?? (prior.employeeName && prior.employeeName !== 'Admin' ? LEGACY_EMPLOYEE_ASSIGNMENT : null);
-    return assignee === this.draft.employeeId ? prior.time : undefined;
+    const currentDuration = appointmentDurationFromTimes(this.draft.time, this.draft.endTime);
+    return assignee === this.draft.employeeId && currentDuration === appointmentDurationMinutes(prior.durationMinutes)
+      ? prior.time
+      : undefined;
   }
   protected formTimes(): string[] {
     const id = this.draft.employeeId;
     const times = id === null || this.activeEmployees().some(person => person.id === id)
-      ? this.availableTimes(this.draft.date, id, this.editingId() || undefined) : [];
-    // An unchanged historical booking remains editable even if the shift was removed later.
+      ? this.availableTimes(this.draft.date, id, this.editingId() || undefined)
+      : [];
+    const duration = appointmentDurationFromTimes(this.draft.time, this.draft.endTime) ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
+    const withinShift = times.filter(time => canScheduleAppointment(this.schedules(), this.draft.date, id, time, duration));
+    // Unchanged historical bookings remain editable if the shift was later removed or shortened.
     const original = this.originalFormTime();
-    if (original && !times.includes(original)) times.push(original);
-    return times.sort();
+    if (original && !withinShift.includes(original)) withinShift.push(original);
+    return withinShift.sort();
+  }
+  protected formEndTimes(): { value: string; label: string }[] {
+    const start = this.draft.time;
+    const options: { value: string; label: string }[] = [];
+    if (!start || validateAppointmentTime(start)) return options;
+    for (let duration = DEFAULT_APPOINTMENT_DURATION_MINUTES; duration <= MAX_APPOINTMENT_DURATION_MINUTES; duration += DEFAULT_APPOINTMENT_DURATION_MINUTES) {
+      const value = addMinutesToTime(start, duration);
+      if (!value) break;
+      const scheduleLoaded = this.shiftState() === 'ready' && this.loadedShiftDate() === this.draft.date;
+      if (scheduleLoaded && !canScheduleAppointment(this.schedules(), this.draft.date, this.draft.employeeId, start, duration)) continue;
+      options.push({ value, label: value === '00:00' && start !== '00:00' ? '24:00' : value });
+    }
+    const prior = this.editingAppointment();
+    const originalDuration = prior ? appointmentDurationMinutes(prior.durationMinutes) : null;
+    const draftDuration = appointmentDurationFromTimes(start, this.draft.endTime);
+    if (prior && this.originalFormTime() === start && draftDuration === originalDuration &&
+      !options.some(option => option.value === this.draft.endTime)) {
+      options.push({
+        value: this.draft.endTime,
+        label: this.draft.endTime === '00:00' && start !== '00:00' ? '24:00' : this.draft.endTime,
+      });
+    }
+    return options;
   }
   protected changeDraftDate(date: string): void {
     this.draft.date = date;
     this.draft.time = '';
+    this.draft.endTime = '';
     void this.fetchHours(date);
   }
-  protected changeDraftPerson(id: string | null): void { this.draft.employeeId = id; this.draft.time = ''; }
+  protected changeDraftTime(time: string): void {
+    this.draft.time = time;
+    this.draft.endTime = time ? addMinutesToTime(time, DEFAULT_APPOINTMENT_DURATION_MINUTES) : '';
+  }
+  protected changeDraftEndTime(time: string): void { this.draft.endTime = time; }
+  protected changeDraftPerson(id: string | null): void {
+    this.draft.employeeId = id;
+    this.draft.time = '';
+    this.draft.endTime = '';
+  }
+  protected timeHasOverlap(column: AgendaColumn, time: string): boolean {
+    return findAppointmentOverlaps(this.appointments(), {
+      date: this.selectedDate(),
+      time,
+      durationMinutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
+      employeeId: column.id === 'admin' ? null : column.id,
+      employeeName: column.id === 'admin' ? 'Admin' : column.name,
+    }).length > 0;
+  }
   protected bookSlot(column: AgendaColumn, time: string): void {
     if (!column.bookable || !column.freeTimes.includes(time)) return;
     this.openForm();
     this.draft.employeeId = column.id === 'admin' ? null : column.id;
-    this.draft.time = time;
+    this.changeDraftTime(time);
   }
   protected editHours(column: AgendaColumn): void {
     if (!column.bookable || this.shiftState() !== 'ready' || this.loadedShiftDate() !== this.selectedDate()) return;
@@ -441,7 +494,7 @@ export class Dashboard {
   protected toggleAppointment(id: string): void { this.collapsedAppointments.update((collapsed) => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
   protected selectAgendaColumn(id: string): void { this.selectedAgendaColumnId.set(id); }
   protected closeForm(): void { if (this.appointmentSaving()) return; this.formOpen.set(false); this.editingAppointment.set(null); this.formError.set(''); void this.fetchHours(this.selectedDate()); }
-  protected edit(item: Appointment): void { this.editingId.set(item.id); this.editingAppointment.set(item); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:phoneForDisplay(item.phone),date:item.date,time:item.time,service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
+  protected edit(item: Appointment): void { this.editingId.set(item.id); this.editingAppointment.set(item); const parts = item.clientName.trim().split(/\s+/); const linkedClient = this.clients().find((client) => client.id === item.clientId); Object.assign(this.draft, this.emptyDraft(), {clientId:item.clientId,clientName:item.clientName,firstName:parts.shift()||'',lastName:parts.join(' ')||parts[0]||'',phone:phoneForDisplay(item.phone),date:item.date,time:item.time,endTime:addMinutesToTime(item.time, appointmentDurationMinutes(item.durationMinutes)),service:item.service,notes:item.notes,reminderConsent:item.reminderConsent,addToContacts:Boolean(linkedClient),employeeId:item.employeeId??(item.employeeName&&item.employeeName!=='Admin'?LEGACY_EMPLOYEE_ASSIGNMENT:null)}); void this.fetchHours(this.draft.date); this.formError.set(''); this.formOpen.set(true); }
   protected startAppointment(client: Client): void { this.openForm(); this.selectAppointmentClient(client.id); this.view.set('agenda'); }
   protected editClient(client: Client): void {
     if (this.clientSaving()) return;
@@ -502,7 +555,7 @@ export class Dashboard {
   private upsertClientState(client: Client): void {
     this.clients.update((current) => [...current.filter((item) => item.id !== client.id), client].sort((a, b) => a.name.localeCompare(b.name, 'it')));
   }
-  protected async saveAppointment(): Promise<void> {
+  protected async saveAppointment(overlapAcknowledgement: AppointmentOverlapAcknowledgement[] = []): Promise<void> {
     if (this.appointmentSaving()) return;
     this.formError.set('');
     const phone = normalizePhoneNumber(this.draft.phone, '+39');
@@ -516,23 +569,61 @@ export class Dashboard {
       this.formError.set(`Il nome completo della cliente non può superare ${DATABASE_LIMITS.appointmentName} caratteri.`);
       return;
     }
-    if (!this.draft.date || !this.draft.time) { this.formError.set(this.copy.form.required); return; }
+    if (!this.draft.date || !this.draft.time || !this.draft.endTime) { this.formError.set(this.copy.form.required); return; }
     const timeError = validateAppointmentTime(this.draft.time);
     if (timeError) { this.formError.set(timeError); return; }
+    const durationMinutes = appointmentDurationFromTimes(this.draft.time, this.draft.endTime);
+    if (durationMinutes === null) {
+      this.formError.set('L’ora di fine deve essere successiva all’inizio e a intervalli di mezz’ora.');
+      return;
+    }
+    const durationError = validateAppointmentDuration(durationMinutes);
+    if (durationError) { this.formError.set(durationError); return; }
+
     const existing = this.appointments();
     const prior = this.editingId()
-      ? existing.find((item)=>item.id===this.editingId()) ?? this.editingAppointment() ?? undefined
+      ? existing.find((item) => item.id === this.editingId()) ?? this.editingAppointment() ?? undefined
       : undefined;
     const employee = this.employees().find((item) => item.id === this.draft.employeeId);
     const legacyEmployeeName = this.legacyEmployeeName();
     const requestedEmployeeId = this.draft.employeeId === LEGACY_EMPLOYEE_ASSIGNMENT ? null : this.draft.employeeId ?? null;
     const requestedEmployeeName = legacyEmployeeName ?? (employee ? `${employee.firstName} ${employee.lastName}` : 'Admin');
-    const sameBooking = !!prior && this.originalFormTime() === this.draft.time;
-    if (!sameBooking && this.shiftState() !== 'missing' && !this.formTimes().includes(this.draft.time)) {
-      this.formError.set('Questa fascia non è disponibile per la persona selezionata. Scegli un altro orario.'); return;
+    const sameAssignee = !!prior && prior.employeeId === requestedEmployeeId &&
+      (requestedEmployeeId !== null || prior.employeeName === requestedEmployeeName);
+    const sameBooking = !!prior && sameAssignee && prior.date === this.draft.date && prior.time === this.draft.time &&
+      appointmentDurationMinutes(prior.durationMinutes) === durationMinutes;
+    let overlapAcknowledgementForWrite: AppointmentOverlapAcknowledgement[] = [];
+    const status = prior?.status ?? 'confirmed';
+
+    if (status === 'confirmed') {
+      if (!sameBooking && this.shiftState() !== 'missing' && !this.formTimes().includes(this.draft.time)) {
+        this.formError.set('Questa fascia non è disponibile per la persona selezionata o non copre l’intera durata. Scegli un altro orario.');
+        return;
+      }
+      if (isAppointmentSlotAtCapacity(existing, {
+        date: this.draft.date,
+        time: this.draft.time,
+        excludeId: this.editingId() || undefined,
+      })) {
+        this.formError.set('La fascia ha già raggiunto il limite di 3 appuntamenti confermati. Scegli un altro orario.');
+        return;
+      }
+      const overlaps = findAppointmentOverlaps(existing, {
+        date: this.draft.date,
+        time: this.draft.time,
+        durationMinutes,
+        employeeId: requestedEmployeeId,
+        employeeName: requestedEmployeeName,
+        excludeId: this.editingId() || undefined,
+      });
+      if (overlaps.length && !overlapAcknowledgementsMatch(overlaps, overlapAcknowledgement)) {
+        this.requestOverlapConfirmation(overlaps, requestedEmployeeName, this.draft.date, clientName, this.draft.time, durationMinutes);
+        return;
+      }
+      overlapAcknowledgementForWrite = overlaps.length ? overlapAcknowledgement : [];
     }
-    if (!sameBooking && findAppointmentConflict(existing,{date:this.draft.date,time:this.draft.time,employeeId:requestedEmployeeId,employeeName:requestedEmployeeName,excludeId:this.editingId()||undefined})) { this.formError.set(this.copy.form.conflict); return; }
-    let matchedClient=this.clients().find((item)=>item.id===this.draft.clientId)||this.clients().find((item)=>
+
+    let matchedClient = this.clients().find((item) => item.id === this.draft.clientId) || this.clients().find((item) =>
       item.phone === phone.e164 || normalizePhoneNumber(item.phone, '+39').e164 === phone.e164);
     if (!matchedClient && !this.draft.clientId && this.draft.addToContacts) {
       this.appointmentSaving.set(true);
@@ -548,19 +639,44 @@ export class Dashboard {
     const existingClientId = this.draft.clientId || prior?.clientId || matchedClient?.id || '';
     const isNewClient = !existingClientId && !matchedClient;
     const clientId = existingClientId || (this.draft.addToContacts && isNewClient ? crypto.randomUUID() : '');
-    const client: Client = { id:clientId, firstName:this.draft.firstName.trim(), lastName:this.draft.lastName.trim(), name:clientName, phone:phone.e164, whatsappConsent:this.draft.reminderConsent, notes:matchedClient?.notes||'', createdAt:matchedClient?.createdAt||prior?.createdAt||new Date().toISOString() };
+    const client: Client = {
+      id: clientId,
+      firstName,
+      lastName,
+      name: clientName,
+      phone: phone.e164,
+      whatsappConsent: this.draft.reminderConsent,
+      notes: matchedClient?.notes || '',
+      createdAt: matchedClient?.createdAt || prior?.createdAt || new Date().toISOString(),
+    };
     const employeeName = legacyEmployeeName ?? (employee
       ? employee.isActive === false && prior?.employeeId === employee.id
         ? prior.employeeName || `${employee.firstName} ${employee.lastName}`
         : `${employee.firstName} ${employee.lastName}`
       : 'Admin');
-    const appointment: Appointment = { id:this.editingId()||crypto.randomUUID(),clientId:client.id,clientName,phone:client.phone,date:this.draft.date,time:this.draft.time,service:this.draft.service.trim(),notes:this.draft.notes.trim(),status:prior?.status||'confirmed',reminderConsent:this.draft.reminderConsent,createdAt:prior?.createdAt||new Date().toISOString(),employeeId:employee?.id??null,employeeName };
+    const appointment: Appointment = {
+      id: this.editingId() || crypto.randomUUID(),
+      clientId: client.id,
+      clientName,
+      phone: client.phone,
+      date: this.draft.date,
+      time: this.draft.time,
+      durationMinutes,
+      service: this.draft.service.trim(),
+      notes: this.draft.notes.trim(),
+      status,
+      reminderConsent: this.draft.reminderConsent,
+      createdAt: prior?.createdAt || new Date().toISOString(),
+      employeeId: employee?.id ?? null,
+      employeeName,
+    };
     let clientSaveAttempted = false;
     let clientSaved = false;
     let saveStage: 'appointment' | 'client' | 'schedule' = 'appointment';
     this.appointmentSaving.set(true);
     try {
-      if (!sameBooking && appointment.status === 'confirmed' && !legacyEmployeeName && this.shiftState() === 'ready' &&
+      await this.repo.ensureAppointmentFeatureSchema();
+      if (!sameBooking && status === 'confirmed' && !legacyEmployeeName && this.shiftState() === 'ready' &&
         !this.schedules().some(row => row.date === appointment.date && row.employeeId === appointment.employeeId)) {
         saveStage = 'schedule';
         const defaultSchedule: DailyWorkSchedule = {
@@ -580,7 +696,7 @@ export class Dashboard {
         this.draft.clientId = client.id;
       }
       saveStage = 'appointment';
-      await this.repo.saveAppointment(appointment);
+      await this.repo.saveAppointment(appointment, { overlapAcknowledgement: overlapAcknowledgementForWrite });
       this.appointments.update((rows) => [...rows.filter((item) => item.id !== appointment.id), appointment]
         .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)));
       this.selectedDate.set(appointment.date);
@@ -589,9 +705,35 @@ export class Dashboard {
       this.editingAppointment.set(null);
       this.formError.set('');
       void this.fetchHours(this.selectedDate());
-    }
-    catch (err) {
-      if (clientSaveAttempted && !clientSaved) {
+    } catch (err) {
+      if (saveStage === 'appointment' && isOverlapConfirmationRequired(err)) {
+        let refreshedOverlaps: Appointment[] | null = null;
+        try {
+          const refreshed = await this.repo.listAppointments();
+          this.appointments.set(refreshed);
+          await this.fetchHours(this.draft.date, true);
+          refreshedOverlaps = findAppointmentOverlaps(refreshed, {
+            date: this.draft.date,
+            time: this.draft.time,
+            durationMinutes,
+            employeeId: requestedEmployeeId,
+            employeeName: requestedEmployeeName,
+            excludeId: this.editingId() || undefined,
+          });
+        } catch {
+          // Preserve the database rejection when the latest appointment list cannot be read.
+        }
+        if (refreshedOverlaps?.length && !overlapAcknowledgementsMatch(refreshedOverlaps, overlapAcknowledgementForWrite)) {
+          this.requestOverlapConfirmation(refreshedOverlaps, requestedEmployeeName, this.draft.date, clientName, this.draft.time, durationMinutes);
+          if (clientSaved) this.formError.set('La cliente è già in rubrica e non verrà duplicata. Rivedi la sovrapposizione aggiornata e conferma o modifica l’appuntamento.');
+          return;
+        }
+        if (refreshedOverlaps && !refreshedOverlaps.length) {
+          this.formError.set(`${clientSaved ? 'La cliente è già in rubrica e non verrà duplicata. ' : ''}L’agenda è cambiata durante il salvataggio e non risultano più sovrapposizioni. Controlla i dati e salva di nuovo.`);
+          return;
+        }
+        this.formError.set(databaseConstraintMessage(err, 'appointment'));
+      } else if (clientSaveAttempted && !clientSaved) {
         if (isUniqueConstraintViolation(err, 'clients_owner_id_phone_key')) {
           try { this.clients.set(await this.repo.listClients()); } catch { /* Keep the current list when refresh is unavailable. */ }
         }
@@ -608,6 +750,25 @@ export class Dashboard {
     } finally {
       this.appointmentSaving.set(false);
     }
+  }
+  private requestOverlapConfirmation(
+    overlaps: Appointment[],
+    person: string,
+    date: string,
+    client: string,
+    time: string,
+    durationMinutes: number,
+  ): void {
+    const acknowledgedOverlaps = toOverlapAcknowledgements(overlaps);
+    const existing = overlaps.map(item => `${item.clientName} (${formatAppointmentTimeRange(item)})`).join('; ');
+    const range = formatAppointmentTimeRange({ time, durationMinutes });
+    this.pendingConfirmation.set({
+      title: this.copy.agenda.overlapTitle,
+      message: this.copy.agenda.overlapMessage(person === 'Admin' ? 'Sissy' : person, this.displayDate(date), existing, client, range),
+      confirmLabel: this.copy.agenda.overlapConfirm,
+      dismissLabel: this.copy.agenda.overlapCancel,
+      action: async () => this.saveAppointment(acknowledgedOverlaps),
+    });
   }
   protected removeAppointment(item: Appointment): void {
     this.pendingConfirmation.set({
@@ -706,7 +867,7 @@ export class Dashboard {
 
   protected async importBackup(event: Event): Promise<void> { const file=(event.target as HTMLInputElement).files?.[0]; if(!file)return; try { const text=await file.text(); const ok=await this.repo.importBackup(text); if(!ok){this.showNotice(this.copy.settings.importError);return;} await this.load();this.showNotice(this.copy.settings.importSuccess); } catch { this.showNotice(this.copy.settings.importError); } finally {(event.target as HTMLInputElement).value='';} }
   protected async seedDemoNoop(): Promise<void> { await this.repo.seedDemoData(); }
-  protected preview(item: Appointment, kind:'confirmation'|'reminder'): string { return renderMessageTemplate(this.settings().messageTemplates[kind],{nome:item.clientName.trim().split(/\s+/)[0]||item.clientName,data:this.displayDate(item.date),ora:item.time,servizio:item.service||'il tuo appuntamento',salone:this.settings().salonName}); }
+  protected preview(item: Appointment, kind:'confirmation'|'reminder'): string { return renderMessageTemplate(this.settings().messageTemplates[kind],{nome:item.clientName.trim().split(/\s+/)[0]||item.clientName,data:this.displayDate(item.date),ora:formatAppointmentTimeRange(item),servizio:item.service||'il tuo appuntamento',salone:this.settings().salonName}); }
   protected openWhatsApp(item:Appointment,kind:'confirmation'|'reminder'): void { if(!item.reminderConsent){this.showNotice(this.copy.messages.consentRequired);return;} if (!item.phone.startsWith('+39') || !normalizePhoneNumber(item.phone, '+39').e164) { this.showNotice('Numero non italiano: controlla il telefono prima di aprire WhatsApp.'); return; } const number=item.phone.replace(/\D/g,'');const href=`https://wa.me/${number}?text=${encodeURIComponent(this.preview(item,kind))}`;window.open(href,'_blank','noopener,noreferrer'); }
   protected shiftDate(delta:number):void { const [y,m,d]=this.selectedDate().split('-').map(Number);const date=new Date(y,m-1,d);date.setDate(date.getDate()+delta);this.selectDay(this.localDate(date)); }
   protected displayDate(value:string):string { const [y,m,d]=value.split('-').map(Number);return new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(y,m-1,d)); }
@@ -714,6 +875,39 @@ export class Dashboard {
   protected clientAppointments(id:string):number { return this.appointments().filter((item)=>item.clientId===id).length; }
   protected initials(value:string):string { return value.trim().split(/\s+/).slice(0,2).map((p)=>p[0]?.toLocaleUpperCase('it')).join(''); }
   protected async logout():Promise<void> { await this.auth.logout(); window.location.assign('/login'); }
-  private emptyDraft(): {clientId:string;clientName:string;firstName:string;lastName:string;phone:string;date:string;time:string;service:string;notes:string;reminderConsent:boolean;addToContacts:boolean;employeeId:string|null} { return {clientId:'',clientName:'',firstName:'',lastName:'',phone:'',date:this.localDate(),time:'',service:'',notes:'',reminderConsent:false,addToContacts:false,employeeId:null}; }
+  private emptyDraft(): {clientId:string;clientName:string;firstName:string;lastName:string;phone:string;date:string;time:string;endTime:string;service:string;notes:string;reminderConsent:boolean;addToContacts:boolean;employeeId:string|null} { return {clientId:'',clientName:'',firstName:'',lastName:'',phone:'',date:this.localDate(),time:'',endTime:'',service:'',notes:'',reminderConsent:false,addToContacts:false,employeeId:null}; }
   private localDate(date=new Date()):string { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; }
+}
+
+function toOverlapAcknowledgements(appointments: Appointment[]): AppointmentOverlapAcknowledgement[] {
+  return appointments.map(item => ({
+    id: item.id,
+    date: item.date,
+    time: item.time.slice(0, 5),
+    durationMinutes: appointmentDurationMinutes(item.durationMinutes),
+    employeeId: item.employeeId ?? null,
+    employeeName: item.employeeName ?? 'Admin',
+    clientName: item.clientName,
+  })).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+function overlapAcknowledgementsMatch(
+  overlaps: Appointment[],
+  acknowledged: AppointmentOverlapAcknowledgement[],
+): boolean {
+  const current = toOverlapAcknowledgements(overlaps);
+  const provided = [...acknowledged].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  return current.length === provided.length && current.every((item, index) => {
+    const ack = provided[index];
+    return item.id === ack.id && item.date === ack.date && item.time === ack.time &&
+      item.durationMinutes === ack.durationMinutes && item.employeeId === ack.employeeId &&
+      item.employeeName === ack.employeeName && item.clientName === ack.clientName;
+  });
+}
+
+function isOverlapConfirmationRequired(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const value = error as { code?: unknown; message?: unknown };
+  return value.code === '23514' && typeof value.message === 'string' &&
+    value.message.includes('appointment_overlap_confirmation_required');
 }

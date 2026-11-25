@@ -21,6 +21,7 @@ export class ConfirmationDialog implements AfterViewInit {
   readonly title = input.required<string>();
   readonly message = input.required<string>();
   readonly confirmLabel = input.required<string>();
+  readonly dismissLabel = input('Annulla');
   readonly dark = input(false);
   readonly confirmed = output<void>();
   readonly dismissed = output<void>();

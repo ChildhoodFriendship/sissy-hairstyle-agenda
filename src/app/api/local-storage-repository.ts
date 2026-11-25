@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { AgendaBackup, AppointmentRepository, ClientRepository, SettingsRepository } from './repositories';
+import type { AgendaBackup, AppointmentRepository, AppointmentWriteOptions, ClientRepository, SettingsRepository } from './repositories';
 import type { Appointment, Client, SalonSettings } from '../library/models';
 
 const APPOINTMENTS_KEY = 'sissy-agenda-appointments-v1';
@@ -32,7 +32,7 @@ export class LocalStorageRepository implements AppointmentRepository, ClientRepo
     return this.readArray<Appointment>(APPOINTMENTS_KEY);
   }
 
-  async saveAppointment(appointment: Appointment): Promise<void> {
+  async saveAppointment(appointment: Appointment, _options?: AppointmentWriteOptions): Promise<void> {
     const records = await this.listAppointments();
     const next = records.filter((item) => item.id !== appointment.id);
     next.push(appointment);

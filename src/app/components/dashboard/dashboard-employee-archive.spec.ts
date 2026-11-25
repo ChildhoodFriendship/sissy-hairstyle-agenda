@@ -46,6 +46,7 @@ describe('Dashboard archived employee assignments', () => {
       hasStorageWarning: vi.fn().mockReturnValue(false),
       hasSettingsWarning: vi.fn().mockReturnValue(false),
       saveClient: vi.fn().mockResolvedValue(undefined),
+      ensureAppointmentFeatureSchema: vi.fn().mockResolvedValue(undefined),
       saveAppointment: vi.fn().mockResolvedValue(undefined),
     };
     TestBed.configureTestingModule({
@@ -105,6 +106,7 @@ describe('Dashboard archived employee assignments', () => {
       hasStorageWarning: vi.fn().mockReturnValue(false),
       hasSettingsWarning: vi.fn().mockReturnValue(false),
       saveClient: vi.fn().mockResolvedValue(undefined),
+      ensureAppointmentFeatureSchema: vi.fn().mockResolvedValue(undefined),
       saveAppointment: vi.fn().mockResolvedValue(undefined),
     };
     TestBed.configureTestingModule({

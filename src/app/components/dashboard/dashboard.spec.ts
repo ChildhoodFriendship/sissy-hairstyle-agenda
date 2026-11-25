@@ -2,14 +2,20 @@ import { TestBed } from '@angular/core/testing';
 import { Dashboard } from './dashboard';
 import { SupabaseAgendaRepository } from '../../api/supabase-agenda-repository';
 import { SUPABASE_CLIENT } from '../../api/supabase-client';
+import type { AppointmentWriteOptions } from '../../api/repositories';
 import type { Appointment, Client, Employee } from '../../library/models';
 
 describe('Dashboard', () => {
   let savedClient: Client | undefined;
   let saveClientCalls = 0;
   let savedAppointment: Appointment | undefined;
+  let savedAppointmentOptions: AppointmentWriteOptions | undefined;
+  let appointmentRows: Appointment[] = [];
+  let appointmentWriteAttempts: { appointment: Appointment; options?: AppointmentWriteOptions }[] = [];
   let failClientList = false;
   let failNextAppointmentSave = false;
+  let nextAppointmentSaveError: unknown = null;
+  let nextAppointmentFeatureError: unknown = null;
   let nextClientSaveError: { code?: string; constraint?: string } | null = null;
   let clientSaveGate: Promise<void> | null = null;
   let employeeSaveCalls = 0;
@@ -36,8 +42,13 @@ describe('Dashboard', () => {
     savedClient = undefined;
     saveClientCalls = 0;
     savedAppointment = undefined;
+    savedAppointmentOptions = undefined;
+    appointmentRows = [];
+    appointmentWriteAttempts = [];
     failClientList = false;
     failNextAppointmentSave = false;
+    nextAppointmentSaveError = null;
+    nextAppointmentFeatureError = null;
     nextClientSaveError = null;
     clientSaveGate = null;
     employeeSaveCalls = 0;
@@ -54,11 +65,18 @@ describe('Dashboard', () => {
         provide: SupabaseAgendaRepository,
         useValue: {
           listWorkSchedules: (date: string) => readShifts(date),
-          listAppointments: async () => [], listClients: async () => {
+          listAppointments: async () => appointmentRows, listClients: async () => {
             if (failClientList) throw new Error('Clients unavailable');
             return [sampleClient];
           }, listEmployees: async () => [],
           findClientByPhone: async () => matchingClientByPhone,
+          ensureAppointmentFeatureSchema: async () => {
+            if (nextAppointmentFeatureError) {
+              const error = nextAppointmentFeatureError;
+              nextAppointmentFeatureError = null;
+              throw error;
+            }
+          },
           deleteClient: async () => {
             if (nextClientDeleteError) {
               const error = nextClientDeleteError;
@@ -76,12 +94,19 @@ describe('Dashboard', () => {
             savedClient = client;
             if (clientSaveGate) await clientSaveGate;
           },
-          saveAppointment: async (appointment: Appointment) => {
+          saveAppointment: async (appointment: Appointment, options?: AppointmentWriteOptions) => {
+            appointmentWriteAttempts.push({ appointment, options });
+            if (nextAppointmentSaveError) {
+              const error = nextAppointmentSaveError;
+              nextAppointmentSaveError = null;
+              throw error;
+            }
             if (failNextAppointmentSave) {
               failNextAppointmentSave = false;
               throw { code: '23505' };
             }
             savedAppointment = appointment;
+            savedAppointmentOptions = options;
           },
           saveEmployee: async () => { employeeSaveCalls += 1; }, deleteEmployee: async () => undefined,
           saveWorkSchedule: async () => { workScheduleSaveCalls += 1; },
@@ -116,6 +141,159 @@ describe('Dashboard', () => {
     expect(fixture.nativeElement.querySelector('.demo-label')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .profile')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar .logout img')?.getAttribute('src')).toBe('/assets/logout.svg');
+  });
+
+  it('checks the appointment migration before writing a shift, contact or appointment', async () => {
+    readShifts = async () => [];
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; endTime: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      formError(): string;
+      saveAppointment(): Promise<void>;
+    };
+    Object.assign(instance.draft, {
+      clientId: '', firstName: 'Nuova', lastName: 'Cliente', phone: '3331234567', date: instance.selectedDate(),
+      time: '09:00', endTime: '09:30', service: '', notes: '', reminderConsent: false,
+      addToContacts: true, employeeId: null,
+    });
+    nextAppointmentFeatureError = { code: 'APPOINTMENT_FEATURE_MIGRATION_REQUIRED', message: 'migration missing' };
+
+    await instance.saveAppointment();
+
+    expect(workScheduleSaveCalls).toBe(0);
+    expect(saveClientCalls).toBe(0);
+    expect(savedAppointment).toBeUndefined();
+    expect(instance.formError()).toContain('migrazione');
+  });
+
+  it('asks before saving a booking that overlaps the same person and saves only after confirmation', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      appointments: { set(value: Appointment[]): void };
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; endTime: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      pendingConfirmation(): { message: string } | null;
+      saveAppointment(): Promise<void>;
+      acceptConfirmation(): Promise<void>;
+    };
+    const date = instance.selectedDate();
+    instance.appointments.set([{
+      id: 'existing-booking', clientId: '', clientName: 'Cliente già prenotata', phone: '', date,
+      time: '08:30', durationMinutes: 90, service: 'Colore, taglio e piega', notes: '', status: 'confirmed',
+      reminderConsent: false, createdAt: date, employeeId: null, employeeName: 'Admin',
+    }]);
+    Object.assign(instance.draft, {
+      clientId: '', firstName: 'Nuova', lastName: 'Cliente', phone: '3331234567', date,
+      time: '09:00', endTime: '09:30', service: 'Piega', notes: '', reminderConsent: false,
+      addToContacts: false, employeeId: null,
+    });
+
+    await instance.saveAppointment();
+
+    expect(savedAppointment).toBeUndefined();
+    expect(instance.pendingConfirmation()?.message).toContain('08:30–10:00');
+    expect(instance.pendingConfirmation()?.message).toContain('09:00–09:30');
+    expect(instance.pendingConfirmation()?.message).toContain('Nuova Cliente');
+
+    await instance.acceptConfirmation();
+
+    expect(savedAppointment?.durationMinutes).toBe(30);
+    expect(savedAppointmentOptions?.overlapAcknowledgement).toEqual([{
+      id: 'existing-booking', date, time: '08:30', durationMinutes: 90,
+      employeeId: null, employeeName: 'Admin', clientName: 'Cliente già prenotata',
+    }]);
+  });
+
+  it('requires confirmation when editing details of a confirmed appointment that already overlaps', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      appointments: { set(value: Appointment[]): void };
+      editingAppointment: { set(value: Appointment | null): void };
+      editingId: { set(value: string): void };
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; endTime: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      pendingConfirmation(): { message: string } | null;
+      saveAppointment(): Promise<void>;
+    };
+    const date = instance.selectedDate();
+    const booking: Appointment = {
+      id: 'editing-booking', clientId: '', clientName: 'Cliente A', phone: '', date,
+      time: '08:30', durationMinutes: 90, service: 'Colore', notes: '', status: 'confirmed',
+      reminderConsent: false, createdAt: date, employeeId: null, employeeName: 'Admin',
+    };
+    const overlappingBooking: Appointment = {
+      id: 'overlapping-booking', clientId: '', clientName: 'Cliente B', phone: '', date,
+      time: '09:00', durationMinutes: 30, service: 'Piega', notes: '', status: 'confirmed',
+      reminderConsent: false, createdAt: date, employeeId: null, employeeName: 'Admin',
+    };
+    instance.appointments.set([booking, overlappingBooking]);
+    instance.editingAppointment.set(booking);
+    instance.editingId.set(booking.id);
+    Object.assign(instance.draft, {
+      clientId: '', firstName: 'Cliente', lastName: 'A', phone: '3331234567', date,
+      time: booking.time, endTime: '10:00', service: 'Taglio', notes: '', reminderConsent: false,
+      addToContacts: false, employeeId: null,
+    });
+
+    await instance.saveAppointment();
+
+    expect(savedAppointment).toBeUndefined();
+    expect(instance.pendingConfirmation()?.message).toContain('Cliente B (09:00–09:30)');
+    expect(appointmentWriteAttempts).toHaveLength(0);
+  });
+
+  it('re-prompts when a concurrent booking changes the overlap set after confirmation', async () => {
+    const fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const instance = fixture.componentInstance as unknown as {
+      selectedDate(): string;
+      appointments: { set(value: Appointment[]): void };
+      draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; endTime: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
+      pendingConfirmation(): { message: string } | null;
+      saveAppointment(): Promise<void>;
+      acceptConfirmation(): Promise<void>;
+    };
+    const date = instance.selectedDate();
+    const firstOverlap: Appointment = {
+      id: 'a-existing', clientId: '', clientName: 'Cliente A', phone: '', date,
+      time: '08:30', durationMinutes: 90, service: '', notes: '', status: 'confirmed',
+      reminderConsent: false, createdAt: date, employeeId: null, employeeName: 'Admin',
+    };
+    const concurrentOverlap: Appointment = {
+      id: 'b-existing', clientId: '', clientName: 'Cliente B', phone: '', date,
+      time: '09:00', durationMinutes: 30, service: '', notes: '', status: 'confirmed',
+      reminderConsent: false, createdAt: date, employeeId: null, employeeName: 'Admin',
+    };
+    instance.appointments.set([firstOverlap]);
+    Object.assign(instance.draft, {
+      clientId: '', firstName: 'Nuova', lastName: 'Cliente', phone: '3331234567', date,
+      time: '09:00', endTime: '09:30', service: '', notes: '', reminderConsent: false,
+      addToContacts: false, employeeId: null,
+    });
+
+    await instance.saveAppointment();
+    expect(instance.pendingConfirmation()?.message).toContain('Cliente A');
+    appointmentRows = [firstOverlap, concurrentOverlap];
+    nextAppointmentSaveError = { code: '23514', message: 'appointment_overlap_confirmation_required' };
+
+    await instance.acceptConfirmation();
+
+    expect(appointmentWriteAttempts[0].options?.overlapAcknowledgement?.map(item => item.id)).toEqual(['a-existing']);
+    expect(savedAppointment).toBeUndefined();
+    expect(instance.pendingConfirmation()?.message).toContain('Cliente B (09:00–09:30)');
+
+    await instance.acceptConfirmation();
+
+    expect(savedAppointment?.clientName).toBe('Nuova Cliente');
+    expect(savedAppointmentOptions?.overlapAcknowledgement?.map(item => item.id)).toEqual(['a-existing', 'b-existing']);
   });
 
   it('keeps the dashboard available and warns when remote salon settings cannot load', async () => {
@@ -420,7 +598,7 @@ describe('Dashboard', () => {
       draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: sampleClient.id, firstName: 'Ada', lastName: 'Lovelace', phone: '+393331234567', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: true, addToContacts: true, employeeId: null });
+    Object.assign(instance.draft, { clientId: sampleClient.id, firstName: 'Ada', lastName: 'Lovelace', phone: '+393331234567', date: instance.selectedDate(), time: '10:00', endTime: '10:30', service: '', notes: '', reminderConsent: true, addToContacts: true, employeeId: null });
     await instance.saveAppointment();
     expect(saveClientCalls).toBe(0);
     expect(savedAppointment?.clientId).toBe(sampleClient.id);
@@ -436,7 +614,7 @@ describe('Dashboard', () => {
       draft: { clientId?: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '+393331234568', date: instance.selectedDate(), time: '10:00', service: '', notes: '', reminderConsent: false, addToContacts: false, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '+393331234568', date: instance.selectedDate(), time: '10:00', endTime: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: false, employeeId: null });
     await instance.saveAppointment();
     expect(saveClientCalls).toBe(0);
     expect(savedAppointment?.clientId).toBe('');
@@ -452,7 +630,7 @@ describe('Dashboard', () => {
       draft: { clientId?: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '+393331234569', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '+393331234569', date: instance.selectedDate(), time: '10:30', endTime: '11:00', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
     await instance.saveAppointment();
     expect(saveClientCalls).toBe(1);
     expect(savedClient?.name).toBe('Katherine Johnson');
@@ -523,7 +701,7 @@ describe('Dashboard', () => {
       clients(): Client[];
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', endTime: '11:00', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
     await instance.load();
     failClientList = true;
     failNextAppointmentSave = true;
@@ -547,7 +725,7 @@ describe('Dashboard', () => {
       formError(): string;
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', endTime: '11:00', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
     nextClientSaveError = { code: '23505', constraint: 'clients_owner_id_phone_key' };
 
     await instance.saveAppointment();
@@ -566,7 +744,7 @@ describe('Dashboard', () => {
       draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Katherine', lastName: 'Johnson', phone: '3337654321', date: instance.selectedDate(), time: '10:30', endTime: '11:00', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
     let releaseSave!: () => void;
     clientSaveGate = new Promise<void>((resolve) => { releaseSave = resolve; });
 
@@ -875,7 +1053,7 @@ describe('Dashboard', () => {
       draft: { clientId: string; firstName: string; lastName: string; phone: string; date: string; time: string; service: string; notes: string; reminderConsent: boolean; addToContacts: boolean; employeeId: string | null };
       saveAppointment(): Promise<void>;
     };
-    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '3337654321', date: instance.selectedDate(), time: '10:30', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
+    Object.assign(instance.draft, { clientId: '', firstName: 'Grace', lastName: 'Hopper', phone: '3337654321', date: instance.selectedDate(), time: '10:30', endTime: '11:00', service: '', notes: '', reminderConsent: false, addToContacts: true, employeeId: null });
 
     await instance.saveAppointment();
 

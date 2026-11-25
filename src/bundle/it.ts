@@ -30,6 +30,11 @@ export const it = {
     noReminders: 'Nessun promemoria in scadenza oggi.', conflict: 'Questo orario è già occupato.',
     singleView: 'Vista singola', personFilter: 'Persona', mobileView: 'Mostra', allPeople: 'Tutte le persone', scrollHint: 'Scorri per le altre persone →',
     singleAgendaLabel: 'Agenda del giorno per', allAgendasLabel: 'Agende del giorno per tutte le persone',
+    overlapTitle: 'Confermi la sovrapposizione?', overlapConfirm: 'Conferma comunque', overlapCancel: 'Torna alla prenotazione',
+    overlapMessage: (person: string, date: string, existing: string, client: string, range: string) =>
+      `Per ${person}, il ${date}, risultano già in agenda: ${existing}. Il nuovo appuntamento di ${client} (${range}) si sovrappone. Vuoi aggiungerlo comunque?`,
+    appointmentStart: 'Ora di inizio', appointmentEnd: 'Ora di fine', bookableTimes: 'Orari prenotabili',
+    overlapHint: 'Già in agenda', noBookableTimes: 'Nessuna fascia prenotabile.', noEndTimes: 'Nessuna durata disponibile per questo turno.',
     status: { cancelled: 'Annullato', completed: 'Completato' },
   },
   form: {

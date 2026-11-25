@@ -84,14 +84,14 @@ L’agenda mostra gli appuntamenti della data selezionata, divisi per Sissy e pe
 1. Apri **Agenda** e scegli **Nuovo appuntamento**.
 2. Inserisci nome, cognome e telefono della cliente. Seleziona una cliente salvata per precompilare i dati oppure scegli **Nuova cliente** per svuotare i campi.
 3. Se la nuova cliente deve comparire nella rubrica, seleziona **Aggiungi anche alla Rubrica Clienti**.
-4. Scegli data, ora e persona assegnata. Inserisci, se necessario, servizio, note e consenso WhatsApp.
+4. Scegli data, ora di inizio, ora di fine e persona assegnata. La durata predefinita è di 30 minuti; puoi selezionare intervalli più lunghi di mezz’ora in mezz’ora, entro il turno. Inserisci, se necessario, servizio, note e consenso WhatsApp.
 5. Scegli **Salva appuntamento**. Durante una modifica, scegli **Salva modifiche**.
 
 Inserisci un numero italiano senza prefisso: l’app aggiunge `+39` e rifiuta prefissi internazionali diversi. Data e ora sono selezionate con i controlli disponibili nel modulo.
 
 Quando la gestione dei turni è disponibile, **Modifica turno** permette di impostare una o più fasce per la persona e la data selezionate. Per una pausa crea due fasce; per un giorno di riposo non inserirne. In **Orari liberi**, scegli una mezz’ora per aprire il modulo con data, ora e persona già selezionate. In assenza di turni personalizzati l’app usa la disponibilità predefinita; un turno salvato o un giorno di riposo la sostituisce.
 
-Per lo stesso giorno e ora possono esserci al massimo tre appuntamenti confermati, senza assegnare la stessa persona due volte. Gli appuntamenti annullati o completati non occupano la fascia. Se la persona assegnata è stata archiviata, l’app conserva la sua indicazione negli appuntamenti storici.
+Per lo stesso giorno e ora possono esserci al massimo tre appuntamenti confermati. La stessa persona può seguire più clienti in intervalli sovrapposti: prima del salvataggio l’app mostra gli appuntamenti già presenti e l’intervallo della nuova prenotazione. Scegli **Conferma comunque** solo se vuoi accettare la sovrapposizione; senza conferma l’appuntamento non viene salvato. Se l’agenda cambia durante il salvataggio, l’app aggiorna l’elenco: se restano sovrapposizioni diverse, chiede una nuova conferma; se non ne restano, invita a controllare i dati e salvare di nuovo. Gli appuntamenti annullati o completati non occupano la fascia. Il database precedente non registrava l’ora di fine: dopo la migrazione gli appuntamenti esistenti avranno una durata iniziale di 30 minuti. Correggi la durata degli appuntamenti più lunghi prima di fare affidamento sugli avvisi di sovrapposizione. Se la persona assegnata è stata archiviata, l’app conserva la sua indicazione negli appuntamenti storici.
 
 #### Consultare e modificare
 

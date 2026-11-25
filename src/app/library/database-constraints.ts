@@ -7,6 +7,8 @@ export const DATABASE_LIMITS = {
   usernameMinimum: 3,
   usernameMaximum: 30,
   workScheduleSlots: 48,
+  appointmentDurationMinimum: 30,
+  appointmentDurationMaximum: 720,
 } as const;
 
 export type DatabaseWriteOperation =
@@ -52,6 +54,13 @@ export function validateAppointmentTime(value: string): string | null {
     : 'L’orario deve essere valido e su intervalli di 30 minuti.';
 }
 
+export function validateAppointmentDuration(value: number): string | null {
+  return Number.isInteger(value) && value >= DATABASE_LIMITS.appointmentDurationMinimum &&
+    value <= DATABASE_LIMITS.appointmentDurationMaximum && value % 30 === 0
+    ? null
+    : 'La durata deve essere compresa tra 30 minuti e 12 ore, a intervalli di mezz’ora.';
+}
+
 export function validateWorkSlots(slots: readonly number[]): string | null {
   if (slots.length > DATABASE_LIMITS.workScheduleSlots) {
     return `Il turno non può contenere più di ${DATABASE_LIMITS.workScheduleSlots} fasce da mezz’ora.`;
@@ -75,6 +84,10 @@ export function databaseConstraintMessage(error: unknown, operation: DatabaseWri
   const code = record.code;
   const constraint = record.constraint;
   const serverMessage = `${record.message} ${record.details}`.toLowerCase();
+
+  if (operation === 'appointment' && code === 'APPOINTMENT_FEATURE_MIGRATION_REQUIRED') {
+    return 'La migrazione per le durate e le sovrapposizioni non è applicata. Esegui il file `supabase/migrations/20261125000000_appointment_duration_and_overlap.sql` nel progetto Supabase e ricarica la pagina.';
+  }
 
   if (code === '23505') {
     if (operation === 'client' && (constraint === 'clients_owner_id_phone_key' ||
@@ -101,6 +114,12 @@ export function databaseConstraintMessage(error: unknown, operation: DatabaseWri
   }
 
   if (code === '23514') {
+    if (operation === 'appointment' && serverMessage.includes('appointment_overlap_confirmation_required')) {
+      return 'La disponibilità è cambiata mentre salvavi. Ho aggiornato gli appuntamenti: controlla la sovrapposizione e conferma di nuovo.';
+    }
+    if (operation === 'appointment' && (constraint === 'appointments_duration_minutes_check' || serverMessage.includes('appointment_duration_invalid'))) {
+      return 'La durata non è valida. Scegli un orario finale a intervalli di mezz’ora.';
+    }
     if (operation === 'appointment' && serverMessage.includes('appointment_slot_capacity_exceeded')) {
       return 'La fascia ha già raggiunto il limite di 3 appuntamenti confermati. Scegli un altro orario.';
     }

@@ -3,6 +3,7 @@ import {
   DATABASE_LIMITS,
   databaseConstraintMessage,
   isUniqueConstraintViolation,
+  validateAppointmentDuration,
   validateAppointmentTime,
   validateName,
   validateServiceName,
@@ -24,6 +25,24 @@ describe('database constraints and user-facing errors', () => {
     expect(validateAppointmentTime('10:30')).toBeNull();
     expect(validateAppointmentTime('10:15')).toContain('30 minuti');
     expect(validateAppointmentTime('24:00')).toContain('30 minuti');
+  });
+
+  it('validates appointment durations in half-hour increments up to the supported limit', () => {
+    expect(validateAppointmentDuration(30)).toBeNull();
+    expect(validateAppointmentDuration(90)).toBeNull();
+    expect(validateAppointmentDuration(720)).toBeNull();
+    expect(validateAppointmentDuration(0)).toContain('30');
+    expect(validateAppointmentDuration(45)).toContain('mezz’ora');
+    expect(validateAppointmentDuration(750)).toContain('12 ore');
+  });
+
+  it('explains concurrent overlaps, invalid durations and a missing feature migration', () => {
+    expect(databaseConstraintMessage({ code: '23514', message: 'appointment_overlap_confirmation_required' }, 'appointment'))
+      .toContain('disponibilità è cambiata');
+    expect(databaseConstraintMessage({ code: '23514', constraint: 'appointments_duration_minutes_check' }, 'appointment'))
+      .toContain('durata');
+    expect(databaseConstraintMessage({ code: 'APPOINTMENT_FEATURE_MIGRATION_REQUIRED' }, 'appointment'))
+      .toContain('migrazione');
   });
 
   it('matches the database username normalization, character set and length limits', () => {

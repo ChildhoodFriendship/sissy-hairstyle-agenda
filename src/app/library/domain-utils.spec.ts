@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  findAppointmentConflict,
+  appointmentDurationFromTimes,
+  findAppointmentOverlaps,
+  formatAppointmentTimeRange,
+  isAppointmentSlotAtCapacity,
   normalizePhoneNumber,
   phoneForDisplay,
   renderMessageTemplate,
@@ -67,54 +70,80 @@ describe('renderMessageTemplate', () => {
   });
 });
 
-describe('findAppointmentConflict', () => {
-  it('finds another active appointment in the same date and time', () => {
-    expect(
-      findAppointmentConflict([appointment()], { date: '2026-11-06', time: '10:30' }),
-    ).toBe(true);
+describe('appointment duration and overlap', () => {
+  it('converts same-day half-hour ranges into minutes, including midnight as 24:00', () => {
+    expect(appointmentDurationFromTimes('08:30', '10:00')).toBe(90);
+    expect(appointmentDurationFromTimes('23:30', '00:00')).toBe(30);
+    expect(appointmentDurationFromTimes('08:30', '08:30')).toBeNull();
+    expect(appointmentDurationFromTimes('08:30', '09:15')).toBeNull();
+    expect(appointmentDurationFromTimes('23:30', '00:30')).toBeNull();
   });
 
-  it('ignores canceled appointments and the appointment being edited', () => {
-    expect(
-      findAppointmentConflict(
-        [appointment({ status: 'cancelled' }), appointment({ id: 'editing' })],
-        { date: '2026-11-06', time: '10:30', excludeId: 'editing' },
-      ),
-    ).toBe(false);
+  it('formats a persisted duration as a readable appointment range', () => {
+    expect(formatAppointmentTimeRange(appointment({ time: '08:30', durationMinutes: 90 }))).toBe('08:30–10:00');
+    expect(formatAppointmentTimeRange(appointment({ time: '23:30', durationMinutes: 30 }))).toBe('23:30–24:00');
   });
 
-  it('allows distinct assignees to share a slot until its three-appointment limit', () => {
+  it('returns same-assignee appointments whose intervals overlap and excludes a touching boundary', () => {
+    const existing = appointment({ employeeId: 'employee-1', employeeName: 'Lara Rossi', time: '08:30', durationMinutes: 90 });
+    expect(findAppointmentOverlaps([existing], {
+      date: '2026-11-06', time: '09:00', durationMinutes: 30, employeeId: 'employee-1', employeeName: 'Lara Rossi',
+    })).toEqual([existing]);
+    expect(findAppointmentOverlaps([existing], {
+      date: '2026-11-06', time: '10:00', durationMinutes: 30, employeeId: 'employee-1', employeeName: 'Lara Rossi',
+    })).toEqual([]);
+  });
+
+  it('ignores other assignees, inactive appointments, other dates and the edited record', () => {
+    const existing = [
+      appointment({ id: 'same', employeeId: 'employee-1', time: '08:30', durationMinutes: 90 }),
+      appointment({ id: 'other', employeeId: 'employee-2', time: '08:30', durationMinutes: 90 }),
+      appointment({ id: 'cancelled', employeeId: 'employee-1', time: '08:30', durationMinutes: 90, status: 'cancelled' }),
+      appointment({ id: 'completed', employeeId: 'employee-1', time: '08:30', durationMinutes: 90, status: 'completed' }),
+      appointment({ id: 'different-date', employeeId: 'employee-1', time: '08:30', durationMinutes: 90, date: '2026-11-07' }),
+    ];
+    expect(findAppointmentOverlaps(existing, {
+      date: '2026-11-06', time: '09:00', durationMinutes: 30, employeeId: 'employee-1', excludeId: 'same',
+    })).toEqual([]);
+  });
+
+  it('does not confuse an archived employee snapshot with the Sissy assignee', () => {
+    const legacyAssignment = appointment({
+      id: 'legacy-assignment', employeeId: null, employeeName: 'Giulia Bianchi', time: '08:30', durationMinutes: 90,
+    });
+    expect(findAppointmentOverlaps([legacyAssignment], {
+      date: '2026-11-06', time: '09:00', durationMinutes: 30, employeeId: null, employeeName: 'Admin',
+    })).toEqual([]);
+  });
+});
+
+describe('isAppointmentSlotAtCapacity', () => {
+  it('allows an existing assignee to take another client while fewer than three start together', () => {
     const existing = [
       appointment({ id: 'admin', employeeId: null }),
       appointment({ id: 'employee-1', employeeId: 'employee-1' }),
     ];
-    expect(findAppointmentConflict(existing, {
-      date: '2026-11-06', time: '10:30', employeeId: 'employee-2',
-    })).toBe(false);
+    expect(isAppointmentSlotAtCapacity(existing, { date: '2026-11-06', time: '10:30', employeeId: 'employee-1' })).toBe(false);
   });
 
-  it('blocks a fourth appointment and duplicate assignee in the same slot', () => {
+  it('blocks a fourth appointment at the same start regardless of assignee', () => {
     const existing = [
       appointment({ id: 'admin', employeeId: null }),
       appointment({ id: 'employee-1', employeeId: 'employee-1' }),
       appointment({ id: 'employee-2', employeeId: 'employee-2' }),
     ];
-    expect(findAppointmentConflict(existing, {
-      date: '2026-11-06', time: '10:30', employeeId: 'employee-3',
-    })).toBe(true);
-    expect(findAppointmentConflict(existing, {
-      date: '2026-11-06', time: '10:30', employeeId: null,
-    })).toBe(true);
+    expect(isAppointmentSlotAtCapacity(existing, { date: '2026-11-06', time: '10:30', employeeId: 'employee-3' })).toBe(true);
   });
 
-  it('does not treat an archived employee snapshot without an id as the Admin assignee', () => {
-    const legacyAssignment = appointment({
-      id: 'legacy-assignment',
-      employeeId: null,
-      employeeName: 'Giulia Bianchi',
-    });
-    expect(findAppointmentConflict([legacyAssignment], {
-      date: '2026-11-06', time: '10:30', employeeId: null, employeeName: 'Admin',
-    })).toBe(false);
+  it('ignores cancelled or completed appointments and excludes the edited appointment from capacity', () => {
+    const existing = [
+      appointment({ id: 'editing' }),
+      appointment({ id: 'second', employeeId: 'employee-1' }),
+      appointment({ id: 'third', employeeId: 'employee-2' }),
+      appointment({ id: 'cancelled', status: 'cancelled' }),
+      appointment({ id: 'completed', status: 'completed' }),
+    ];
+    expect(isAppointmentSlotAtCapacity(existing, { date: '2026-11-06', time: '10:30', excludeId: 'editing' })).toBe(false);
+    expect(isAppointmentSlotAtCapacity(existing, { date: '2026-11-06', time: '10:30' })).toBe(true);
   });
 });

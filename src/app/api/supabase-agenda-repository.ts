@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import type { AppointmentRepository, ClientRepository, EmployeeRepository, SettingsRepository } from './repositories';
+import type { AppointmentRepository, AppointmentWriteOptions, ClientRepository, EmployeeRepository, SettingsRepository } from './repositories';
 import { LocalStorageRepository } from './local-storage-repository';
 import { SUPABASE_CLIENT } from './supabase-client';
 import type { Appointment, Client, Employee, SalonSettings } from '../library/models';
@@ -29,6 +29,7 @@ interface AppointmentRow {
   created_at: string;
   employee_id: string | null;
   employee_name: string;
+  duration_minutes?: number | null;
 }
 
 interface EmployeeRow {
@@ -45,6 +46,7 @@ const SETTINGS_COLUMNS = 'salon_name,default_country_code,business_hours,message
 export class SupabaseAgendaRepository extends LocalStorageRepository implements AppointmentRepository, ClientRepository, EmployeeRepository, SettingsRepository {
   private readonly supabase = inject(SUPABASE_CLIENT);
   private settingsUnavailable = false;
+  private appointmentFeatureSchemaReady = false;
 
   override async listAppointments(): Promise<Appointment[]> {
     const client = this.requireClient();
@@ -64,11 +66,27 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       createdAt: row.created_at,
       employeeId: row.employee_id,
       employeeName: row.employee_name,
+      durationMinutes: row.duration_minutes ?? 30,
     }));
   }
 
-  override async saveAppointment(item: Appointment): Promise<void> {
+  async ensureAppointmentFeatureSchema(): Promise<void> {
+    if (this.appointmentFeatureSchemaReady) return;
+    const { error } = await this.requireClient().from('appointments')
+      .select('duration_minutes,overlap_acknowledgement').limit(0);
+    if (!error) {
+      this.appointmentFeatureSchemaReady = true;
+      return;
+    }
+    if (isMissingAppointmentFeatureColumns(error)) {
+      throw { code: 'APPOINTMENT_FEATURE_MIGRATION_REQUIRED', message: 'Appointment duration/overlap migration is missing.' };
+    }
+    throw error;
+  }
+
+  override async saveAppointment(item: Appointment, options: AppointmentWriteOptions = {}): Promise<void> {
     const client = this.requireClient();
+    await this.ensureAppointmentFeatureSchema();
     const { error } = await client.from('appointments').upsert({
       id: item.id,
       client_id: item.clientId || null,
@@ -76,6 +94,8 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       phone: item.phone,
       appointment_date: item.date,
       appointment_time: item.time,
+      duration_minutes: item.durationMinutes ?? 30,
+      overlap_acknowledgement: options.overlapAcknowledgement ?? [],
       service: item.service,
       notes: item.notes,
       status: item.status,
@@ -84,7 +104,13 @@ export class SupabaseAgendaRepository extends LocalStorageRepository implements 
       employee_id: item.employeeId ?? null,
       employee_name: item.employeeName || 'Admin',
     });
-    if (error) throw error;
+    if (error) {
+      if (isMissingAppointmentFeatureColumns(error)) {
+        this.appointmentFeatureSchemaReady = false;
+        throw { code: 'APPOINTMENT_FEATURE_MIGRATION_REQUIRED', message: 'Appointment duration/overlap migration is missing.' };
+      }
+      throw error;
+    }
   }
 
   override async deleteAppointment(id: string): Promise<void> {
@@ -378,6 +404,13 @@ function salonSettingsFromRow(value: unknown): SalonSettings {
     },
     demoDataEnabled: value['demo_data_enabled'],
   };
+}
+
+function isMissingAppointmentFeatureColumns(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  const code = typeof error['code'] === 'string' ? error['code'] : '';
+  const message = typeof error['message'] === 'string' ? error['message'] : '';
+  return ['PGRST204', '42703'].includes(code) && /duration_minutes|overlap_acknowledgement/i.test(message);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
